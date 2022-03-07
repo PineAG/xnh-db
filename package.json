@@ -1,0 +1,11 @@
+{
+  "name": "@xnh-db/",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "PineAG",
+  "license": "MIT",
+  "private": "true",
+  "workspaces": {
+    "packages": ["projects/*"]
+  }
+}

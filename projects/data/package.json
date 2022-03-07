@@ -1,0 +1,19 @@
+{
+  "name": "@xnh-db/data",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@types/node": "^17.0.21",
+    "@xnh-db/register-utils": "*",
+    "@xnh-db/types": "*",
+    "typescript": "^4.6.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.7.0"
+  },
+  "scripts": {
+    "build": "ts-node index.ts"
+  }
+}
