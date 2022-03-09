@@ -1,10 +1,9 @@
-import { XNHDataRef, XNHDataType, XNHTypeBase } from "./base"
-
 export type DataRefType = 'direct' | 'link' | 'wrapped'
 
 export interface BaseBase {
+    type: string
     props: {}
-    rel: {}
+    rel: {[key: string]: BaseBase}
 }
 
 export interface LinkedData {
@@ -24,18 +23,29 @@ export type ExcludeKeys<T, K> = Pick<T, Exclude<keyof T, K>>
 
 
 // Argument sent into register func
-export type ConfigData<DataType extends XNHDataType> = (
-    {id: string} & // attachments
-    ExcludeKeys<XNHTypeBase<DataType>, XNHDataRef<DataType>> &
-    {
-        [K in XNHDataRef<DataType> & (keyof XNHTypeBase<DataType>)]: 
-            ImportData<XNHTypeBase<DataType>[K] & XNHDataType>[]
-    });
+export type ConfigData<T extends BaseBase> = {
+        id: string
+        props: T["props"]
+        rel: {
+            [K in keyof T["rel"]]: 
+                ImportData<T["rel"][K]>[]
+        }
+    };
 // Return of register func
-export type ImportData<DataType extends XNHDataType> = {
-    id: string,
-    type: DataType,
-    value: ConfigData<DataType>
+export type ImportData<T extends BaseBase> = {
+    id: string
+    title: string
+    type: T["type"]
+    value: ConfigData<T>
 }
 // Exported as JSON
-export type ExportData<DataType extends XNHDataType> = {type: DataType} & ConfigData<DataType>
+export type ExportData<T extends BaseBase> = {
+    id: string
+    title: string
+    type: T["type"]
+    props: T["props"]
+    rel: {
+        [K in keyof T["rel"]]: 
+            {id: string, type: T["rel"][K]["type"], title: string}[]
+    }
+};
