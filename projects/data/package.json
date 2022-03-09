@@ -6,9 +6,12 @@
   "private": true,
   "dependencies": {
     "@types/node": "^17.0.21",
+    "@types/rimraf": "^3.0.2",
     "@xnh-db/register-utils": "*",
     "@xnh-db/types": "*",
-    "typescript": "^4.6.2"
+    "rimraf": "^3.0.2",
+    "typescript": "^4.6.2",
+    "utility-types": "^3.10.0"
   },
   "devDependencies": {
     "ts-node": "^10.7.0"
