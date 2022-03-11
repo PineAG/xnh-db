@@ -11,6 +11,7 @@ export interface CharacterBase extends BaseBase {
         创作者: CreatorBase
         配音: VoiceActorBase
     }
+    files: {}
 }
 
 export interface ArtworkBase extends BaseBase {
@@ -22,6 +23,7 @@ export interface ArtworkBase extends BaseBase {
         创作者: CreatorBase
         角色: CharacterBase
     }
+    files: {}
 }
 
 export interface VoiceActorBase extends BaseBase {
@@ -34,6 +36,7 @@ export interface VoiceActorBase extends BaseBase {
     rel: {
         角色: CharacterBase
     }
+    files: {}
 }
 
 export interface CreatorBase extends BaseBase {
@@ -45,4 +48,5 @@ export interface CreatorBase extends BaseBase {
         角色: CharacterBase
         作品: ArtworkBase
     }
+    files: {}
 }

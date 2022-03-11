@@ -3,6 +3,8 @@ export type DataRefType = 'direct' | 'link' | 'wrapped'
 export interface BaseBase {
     type: string
     props: {}
+    tags: string[]
+    files: {[key: string]: string | string[]}
     rel: {[key: string]: BaseBase}
 }
 
@@ -26,6 +28,8 @@ export type ExcludeKeys<T, K> = Pick<T, Exclude<keyof T, K>>
 export type ConfigData<T extends BaseBase> = {
         id: string
         props: T["props"]
+        files: T["files"]
+        tags: T["tags"]
         rel: {
             [K in keyof T["rel"]]: 
                 ImportData<T["rel"][K]>[]
@@ -36,6 +40,8 @@ export type ImportData<T extends BaseBase> = {
     id: string
     title: string
     type: T["type"]
+    files: T["files"]
+    tags: T["tags"]
     value: ConfigData<T>
 }
 // Exported as JSON
@@ -43,6 +49,8 @@ export type ExportData<T extends BaseBase> = {
     id: string
     title: string
     type: T["type"]
+    files: T["files"]
+    tags: T["tags"]
     props: T["props"]
     rel: {
         [K in keyof T["rel"]]: 

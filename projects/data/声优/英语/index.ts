@@ -7,6 +7,8 @@ export const Cristina_Danielle_Valenzuela = registerVoiceActor({
         语言: '英语',
         性别: '女',
     },
+    files: {},
+    tags: [],
     rel: {
         角色: []
     }

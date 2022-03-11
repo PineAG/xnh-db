@@ -84,11 +84,11 @@ class DistinctQueue<T> {
         this.exists.delete(val)
         return val
     }
-    get size(): number {
+    size(): number {
         return this.exists.size
     }
-    get empty(): boolean {
-        return this.size === 0
+    empty(): boolean {
+        return this.size() === 0
     }
 }
 
@@ -112,7 +112,7 @@ export function flattenDependencies(memoryDB: Map<string, XNHImportedData>){
     for(const v of memoryDB.values()){
         updateQueue.push(v.id)
     }
-    while(!updateQueue.empty){
+    while(!updateQueue.empty()){
         const leftId = updateQueue.pop()
         const leftType = memoryDB.get(leftId).type
         const leftNeighborsSet = neighborMap.get(leftId)

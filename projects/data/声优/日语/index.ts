@@ -7,6 +7,8 @@ export const 逢坂良太 = registerVoiceActor({
         性别: '男',
         语言: '日语',
     },
+    files: {},
+    tags: [],
     rel: {
         角色: []
     }

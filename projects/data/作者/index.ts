@@ -5,6 +5,8 @@ export const miHoYo = registerCreator({
     props: {
         姓名: '米哈游',
     },
+    files: {},
+    tags: [],
     rel: {
         角色: [],
         作品: []

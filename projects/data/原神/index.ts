@@ -9,6 +9,8 @@ export const 原神 = registerArtwork({
     props: {
         作品名: "原神",
     },
+    files: {},
+    tags: [],
     rel: {
         创作者: [miHoYo],
         角色: []
@@ -20,6 +22,8 @@ export const 班尼特 = registerCharacter({
     props: {
         姓名: "班尼特",
     },
+    files: {},
+    tags: [],
     rel: {
         出处: [原神],
         创作者: [],
