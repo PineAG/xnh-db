@@ -1,5 +1,6 @@
 import { CharacterConfig, ImportedArtwork, ImportedCharacter, ArtworkConfig, VoiceActorConfig, ImportedVoiceActor, CreatorConfig, ImportedCreator, XNHImportedData } from "@xnh-db/types";
 
+
 export const memoryDB: Map<string, XNHImportedData> = new Map()
 
 function registerData<T extends XNHImportedData>(data: T): T {

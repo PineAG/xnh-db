@@ -1,15 +1,16 @@
-const fs = require('fs');
 const path = require('path');
-const rimraf = require('rimraf');
+const fs = require('fs');
 
-import { XNHClasses } from "@xnh-db/types";
+import { XNHClasses, XNHImportedData } from "@xnh-db/types";
 import { memoryDB } from '..';
 import { ImportData } from '@xnh-db/types/utils';
 import { flattenDependencies } from "./flatten";
+import {dumpJSON, mkPath, rmtree} from './utils'
+import { generateSearchIndex } from "./search";
 
 
-async function exportJson(outputDir: string) {
-    await fs.promises.mkdir(outputDir, { recursive: true })
+async function exportJsonDoc(outputDir: string, memoryDB: Map<string, XNHImportedData>) {
+    await mkPath(outputDir)
     for (let doc of memoryDB.values()) {
         const relLinks: { [key: string]: { id: string, type: XNHClasses }[] } = {}
         for (const [k, v] of Object.entries(doc.value.rel as { [key: string]: ImportData<any>[] })) {
@@ -22,17 +23,15 @@ async function exportJson(outputDir: string) {
             props: doc.value.props,
             rel: relLinks
         }
-        const rawJson = JSON.stringify(exportData)
-        await fs.promises.writeFile(path.join(outputDir, `${doc.id}.json`), rawJson)
+        await dumpJSON(path.join(outputDir, `${doc.id}.json`), exportData)
     }
 }
 
 export async function finalizeRegistration(outputDir: string) {
     flattenDependencies(memoryDB)
     if (fs.existsSync(outputDir)) {
-        await new Promise((resolve, reject) => {
-            rimraf(outputDir, err => err ? reject(err) : resolve(null))
-        })
+        await rmtree(outputDir)
     }
-    exportJson(path.join(outputDir, 'items'))
+    await exportJsonDoc(path.join(outputDir, 'items'), memoryDB)
+    await generateSearchIndex(path.join(outputDir, 'search'), memoryDB, 10)
 }

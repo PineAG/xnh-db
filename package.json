@@ -6,6 +6,12 @@
   "license": "MIT",
   "private": "true",
   "workspaces": {
-    "packages": ["projects/*"]
+    "packages": [
+      "projects/*"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.1",
+    "jest": "^27.5.1"
   }
 }
