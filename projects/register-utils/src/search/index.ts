@@ -18,7 +18,9 @@ function splitSentences(s: string): string[] {
 
 function* splitNGram(s: string, n: number): Generator<string> {
     if(n === 1){
-        return s.split('')
+        for(const term of s){
+            yield term
+        }
     }
     for (let i = 0; i <= s.length - n; i++) {
         yield s.slice(i, i + n)
@@ -31,7 +33,7 @@ type TokenizedDoc = Map<number, { total: number, nGrams: { [key: string]: number
 
 export function tokenizeDocument<T extends DocBase, W extends DocWeight<T>>(doc: T, maxNGram: number, weights: W): TokenizedDoc {
     const result: TokenizedDoc = new Map()
-    for (let i = 1; i <= maxNGram; i++) {
+    for (let  i= 1; i <= maxNGram; i++) {
         let totalCounter = 0
         const nGramCounter = {}
         for (const [k, v] of Object.entries(doc)) {

@@ -5,8 +5,8 @@ import { XNHImportedData } from "@xnh-db/types";
 import { tokenizeDocument } from "../search";
 import {dumpJSON, mkPath} from './utils'
 
-type GlobalReverseIndex = Map<number, Map<string, {tfidf: number, documentId: string, type: string}[]>>
-type TmpGlobalReverseIndex = Map<number, Map<string, {totalCount: number, nGramCount: number, documentId: string, type: string}[]>>
+type GlobalReverseIndex = Map<number, Map<string, {tfidf: number, documentId: string, type: string, title: string}[]>>
+type TmpGlobalReverseIndex = Map<number, Map<string, {totalCount: number, nGramCount: number, documentId: string, type: string, title: string}[]>>
 
 function generateGlobalReverseIndex(memoryDB: Map<string, XNHImportedData>, maxNGram: number): GlobalReverseIndex {
     const tmpIdx: TmpGlobalReverseIndex = new Map()
@@ -21,7 +21,7 @@ function generateGlobalReverseIndex(memoryDB: Map<string, XNHImportedData>, maxN
                 if(!nGramSet.has(token)){
                     nGramSet.set(token, [])
                 }
-                nGramSet.get(token).push({totalCount: total, nGramCount: count, documentId: doc.id, type: doc.type})
+                nGramSet.get(token).push({totalCount: total, nGramCount: count, documentId: doc.id, type: doc.type, title: doc.title})
             }
         }
     }
@@ -31,12 +31,13 @@ function generateGlobalReverseIndex(memoryDB: Map<string, XNHImportedData>, maxN
         const newGram = new Map()
         globalReverseIndex.set(n, newGram)
         for(const [term, docs] of grams){
-            newGram.set(term, docs.map(({totalCount, nGramCount, documentId, type}) => {
+            newGram.set(term, docs.map(({totalCount, nGramCount, documentId, type, title}) => {
                 const tf = nGramCount / totalCount
                 const idf = Math.log10(memoryDB.size / docs.length)
                 const tfidf = tf * idf
                 return {
                     tfidf,
+                    title,
                     documentId,
                     type
                 }
