@@ -10,6 +10,11 @@ const MAX_N_GRAM = 10
 
 export type SearchResult = {documentId: string, type: XNHClasses, tfidf: number, title: string}
 
+export function reversoTerm(s: string): string {
+    // TODO: Merge it to @xnh-db/search
+    return s.toLowerCase()
+}
+
 export async function getSearchTerm(term: string): Promise<SearchResult[] | null> {
     if(term.length > MAX_N_GRAM){
         term = term.slice(0, MAX_N_GRAM)
@@ -31,7 +36,7 @@ function* unionRightMapKeys<T>(left: Map<string, T>, right: Map<string, T>): Gen
 }
 
 export async function searchByKeywords(keywords: string): Promise<SearchResult[]> {
-    const terms = keywords.split(' ')
+    const terms = reversoTerm(keywords).split(' ')
     const termResult = await Promise.all(terms.map(t => getSearchTerm(t)))
     const mappedResult = termResult.filter(t => t !== null).map(t => new Map(t?.map(x => [x.documentId, x])))
     if(mappedResult.length === 0) return []

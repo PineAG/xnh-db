@@ -12,6 +12,10 @@ export interface ReverseIndexDocument {
 
 const delimiterRegex = /[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~\s]+/
 
+export function reversoTerm(s: string): string {
+    return s.toLowerCase()
+}
+
 function splitSentences(s: string): string[] {
     return s.split(delimiterRegex)
 }
@@ -38,7 +42,7 @@ export function tokenizeDocument<T extends DocBase, W extends DocWeight<T>>(doc:
         const nGramCounter = {}
         for (const [k, v] of Object.entries(doc)) {
             const w = weights[k] ?? 1.0
-            for (const sent of splitSentences(v)) {
+            for (const sent of splitSentences(reversoTerm(v))) {
                 for (const iGram of splitNGram(sent, i)) {
                     totalCounter += w
                     nGramCounter[iGram] = (nGramCounter[iGram] ?? 0) + w

@@ -1,5 +1,5 @@
 {
-  "name": "@xnh-db/",
+  "name": "@xnh-db",
   "version": "1.0.0",
   "main": "index.js",
   "author": "PineAG",
@@ -13,8 +13,5 @@
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "jest": "^27.5.1"
-  },
-  "scripts": {
-    "build": "scripts/build"
   }
 }
