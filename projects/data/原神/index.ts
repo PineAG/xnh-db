@@ -102,7 +102,7 @@ export const 五郎 = registerCharacter({
 })
 
 export const 枫原万叶 = registerCharacter({
-    id: 'genshin-impact-gorou',
+    id: 'genshin-impact-kazuha',
     props: {
         姓名: "枫原万叶",
     },
