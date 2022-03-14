@@ -15,5 +15,8 @@
     "@types/jest": "^27.4.1",
     "jest": "^27.5.1",
     "nyc": "^15.1.0"
+  },
+  "scripts": {
+    "build": "tsc"
   }
 }

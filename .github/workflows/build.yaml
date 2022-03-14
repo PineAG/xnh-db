@@ -41,6 +41,8 @@ jobs:
     - run: |
         cd projects/search
         yarn build
+        cd ../register-utils
+        yarn build
         cd ../data
         yarn build
         cd ../frontend
