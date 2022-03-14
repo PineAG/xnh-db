@@ -1,19 +1,24 @@
-import { XNHClasses } from '@xnh-db/types'
+import { reversoTerm } from '@xnh-db/search'
+import { XNHClasses, XNHExportedData } from '@xnh-db/types'
 import axios from 'axios'
+import { shuffle } from 'lodash'
 import LRUCache from'quick-lru'
 
+let globalIndex: string[] | null = null
 const searchLRU = new LRUCache<string, SearchResult[]>({
+    maxSize: 512
+})
+const itemLRU = new LRUCache<string, null | XNHExportedData>({
     maxSize: 512
 })
 
 const MAX_N_GRAM = 10
 
-export type SearchResult = {documentId: string, type: XNHClasses, tfidf: number, title: string}
-
-export function reversoTerm(s: string): string {
-    // TODO: Merge it to @xnh-db/search
-    return s.toLowerCase()
+function error(msg: string): never {
+    throw new Error(msg)
 }
+
+export type SearchResult = {documentId: string, type: XNHClasses, tfidf: number, title: string}
 
 export async function getSearchTerm(term: string): Promise<SearchResult[] | null> {
     if(term.length > MAX_N_GRAM){
@@ -33,6 +38,34 @@ function* unionRightMapKeys<T>(left: Map<string, T>, right: Map<string, T>): Gen
             yield key
         }
     }
+}
+
+export async function getGlobalIndex(): Promise<string[]> {
+    if(globalIndex !== null){
+        return globalIndex
+    }else{
+        const res = await axios.get<string[]>('/data/all.json')
+        globalIndex = res.data
+        return globalIndex
+    }
+}
+
+export async function getItem(itemId: string): Promise<null | XNHExportedData> {
+    const currentItem = itemLRU.get(itemId)
+    if(currentItem === undefined){
+        const res = await axios.get<XNHExportedData>(`/data/items/${itemId}.json`, {validateStatus: s => s === 200 || s === 404})
+        const data = res.status === 404 ? null : res.data
+        itemLRU.set(itemId, data)
+        return data
+    }else{
+        return currentItem
+    }
+}
+
+export async function getRandomItems(count: number): Promise<XNHExportedData[]> {
+    const idList = shuffle(await getGlobalIndex())
+    const selectedIds = idList.slice(0, count)
+    return Promise.all(selectedIds.map(async itemId => (await getItem(itemId)) ?? error(`Invalid id: ${itemId}`)))
 }
 
 export async function searchByKeywords(keywords: string): Promise<SearchResult[]> {
