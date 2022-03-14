@@ -38,7 +38,14 @@ jobs:
         # Build and test the project, then
         # deploy to Azure Web App.
         yarn install
-    - run: cd projects/data; yarn build; cd ../frontend; yarn build; cd ../..
+    - run: |
+        cd projects/search
+        yarn build
+        cd ../data
+        yarn build
+        cd ../frontend
+        yarn build
+        cd ../..
     - run: mv projects/frontend/build ./dist; mv projects/data/dist ./dist/data
     - run: echo "xnh-db.pine-ag.com" > ./dist/CNAME
     - uses: peaceiris/actions-gh-pages@v3
