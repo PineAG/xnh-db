@@ -9,6 +9,10 @@ import {dumpJSON, mkPath, rmtree} from './utils'
 import { generateSearchIndex } from "./search";
 
 
+async function exportGlobalIndex(outputFile: string, memoryDB: Map<string, XNHImportedData>){
+    await dumpJSON(outputFile, Array.from(memoryDB.keys()))
+}
+
 async function exportJsonDoc(outputDir: string, memoryDB: Map<string, XNHImportedData>) {
     await mkPath(outputDir)
     for (let doc of memoryDB.values()) {
@@ -34,4 +38,5 @@ export async function finalizeRegistration(outputDir: string) {
     }
     await exportJsonDoc(path.join(outputDir, 'items'), memoryDB)
     await generateSearchIndex(path.join(outputDir, 'search'), memoryDB, 10)
+    await exportGlobalIndex(path.join(outputDir, 'all.json'), memoryDB)
 }

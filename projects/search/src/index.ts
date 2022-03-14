@@ -1,9 +1,9 @@
-export type XNHReverseIndex = Map<string, ReverseIndexTarget>
-
 export interface ReverseIndexTarget {
     count: number
     documents: ReverseIndexDocument[]
 }
+
+export type XNHReverseIndex = Map<string, ReverseIndexTarget>
 
 export interface ReverseIndexDocument {
     id: string
@@ -39,7 +39,7 @@ export function tokenizeDocument<T extends DocBase, W extends DocWeight<T>>(doc:
     const result: TokenizedDoc = new Map()
     for (let  i= 1; i <= maxNGram; i++) {
         let totalCounter = 0
-        const nGramCounter = {}
+        const nGramCounter: {[key: string]: number} = {}
         for (const [k, v] of Object.entries(doc)) {
             const w = weights[k] ?? 1.0
             for (const sent of splitSentences(reversoTerm(v))) {

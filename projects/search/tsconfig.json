@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "target": "ES5",
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "downlevelIteration": true,
+        "outDir": "./dist",
+        "declaration": true,
+        "rootDir": ".",
+        "composite": true,
+        "skipLibCheck": true
+    },
+    "include": ["./src/**/*.ts"]
+}
