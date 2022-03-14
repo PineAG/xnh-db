@@ -1,7 +1,7 @@
 {
   "name": "@xnh-db/register-utils",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/src/index.js",
   "license": "MIT",
   "private": true,
   "dependencies": {
