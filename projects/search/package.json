@@ -2,7 +2,7 @@
     "name": "@xnh-db/search",
     "version": "1.0.0",
     "license": "MIT",
-    "main": "dist/index.js",
+    "main": "dist/src/index.js",
     "private": true,
     "devDependencies": {
         "@xnh-db/types": "*"
