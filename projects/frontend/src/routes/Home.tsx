@@ -20,7 +20,7 @@ export function Home() {
     } else {
         return <div>
             {status.data.map(it =>
-                <PreviewCard item={it} /> 
+                <PreviewCard key={it.id} item={it} /> 
                 )}
         </div>
     }

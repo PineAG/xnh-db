@@ -19,7 +19,7 @@ export async function exportJsonDoc(props: RegistrationProps, memoryDB: Map<stri
             title: doc.title,
             type: doc.type,
             props: doc.value.props,
-            files: exportAssets(doc.files, props),
+            files: await exportAssets(doc.files, props),
             rel: relLinks
         }
         await dumpJSON(path.join(outputDir, `${doc.id}.json`), exportData)

@@ -1,5 +1,6 @@
 import React from 'react';
 import './App.css';
+import 'antd/dist/antd.css'
 import { SearchBar } from './components/SearchBar';
 import { RouteRoot } from './routes';
 

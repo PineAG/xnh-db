@@ -7,7 +7,7 @@ import { mkPath } from "./utils";
 async function dumpAsset(props: RegistrationProps, name: FileItem): Promise<string> {
     const srcPath = path.join(props.sourceImageDir, name)
     const dstPath = path.join(props.outputDir, name)
-    const outputPath = path.join('/', props.imagePublicDir, name)
+    const outputPath = `${name}`
     await fs.promises.copyFile(srcPath, dstPath)
     return outputPath
 }
