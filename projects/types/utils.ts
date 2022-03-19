@@ -1,10 +1,12 @@
 export type DataRefType = 'direct' | 'link' | 'wrapped'
 
+export type FileItem = string
+
 export interface BaseBase {
     type: string
     props: {}
     tags: string[]
-    files: {[key: string]: string | string[]}
+    files: {[key: string]: null | FileItem | FileItem[]}
     rel: {[key: string]: BaseBase}
 }
 

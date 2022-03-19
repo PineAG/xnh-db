@@ -6,4 +6,8 @@ import "./原神"
 import "./战双"
 
 
-finalizeRegistration(__dirname + '/dist')
+finalizeRegistration({
+    outputDir: 'dist',
+    sourceImageDir: 'tmpJS',
+    imagePublicDir: 'images'
+})

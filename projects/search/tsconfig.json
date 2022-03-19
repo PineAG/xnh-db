@@ -7,7 +7,7 @@
         "downlevelIteration": true,
         "outDir": "./dist",
         "declaration": true,
-        "rootDir": ".",
+        "rootDir": "..",
         "composite": true,
         "skipLibCheck": true
     },

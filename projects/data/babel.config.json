@@ -1,0 +1,17 @@
+{
+    "sourceMaps": "inline",
+    "presets": ["@babel/preset-env", "@babel/preset-typescript"],
+    "plugins": [
+        [
+          "file-loader",
+          {
+            "name": "[hash].[ext]",
+            "extensions": ["png", "jpg", "jpeg", "gif", "svg"],
+            "publicPath": "/images",
+            "outputPath": "/tmpJS/images",
+            "context": "",
+            "limit": 0
+          }
+        ]
+      ]    
+}

@@ -11,7 +11,9 @@ export interface CharacterBase extends BaseBase {
         创作者: CreatorBase
         配音: VoiceActorBase
     }
-    files: {}
+    files: {
+        立绘: string | null
+    }
 }
 
 export interface ArtworkBase extends BaseBase {

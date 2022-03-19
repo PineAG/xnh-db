@@ -8,6 +8,7 @@
         "outDir": "./dist",
         "declaration": true,
         "sourceRoot": "./src",
+        "rootDir": ".",
         "composite": true,
         "skipLibCheck": true
     },
