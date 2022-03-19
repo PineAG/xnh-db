@@ -3,6 +3,10 @@ import { miHoYo } from "../作者";
 import { kinsen, 穆雪婷 } from "../声优/中文";
 import { 逢坂良太 } from "../声优/日语";
 import { Cristina_Danielle_Valenzuela } from "../声优/英语";
+import xiao from './xiao.png'
+import chongyun from './chongyun.png'
+import xingqiu from './xingqiu.png'
+import gorou from './gorou.png'
 
 export const 原神 = registerArtwork({
     id: 'genshin-impact',
@@ -22,7 +26,9 @@ export const 班尼特 = registerCharacter({
     props: {
         姓名: "班尼特",
     },
-    files: {},
+    files: {
+        立绘: null
+    },
     tags: [],
     rel: {
         出处: [原神],
@@ -36,7 +42,9 @@ export const 雷泽 = registerCharacter({
     props: {
         姓名: "雷泽",
     },
-    files: {},
+    files: {
+        立绘: null
+    },
     tags: [],
     rel: {
         出处: [原神],
@@ -50,7 +58,9 @@ export const 重云 = registerCharacter({
     props: {
         姓名: "重云",
     },
-    files: {},
+    files: {
+        立绘: chongyun
+    },
     tags: [],
     rel: {
         出处: [原神],
@@ -64,7 +74,9 @@ export const 行秋 = registerCharacter({
     props: {
         姓名: "行秋",
     },
-    files: {},
+    files: {
+        立绘: xingqiu
+    },
     tags: [],
     rel: {
         出处: [原神],
@@ -78,7 +90,9 @@ export const 魈 = registerCharacter({
     props: {
         姓名: "魈",
     },
-    files: {},
+    files: {
+        立绘: xiao
+    },
     tags: [],
     rel: {
         出处: [原神],
@@ -92,7 +106,9 @@ export const 五郎 = registerCharacter({
     props: {
         姓名: "五郎",
     },
-    files: {},
+    files: {
+        立绘: gorou
+    },
     tags: [],
     rel: {
         出处: [原神],
@@ -106,7 +122,9 @@ export const 枫原万叶 = registerCharacter({
     props: {
         姓名: "枫原万叶",
     },
-    files: {},
+    files: {
+        立绘: null
+    },
     tags: [],
     rel: {
         出处: [原神],

@@ -19,7 +19,9 @@ export const 常羽 = registerCharacter({
     props: {
         姓名: '常羽'
     },
-    files: {},
+    files: {
+        立绘: null
+    },
     tags: [],
     rel: {
         出处: [战双帕弥什],
