@@ -1,6 +1,6 @@
 import React, { CSSProperties } from "react";
 import { XNHExportedData } from "@xnh-db/types";
-import {Image, Empty, Row, Col} from 'antd'
+import {Image, Empty, Row, Col, Descriptions} from 'antd'
 export type CardComponent<T extends XNHExportedData> = (props: {item: T}) => JSX.Element
 
 export interface NullableImageProps {
@@ -25,4 +25,24 @@ export function NullableImage(props: NullableImageProps){
     return <div style={style}>
         {imageEle}
     </div>
+}
+
+const propsTableTitleStyle: CSSProperties = {
+    fontSize: '3rem',
+    textAlign: 'start'
+}
+
+const propsTableStyle: CSSProperties = {
+
+}
+
+export type PropsTableDataSource = [string, React.ReactNode, number?][]
+
+export function PropsTable({items, title}: {title?: string, items: PropsTableDataSource}) {
+    const titleEle = title ? <label style={propsTableTitleStyle}>{title}</label> : undefined
+    return <Descriptions bordered title={titleEle} labelStyle={{whiteSpace: 'nowrap'}}>
+        {items.map(([k, v, span]) => (
+            <Descriptions.Item key={k} span={span} label={k}>{v}</Descriptions.Item>
+        ))} 
+    </Descriptions>
 }

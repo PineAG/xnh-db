@@ -50,7 +50,7 @@ function renderSearchResultItem(data: SearchResult): SearchCompleteItem{
   }
 }
 
-export function SearchBar(){
+export function SearchPage(){
   const [searchStatus, setSearchStatus] = useState<SearchStatus>({status: 'hidden'})
   const navigate = useNavigate()
   function onSelect(idx: ReactNode, item: SearchCompleteItem){

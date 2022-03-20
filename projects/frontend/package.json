@@ -15,6 +15,7 @@
     "@types/react-dom": "^17.0.13",
     "@xnh-db/search": "*",
     "@xnh-db/types": "*",
+    "ant-design-pro": "^2.3.2",
     "antd": "^4.19.2",
     "axios": "^0.26.1",
     "lodash": "^4.17.21",
