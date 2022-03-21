@@ -15,6 +15,7 @@ function registerData<T extends XNHImportedData>(data: T): T {
 export function registerCharacter(conf: CharacterConfig): ImportedCharacter {
     return registerData({
         id: conf.id,
+        avatar: conf.files.头像 ?? null,
         tags: conf.tags,
         files: conf.files,
         title: conf.props.姓名,
@@ -26,6 +27,7 @@ export function registerCharacter(conf: CharacterConfig): ImportedCharacter {
 export function registerArtwork(conf: ArtworkConfig): ImportedArtwork {
     return registerData({
         id: conf.id,
+        avatar: null,
         tags: conf.tags,
         files: conf.files,
         title: conf.props.作品名,
@@ -37,6 +39,7 @@ export function registerArtwork(conf: ArtworkConfig): ImportedArtwork {
 export function registerVoiceActor(conf: VoiceActorConfig): ImportedVoiceActor {
     return registerData({
         id: conf.id,
+        avatar: null,
         tags: conf.tags,
         files: conf.files,
         title: conf.props.姓名,
@@ -48,6 +51,7 @@ export function registerVoiceActor(conf: VoiceActorConfig): ImportedVoiceActor {
 export function registerCreator(conf: CreatorConfig): ImportedCreator {
     return registerData({
         id: conf.id,
+        avatar: null,
         tags: conf.tags,
         files: conf.files,
         title: conf.props.姓名,
@@ -57,3 +61,4 @@ export function registerCreator(conf: CreatorConfig): ImportedCreator {
 }
 
 export {finalizeRegistration} from './finalize'
+export * from './finalize/images/marker'

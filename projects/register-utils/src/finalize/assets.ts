@@ -1,14 +1,17 @@
-const path = require('path')
-const fs = require('fs')
+import path from 'path'
 import { BaseBase, FileItem } from "@xnh-db/types/utils";
 import { RegistrationProps } from ".";
 import { mkPath } from "./utils";
+import {processImage} from './images/processors'
+import { ProcessorType } from './images/utils';
 
 async function dumpAsset(props: RegistrationProps, name: FileItem): Promise<string> {
-    const srcPath = path.join(props.sourceImageDir, name)
-    const dstPath = path.join(props.outputDir, name)
-    const outputPath = `${name}`
-    await fs.promises.copyFile(srcPath, dstPath)
+    const [realName, ...processorNames] = name.split('!')
+    const dstName = processorNames.length === 0 ? realName : `${path.basename(realName)}_${processorNames.join("_")}.png`
+    const srcPath = path.join(props.sourceImageDir, realName)
+    const dstPath = processorNames.length === 0 ? path.join(props.outputDir, dstName) : path.join(props.outputDir, 'images', dstName)
+    const outputPath = `${realName}`
+    await processImage(srcPath, dstPath, 'cachedImages', processorNames as ProcessorType[])
     return outputPath
 }
 

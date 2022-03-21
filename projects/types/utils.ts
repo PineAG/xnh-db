@@ -44,6 +44,7 @@ export type ImportData<T extends BaseBase> = {
     type: T["type"]
     files: T["files"]
     tags: T["tags"]
+    avatar: null | string
     value: ConfigData<T>
 }
 // Exported as JSON
@@ -54,6 +55,7 @@ export type ExportData<T extends BaseBase> = {
     files: T["files"]
     tags: T["tags"]
     props: T["props"]
+    avatar: null | string
     rel: {
         [K in keyof T["rel"]]: 
             {id: string, type: T["rel"][K]["type"], title: string}[]

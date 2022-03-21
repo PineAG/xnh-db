@@ -13,6 +13,7 @@ export interface CharacterBase extends BaseBase {
     }
     files: {
         立绘: string | null
+        头像?: string
     }
 }
 

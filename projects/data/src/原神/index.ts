@@ -1,4 +1,4 @@
-import { registerArtwork, registerCharacter } from "@xnh-db/register-utils";
+import { cropAnimeAvatar, registerArtwork, registerCharacter } from "@xnh-db/register-utils";
 import { miHoYo } from "../作者";
 import { kinsen, 穆雪婷 } from "../声优/中文";
 import { 逢坂良太 } from "../声优/日语";
@@ -59,7 +59,8 @@ export const 重云 = registerCharacter({
         姓名: "重云",
     },
     files: {
-        立绘: chongyun
+        立绘: chongyun,
+        头像: cropAnimeAvatar(chongyun)
     },
     tags: [],
     rel: {
@@ -75,7 +76,8 @@ export const 行秋 = registerCharacter({
         姓名: "行秋",
     },
     files: {
-        立绘: xingqiu
+        立绘: xingqiu,
+        头像: cropAnimeAvatar(xingqiu)
     },
     tags: [],
     rel: {
@@ -91,7 +93,8 @@ export const 魈 = registerCharacter({
         姓名: "魈",
     },
     files: {
-        立绘: xiao
+        立绘: xiao,
+        头像: cropAnimeAvatar(xiao)
     },
     tags: [],
     rel: {
@@ -107,7 +110,8 @@ export const 五郎 = registerCharacter({
         姓名: "五郎",
     },
     files: {
-        立绘: gorou
+        立绘: gorou,
+        头像: cropAnimeAvatar(gorou)
     },
     tags: [],
     rel: {
