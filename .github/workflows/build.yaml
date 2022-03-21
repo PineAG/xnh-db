@@ -40,10 +40,13 @@ jobs:
         yarn install
     - run: |
         cd projects/search &&\
+        rm -rf dist &&\
         yarn build &&\
         cd ../register-utils &&\
+        rm -rf dist &&\
         yarn build &&\
         cd ../data &&\
+        rm -rf dist &&\
         yarn build &&\
         cd ../frontend &&\
         yarn build &&\
