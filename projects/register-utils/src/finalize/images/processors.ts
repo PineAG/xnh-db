@@ -33,7 +33,7 @@ async function pCropAnimeAvatar(img: Jimp): Promise<Jimp> {
     const cascade = await loadCascade(animeFaceCascade)
     const msize = new cv.Size(0, 0)
     const faces = new cv.RectVector()
-    cascade.detectMultiScale(gray, faces, 1.02, 3, 0, msize, msize)
+    cascade.detectMultiScale(gray, faces, 1.01, 3, 0, msize, msize)
     const faceRects: {[K in ('x'|'y'|'w'|'h')]: number}[] = []
     for(let i=0; i<faces.size(); i++){
         const {x, y, width, height} = faces.get(i)

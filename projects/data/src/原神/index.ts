@@ -7,6 +7,10 @@ import xiao from './xiao.png'
 import chongyun from './chongyun.png'
 import xingqiu from './xingqiu.png'
 import gorou from './gorou.png'
+import kazuha from './kazuha.png'
+import venti from './venti.png'
+import razor from './razor.png'
+import bennett from './bennett.png'
 
 export const 原神 = registerArtwork({
     id: 'genshin-impact',
@@ -27,7 +31,8 @@ export const 班尼特 = registerCharacter({
         姓名: "班尼特",
     },
     files: {
-        立绘: null
+        立绘: bennett,
+        头像: cropAnimeAvatar(bennett)
     },
     tags: [],
     rel: {
@@ -43,7 +48,8 @@ export const 雷泽 = registerCharacter({
         姓名: "雷泽",
     },
     files: {
-        立绘: null
+        立绘: razor,
+        头像: cropAnimeAvatar(razor)
     },
     tags: [],
     rel: {
@@ -127,7 +133,8 @@ export const 枫原万叶 = registerCharacter({
         姓名: "枫原万叶",
     },
     files: {
-        立绘: null
+        立绘: kazuha,
+        头像: cropAnimeAvatar(kazuha)
     },
     tags: [],
     rel: {

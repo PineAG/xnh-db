@@ -14,11 +14,17 @@ export async function exportJsonDoc(props: RegistrationProps, memoryDB: Map<stri
         for (const [k, v] of Object.entries(doc.value.rel as { [key: string]: ImportData<any>[] })) {
             relLinks[k] = v.map(x => ({ id: x.id, type: x.type, title: x.title }))
         }
+        let avatar = null
+        if(doc.avatar){
+            const [avatarBaseURL, ...processors] = doc.avatar.split('!')
+            avatar = processors.length > 0 ? `${avatarBaseURL}_${processors.join("_")}.png` : avatarBaseURL
+        }
         const exportData = {
             id: doc.id,
             title: doc.title,
             type: doc.type,
             props: doc.value.props,
+            avatar,
             files: await exportAssets(doc.files, props),
             rel: relLinks
         }

@@ -38,9 +38,9 @@ const propsTableStyle: CSSProperties = {
 
 export type PropsTableDataSource = [string, React.ReactNode, number?][]
 
-export function PropsTable({items, title}: {title?: string, items: PropsTableDataSource}) {
+export function PropsTable({items, title, column}: {title?: string, items: PropsTableDataSource, column?: number}) {
     const titleEle = title ? <label style={propsTableTitleStyle}>{title}</label> : undefined
-    return <Descriptions bordered title={titleEle} labelStyle={{whiteSpace: 'nowrap'}}>
+    return <Descriptions column={column} bordered title={titleEle} labelStyle={{whiteSpace: 'nowrap'}}>
         {items.map(([k, v, span]) => (
             <Descriptions.Item key={k} span={span} label={k}>{v}</Descriptions.Item>
         ))} 

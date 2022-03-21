@@ -1,5 +1,6 @@
-import { registerArtwork, registerCharacter } from "@xnh-db/register-utils";
+import { cropAnimeAvatar, registerArtwork, registerCharacter } from "@xnh-db/register-utils";
 import { kinsen } from "../声优/中文";
+import changyu from './Coating-Kirin-GenericModified.png'
 
 export const 战双帕弥什 = registerArtwork({
     id: 'punishing',
@@ -20,7 +21,8 @@ export const 常羽 = registerCharacter({
         姓名: '常羽'
     },
     files: {
-        立绘: null
+        立绘: changyu,
+        头像: cropAnimeAvatar(changyu)
     },
     tags: [],
     rel: {
@@ -29,3 +31,4 @@ export const 常羽 = registerCharacter({
         配音: [kinsen]
     }
 })
+

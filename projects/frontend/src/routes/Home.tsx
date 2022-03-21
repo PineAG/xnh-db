@@ -1,15 +1,15 @@
-import { XNHExportedData } from "@xnh-db/types";
 import React, { useEffect, useState } from "react";
-import { getRandomItems } from "../actions/api";
+import { getRandomItemId } from "../actions/api";
 import { PreviewCard } from "../components/PreviewCard";
 import { LoadingStatusBase } from "../utils/status";
+import {Row, Col} from 'antd'
 
-type HomeStatus = LoadingStatusBase<XNHExportedData[]>
+type HomeStatus = LoadingStatusBase<string[]>
 
 export function Home() {
     const [status, setStatus] = useState<HomeStatus>({status: 'pending'})
     useEffect(() => {
-        getRandomItems(10)
+        getRandomItemId(10)
             .then(data => setStatus({status: 'success', data}))
             .catch(err => setStatus({status: 'failed', message: err.toString()}))
     }, [])
@@ -18,10 +18,12 @@ export function Home() {
     } else if (status.status === 'failed') {
         return <p>Error: {status.message}</p>
     } else {
-        return <div>
-            {status.data.map(it =>
-                <PreviewCard key={it.id} item={it} /> 
-                )}
-        </div>
+        return <Row>
+            {status.data.map(id =>
+                <Col xs={24} sm={12} md={8} lg={6} key={id}>
+                    <PreviewCard itemId={id} />
+                </Col> 
+            )}
+        </Row>
     }
 }

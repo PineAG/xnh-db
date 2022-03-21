@@ -62,9 +62,14 @@ export async function getItem(itemId: string): Promise<null | XNHExportedData> {
     }
 }
 
-export async function getRandomItems(count: number): Promise<XNHExportedData[]> {
+export async function getRandomItemId(count: number): Promise<string[]> {
     const idList = shuffle(await getGlobalIndex())
     const selectedIds = idList.slice(0, count)
+    return selectedIds
+}
+
+export async function getRandomItems(count: number): Promise<XNHExportedData[]> {
+    const selectedIds = await getRandomItemId(count)
     return Promise.all(selectedIds.map(async itemId => (await getItem(itemId)) ?? error(`Invalid id: ${itemId}`)))
 }
 
