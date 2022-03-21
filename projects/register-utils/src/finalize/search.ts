@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-
 import { XNHImportedData } from "@xnh-db/types";
 import { tokenizeDocument } from "@xnh-db/search";
 import {dumpJSON, mkPath} from './utils'
+
+import fs from 'fs'
+import path from 'path'
 
 type GlobalReverseIndex = Map<number, Map<string, {tfidf: number, documentId: string, type: string, title: string}[]>>
 type TmpGlobalReverseIndex = Map<number, Map<string, {totalCount: number, nGramCount: number, documentId: string, type: string, title: string}[]>>

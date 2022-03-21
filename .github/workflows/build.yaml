@@ -39,14 +39,14 @@ jobs:
         # deploy to Azure Web App.
         yarn install
     - run: |
-        cd projects/search
-        yarn build
-        cd ../register-utils
-        yarn build
-        cd ../data
-        yarn build
-        cd ../frontend
-        yarn build
+        cd projects/search &&\
+        yarn build &&\
+        cd ../register-utils &&\
+        yarn build &&\
+        cd ../data &&\
+        yarn build &&\
+        cd ../frontend &&\
+        yarn build &&\
         cd ../..
     - run: mv projects/frontend/build ./dist; mv projects/data/dist ./dist/data
     - run: echo "xnh-db.pine-ag.com" > ./dist/CNAME
