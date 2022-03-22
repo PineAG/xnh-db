@@ -12,3 +12,29 @@ export const miHoYo = registerCreator({
         作品: []
     }
 })
+
+export const King_Record = registerCreator({
+    id: 'king-record',
+    props: {
+        '姓名': 'King Record'
+    },
+    files: {},
+    'tags': [],
+    rel: {
+        '作品': [],
+        '角色': []
+    }
+})
+
+export const GONZO = registerCreator({
+    id: 'gonzo',
+    props: {
+        '姓名': 'GONZO'
+    },
+    files: {},
+    'tags': [],
+    rel: {
+        '作品': [],
+        '角色': []
+    }
+}) 
