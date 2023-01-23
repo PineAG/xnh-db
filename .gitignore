@@ -131,3 +131,5 @@ dist
 
 .vscode
 .idea
+
+/data
