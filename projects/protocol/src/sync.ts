@@ -1,4 +1,4 @@
-import { CollectionIndex, ICollectionReadonlyClient, ICollectionReadWriteClient, IRelationReadonlyClient, IRelationReadWriteClient } from "./client";
+import { CollectionIndex, ICollectionClient, IRelationClient } from "./client";
 
 export type CollectionSyncAction = {type: "create" | "update" | "delete", id: string, date: Date}
 
@@ -26,7 +26,7 @@ export function diffCollectionIndices(sourceIndex: CollectionIndex, destinationI
 
 type ProgressResult = {current: number, total: number}
 
-export async function* synchronizeCollection<T>(sourceClient: ICollectionReadonlyClient<T>, destinationClient: ICollectionReadWriteClient<T>): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
+export async function* synchronizeCollection<T>(sourceClient: ICollectionClient<T>, destinationClient: ICollectionClient<T>): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex)
@@ -39,13 +39,13 @@ export async function* synchronizeCollection<T>(sourceClient: ICollectionReadonl
             const item = await sourceClient.getItem(action.id)
             await destinationClient.updateItem(action.id, item, action.date)
         } else if(action.type === "delete") {
-            await destinationClient.deleteItem(action.id, action.date)
+            await destinationClient.deleteItem(action.id)
         }
         yield [action, {current: counter++, total: diffResult.length}]
     }
 }
 
-export async function* synchronizeRelation(sourceClient: IRelationReadonlyClient, destinationClient: IRelationReadWriteClient): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
+export async function* synchronizeRelation(sourceClient: IRelationClient, destinationClient: IRelationClient): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex)
@@ -65,7 +65,7 @@ export async function* synchronizeRelation(sourceClient: IRelationReadonlyClient
                 }
             }
         } else if(action.type === "delete") {
-            await destinationClient.unlinkAllTargetsById(action.id, action.date)
+            await destinationClient.unlinkAllTargetsById(action.id)
         }
         yield [action, {current: counter++, total: diffResult.length}]
     }
