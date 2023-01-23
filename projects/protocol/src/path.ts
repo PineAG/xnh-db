@@ -95,29 +95,43 @@ class UnsafeRelationPathClient implements IRelationClient {
     }
 
     async linkToTarget(id: string, targetId: string, updateAt: Date): Promise<void> {
+        const index = await this.getIndex()
         const data = await this.pathClient.read(['rel', `${id}.json`])
         const list = data === null ? [] : (await JsonUtils.fromJson<string[]>(data))
         if(!list.includes(targetId)) {
             list.push(targetId)
             const b = await JsonUtils.toJson(list)
             await this.pathClient.write(['rel', `${id}.json`], b)
+            index[id] = updateAt
+            await this.setIndex(index)
         }
     }
 
     async unlinkTarget(id: string, targetId: string, updateAt: Date): Promise<void> {
+        const index = await this.getIndex()
         const data = await this.pathClient.read(['rel', `${id}.json`])
         const list = data === null ? [] : (await JsonUtils.fromJson<string[]>(data))
         const newList = list.filter(id => id !== targetId)
         if(newList.length === 0) {
+            index[id] = updateAt
             await this.pathClient.delete(['rel', `${id}.json`])
         } else {
             const b = await JsonUtils.toJson(newList)
             await this.pathClient.write(['rel', `${id}.json`], b)
+            delete index[id]
         }
+        await this.setIndex(index)
     }
 
     async unlinkAllTargetsById(id: string): Promise<void> {
+        const index = await this.getIndex()
         await this.pathClient.delete(['rel', `${id}.json`])
+        delete index[id]
+        await this.setIndex(index)
+    }
+    
+    private async setIndex(index: CollectionIndex): Promise<void> {
+        await this.pathClient.write(['index.json'], await CollectionIndexUtils.toJson(index))
     }
 }
 
