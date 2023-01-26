@@ -1,4 +1,4 @@
-import { CollectionIndex, ICollectionClient, IRelationClient } from "./client";
+import { CollectionIndex, ICollectionClient, IFullTextClient, IRelationClient } from "./base";
 
 export type CollectionSyncAction = {type: "create" | "update" | "delete", id: string, date: Date}
 
@@ -45,7 +45,7 @@ export async function* synchronizeCollection<T>(sourceClient: ICollectionClient<
     }
 }
 
-export async function* synchronizeRelation(sourceClient: IRelationClient, destinationClient: IRelationClient): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
+export async function* synchronizeRelation<Payload>(sourceClient: IRelationClient<Payload>, destinationClient: IRelationClient<Payload>): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex)
@@ -66,6 +66,26 @@ export async function* synchronizeRelation(sourceClient: IRelationClient, destin
             }
         } else if(action.type === "delete") {
             await destinationClient.unlinkAllTargetsById(action.id)
+        } else {
+            throw new Error(`Invalid state: ${action.type}`)
+        }
+        yield [action, {current: counter++, total: diffResult.length}]
+    }
+}
+
+export async function* synchronizeFullText(sourceClient: IFullTextClient, destinationClient: IFullTextClient): AsyncGenerator<[CollectionSyncAction, ProgressResult]> {
+    const sourceIndex = await sourceClient.getIndex()
+    const destinationIndex = await destinationClient.getIndex()
+    const diffResult = diffCollectionIndices(sourceIndex, destinationIndex)
+    let counter = 0
+    for(const action of diffResult) {
+        if(action.type === "create" || action.type === "update") {
+            const documents = await sourceClient.getDocumentsByKeyword(action.id)
+            await destinationClient.updateKeyword(action.id, documents, action.date)
+        } else if(action.type === "delete") {
+            await destinationClient.deleteKeyword(action.id)
+        } else {
+            throw new Error(`Invalid state: ${action.type}`)
         }
         yield [action, {current: counter++, total: diffResult.length}]
     }

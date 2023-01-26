@@ -3,6 +3,7 @@
         "experimentalDecorators": true,
         "target": "ES5",
         "outDir": "lib",
+        "sourceMap": true,
         "declaration": true,
         "declarationMap": true,
         "composite": true,

@@ -1,5 +1,2 @@
 export * from "./client"
-export * from "./git"
-export * from "./sync"
-export * from "./path"
-export * from "./two-way"
+export * from "./data"
