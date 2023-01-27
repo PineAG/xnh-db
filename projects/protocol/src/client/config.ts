@@ -15,52 +15,77 @@ type ArrayConfig<T, TypeStr extends string, Options> = {
     options: Options
 }
 
-export type IdFieldConfig = {
-    [ConfigIdentifier]: true,
-    type: "id"
-}
-
-export type StringFieldConfig = ItemConfig<string, "string", {fullText: true}>
-export type StringListConfig = ArrayConfig<string, "string", {tagsCollection: string} | {fullText: true}>
-export type NumberFieldConfig = ItemConfig<number, "number", undefined>
-
-export type FieldConfig = IdFieldConfig | StringFieldConfig | StringListConfig | NumberFieldConfig
-
 export function isFieldConfig(obj: object): obj is FieldConfig {
     return ConfigIdentifier in obj
 }
 
+export type IdFieldConfig = {
+    [ConfigIdentifier]: true,
+    type: "id"
+}
 export function id(): IdFieldConfig {
     return {
         [ConfigIdentifier]: true,
         type: "id"
     }
 }
-export function fullTextField(): StringFieldConfig {
+
+type FullTextOptions = {type: "fullText", weight: number}
+type TagOptions = {type: "tag", collection: string}
+
+export type FullTextFieldConfig = ItemConfig<string, "string", FullTextOptions>
+export function fullTextField(weight: number): FullTextFieldConfig {
     return {
         [ConfigIdentifier]: true,
         type: "string",
         isArray: false,
-        options: {fullText: true}
+        options: {type: "fullText", weight}
     }
 }
-export function fullTextList(): StringListConfig {
+
+export type FullTextListConfig = ArrayConfig<string, "string", FullTextOptions>
+export function fullTextList(weight: number): FullTextListConfig {
     return {
         [ConfigIdentifier]: true,
         type: "string",
         isArray: true,
-        options: {fullText: true}
+        options: {type: "fullText", weight}
     }
 }
-export function tagList(tagsCollection: string): StringListConfig {
+
+export type TagListConfig = ArrayConfig<string, "string", TagOptions>
+export function tagList(tagsCollection: string): TagListConfig {
     return {
         [ConfigIdentifier]: true,
         type: "string",
         isArray: true,
-        options: {tagsCollection}
+        options: {type: "tag", collection: tagsCollection}
     }
 }
-export function number(): NumberFieldConfig {
+
+export type FileConfig = ItemConfig<string, "string", {type: "file"}>
+export function file(): FileConfig {
+    return {
+        [ConfigIdentifier]: true,
+        type: "string",
+        isArray: false,
+        options: {type: "file"}
+    }
+}
+
+export type FileListConfig = ArrayConfig<string, "string", {type: "file"}>
+export function fileList(): FileListConfig {
+    return {
+        [ConfigIdentifier]: true,
+        type: "string",
+        isArray: true,
+        options: {type: "file"}
+    }
+}
+
+
+export type NumberConfig = ItemConfig<number, "number", {min: number, max: number, step: number, default: number}>
+export function number(): NumberConfig {
     return {
         [ConfigIdentifier]: true,
         type: "number",
@@ -79,10 +104,15 @@ export type ConfigFromDeclaration<T> = {
             T[K] extends string ?
                 StringFieldConfig | IdFieldConfig :
             T[K] extends number ?
-                NumberFieldConfig :
+                NumberConfig :
             T[K] extends Record<string, any> ?
                 ConfigFromDeclaration<T[K]>:
                 never
         )
     )
 }
+
+type StringListConfig = FullTextListConfig | TagListConfig | FileListConfig
+type StringFieldConfig = FullTextFieldConfig | FileConfig
+
+export type FieldConfig = IdFieldConfig | StringFieldConfig | NumberConfig | StringListConfig

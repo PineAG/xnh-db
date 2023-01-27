@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "experimentalDecorators": true,
-        "target": "ES5",
+        "target": "ES2015",
         "outDir": "lib",
         "sourceMap": true,
         "declaration": true,

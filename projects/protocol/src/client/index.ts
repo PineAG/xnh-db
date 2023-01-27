@@ -1,5 +1,5 @@
 export * from "./offline"
 export * from "./online"
-export * from "./config"
+export * as FieldConfigs from "./config"
 export * from "./flat"
 export * from "./git"

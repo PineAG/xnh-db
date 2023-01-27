@@ -9,7 +9,7 @@ export module PathSyncClient {
         }
         
         export async function toJson<T>(obj: T): Promise<Blob> {
-            const t = JSON.stringify(obj)
+            const t = JSON.stringify(obj, null, 1)
             const b = new TextEncoder().encode(t)
             return new Blob([b])
         }
