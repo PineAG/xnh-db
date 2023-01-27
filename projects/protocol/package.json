@@ -2,7 +2,8 @@
   "name": "@xnh-db/protocol",
   "version": "1.0.0",
   "main": "lib/index.js",
-  "types": "src/index.ts",
+  "typing": "src/index.ts",
+  "source": "src/index.ts",
   "files": [
     "lib",
     "src"
@@ -13,5 +14,8 @@
   },
   "devDependencies": {
     "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "utility-types": "^3.10.0"
   }
 }

@@ -1,5 +1,5 @@
 import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IVoiceActor, VoiceActorDefinition } from "@xnh-db/protocol";
-import { IdbCollectionClient, IdbCollectionWrapper } from "./collection";
+import { GlobalStatusWrapper, IdbCollectionClient, IdbCollectionWrapper } from "./collection";
 import { IdbRelationClient, IdbRelationWrapper } from "./relation";
 import * as idb from "idb"
 
@@ -23,6 +23,20 @@ export function createDBWrappers() {
             character_voiceActor: new IdbRelationWrapper({character, voiceActor})
         }
     }
+}
+
+export function initializeWrappers(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
+    GlobalStatusWrapper.initialize(db)
+    for(const c of Object.values(wrappers.collections)) {
+        c.onUpgrade(db)
+    }
+    for(const r of Object.values(wrappers.inheritance)) {
+        r.onUpgrade(db)
+    }
+    for(const r of Object.values(wrappers.relations)){
+        r.onUpgrade(db)
+    }
+    console.log("Fuck yeah")
 }
 
 export function createDBClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {

@@ -7,7 +7,6 @@
         "declarationMap": true,
         "sourceMap": true,
         "composite": true,
-        "module": "ESNext",
         "moduleResolution": "node",
         "esModuleInterop": true,
         "rootDir": "src",

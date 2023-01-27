@@ -24,19 +24,19 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
         sortedKeys.sort()
         this.sortedKeys = sortedKeys
 
-        this.storeName = `relation_${sortedKeys.join("-")}`
+        this.storeName = `relation_${sortedKeys.map(k => `${k}:${wrappers[k].name}`).join("_")}`
     }
 
     onUpgrade(db: idb.IDBPDatabase) {
         const store = db.createObjectStore(this.storeName)
 
         for(const key of Object.keys(this.wrappers)) {
-            store.createIndex(this.indexName(key), this.indexKeyPath(key))
+            store.createIndex(this.indexName(key), this.indexKeyPath(key), {unique: false})
         }
     }
 
     private indexName(name: keyof C) {
-        return `key:${name as string}`
+        return `key:${this.storeName}:${name as string}`
     }
 
     private indexKeyPath(name: string) {

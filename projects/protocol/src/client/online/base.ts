@@ -1,3 +1,5 @@
+import { DeepPartial } from "utility-types"
+
 export module IOnlineClient {
     export interface FullTextQueryResult {
         id: string
@@ -5,10 +7,10 @@ export module IOnlineClient {
     }
 
     export interface Collection<T, Query> {
-        getItemById(id: string): Promise<T>
-        queryItems(query: Query): Promise<T[]>
+        getItemById(id: string): Promise<DeepPartial<T>>
+        queryItems(query: Query): Promise<DeepPartial<T>[]>
         queryFullText(keywords: string[]): Promise<FullTextQueryResult[]>
-        putItem(id: string, value: T, updatedAt: Date): Promise<void>
+        putItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void>
         deleteItem(id: string): Promise<void>
     }
 

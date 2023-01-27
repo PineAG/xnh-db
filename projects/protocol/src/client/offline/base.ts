@@ -1,10 +1,12 @@
+import {DeepPartial} from "utility-types"
+
 export module IOfflineClient {
     export type CollectionIndex<K> = {key: K, date: Date}[]
 
     export interface Collection<T> {
         getIndex(): Promise<CollectionIndex<string>>
-        getItem(id: string): Promise<T>
-        updateItem(id: string, value: T, updatedAt: Date): Promise<void>
+        getItem(id: string): Promise<DeepPartial<T>>
+        updateItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void>
         deleteItem(id: string): Promise<void>
     }
     

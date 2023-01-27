@@ -1,4 +1,5 @@
 import { FieldConfig as FC } from "@xnh-db/protocol"
+import { DeepPartial } from "utility-types"
 
 const MAX_TOKEN_LENGTH = 20
 
@@ -19,7 +20,7 @@ export function* tokenizeString(s: string): Generator<string> {
     }
 }
 
-export function extractFullTextTokensByConfig<T>(data: T, config: FC.ConfigFromDeclaration<T>): Record<string, number> {
+export function extractFullTextTokensByConfig<T>(data: DeepPartial<T>, config: FC.ConfigFromDeclaration<T>): Record<string, number> {
     const result: Record<string, number> = {}
     let total = 0
     for(const [s, w] of walk(data, config)) {
@@ -46,7 +47,9 @@ export function extractFullTextTokensByConfig<T>(data: T, config: FC.ConfigFromD
             if(conf.type === "string" && conf.options.type === "fullText") {
                 const values = (conf.isArray ? node : [node]) as string[]
                 for(const v of values){
-                    yield [v, conf.options.weight]
+                    for(const t of tokenizeString(v)){
+                        yield [t, conf.options.weight]
+                    }
                 }
             }
         }else{

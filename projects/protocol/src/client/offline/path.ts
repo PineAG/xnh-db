@@ -1,3 +1,4 @@
+import { DeepPartial } from "utility-types"
 import {IOfflineClient} from "./base"
 
 export module PathSyncClient {
@@ -76,7 +77,7 @@ export module PathSyncClient {
             this.pathClient.write(this.paths.index(), b)
         }
 
-        async getItem(id: string): Promise<T> {
+        async getItem(id: string): Promise<DeepPartial<T>> {
             const data = await this.pathClient.read(this.paths.item(id))
             if(data === null) {
                 throw new Error(`Item not exist: ${id}`)
@@ -84,7 +85,7 @@ export module PathSyncClient {
                 return await JsonUtils.fromJson(data)
             }
         }
-        async updateItem(id: string, value: T, updatedAt: Date): Promise<void> {
+        async updateItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void> {
             const b = await JsonUtils.toJson(value)
             await this.pathClient.write(this.paths.item(id), b)
             await this.updateIndex(index => {
