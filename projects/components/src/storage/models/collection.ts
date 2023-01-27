@@ -66,7 +66,7 @@ export class IdbCollectionWrapper<T> {
     }
 
     private dataIndexName(key: string[]): string {
-        return `data:${key.join(".")}`
+        return `${key.join("_")}`
     }
 
     private dataKeyPath(key: string[]): string {
@@ -216,6 +216,7 @@ export class IdbCollectionWrapper<T> {
 
     async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<DeepPartial<T>[]> {
         const tx = db.transaction(this.name, "readonly")
+        console.log(tx.store.indexNames, this.dataIndexName(keys), tx.store.indexNames.contains(this.dataIndexName(keys)), value)
         const result = await tx.db.getAllFromIndex(this.name, this.dataIndexName(keys), value)
         await tx.done
         return result
@@ -226,16 +227,14 @@ export class IdbCollectionWrapper<T> {
             const keys = await db.getAllKeysFromIndex(this.fullTextStoreName(), this.fullTextIndexName(), keyword)
             const result: Record<string, number> = {}
             await Promise.all(keys.map(async id => {
-                console.log("IN")
-                const tx = db.transaction(this.fullTextStoreName(), "readonly", {durability: "relaxed"})
+                const tx = db.transaction(this.fullTextStoreName(), "readonly")
                 const item: FullTextItem = await tx.store.get(id)
                 await tx.done
                 
-                const termTx = db.transaction(this.fullTextTermStoreName(), "readonly", {durability: "relaxed"})
+                const termTx = db.transaction(this.fullTextTermStoreName(), "readonly")
                 const termFreq = await termTx.store.get(keyword) ?? 0
                 await termTx.done
                 
-                console.log("OUT")
                 const weight = item.weights[keyword] * Math.log(termFreq + 1)
                 result[id as string] = weight
             }))

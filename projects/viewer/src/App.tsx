@@ -9,16 +9,17 @@ createIdbClients().then(async clients => {
   await character.putItem(id, {
     id,
     name: {
-      zhs: "测试"
+      zhs: Math.random() < 0.5 ? "测试": "test"
     },
     appearance: {
       hair: {
-        color: ["蓝色"]
+        color: ["蓝色", "绿色"]
       }
     }
   }, new Date())
-  // const result = await character.queryItems({keyPath: ["appearance", "hair", "color"], value: "蓝色"})
-  const result = await character.queryFullText(["测", "试"])
+  // const result = await character.queryItems({keyPath: ["name", "zhs"], value: "测试"})
+  const result = await character.queryItems({keyPath: ["appearance", "hair", "color"], value: "绿色"})
+  // const result = await character.queryFullText(["test"])
   console.log(result)
 })
 

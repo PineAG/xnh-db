@@ -57,5 +57,5 @@ export function extractFlatDataByConfig<T>(data: Record<string, any>, definition
 }
 
 export function keyPathToFlattenedKey(keyPath: string[]): string {
-    return keyPath.join(".")
+    return keyPath.join("_")
 }
