@@ -1,4 +1,4 @@
-import { ConfigFromDeclaration, isFieldConfig, number } from "@xnh-db/protocol/src/client/config"
+import { FieldConfig as FC } from "@xnh-db/protocol"
 
 const MAX_TOKEN_LENGTH = 20
 
@@ -19,8 +19,8 @@ export function* tokenizeString(s: string): Generator<string> {
     }
 }
 
-export function extractFullTextTokensByConfig<T>(data: T, config: ConfigFromDeclaration<T>): Record<string, number> {
-    const result = {}
+export function extractFullTextTokensByConfig<T>(data: T, config: FC.ConfigFromDeclaration<T>): Record<string, number> {
+    const result: Record<string, number> = {}
     let total = 0
     for(const [s, w] of walk(data, config)) {
         if(s in result) {
@@ -39,10 +39,10 @@ export function extractFullTextTokensByConfig<T>(data: T, config: ConfigFromDecl
     }
     return result
 
-    function* walk<V>(node: V, conf: ConfigFromDeclaration<V>): Generator<[string, number]> {
+    function* walk(node: any, conf: any): Generator<[string, number]> {
         if(node === undefined) {
             return
-        } else if(isFieldConfig(conf)) {
+        } else if(FC.isFieldConfig(conf)) {
             if(conf.type === "string" && conf.options.type === "fullText") {
                 const values = (conf.isArray ? node : [node]) as string[]
                 for(const v of values){
@@ -51,7 +51,7 @@ export function extractFullTextTokensByConfig<T>(data: T, config: ConfigFromDecl
             }
         }else{
             for(const key of Object.keys(conf)) {
-                yield* walk(data[key], conf[key])
+                yield* walk(node[key], conf[key])
             }
         }
     }

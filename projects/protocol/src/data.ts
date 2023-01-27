@@ -1,4 +1,4 @@
-import { FieldConfigs as FC } from "./client"
+import {FieldConfig as FC} from "./client/config"
 
 export type Languages = "zhs" | "ja" | "en"
 export type InternationalName = Record<Languages, string>

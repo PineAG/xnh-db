@@ -1,5 +1,5 @@
 import { flattenDataDefinition, IOfflineClient, IOnlineClient } from "@xnh-db/protocol"
-import { ConfigFromDeclaration } from "@xnh-db/protocol"
+import { FieldConfig as FC } from "@xnh-db/protocol"
 import * as idb from "idb"
 import { sortBy } from "lodash"
 import { extractFullTextTokensByConfig } from "./fulltext"
@@ -42,9 +42,9 @@ type IdbCollectionWrapperDeletionListener = (db: idb.IDBPDatabase, id: string) =
 export class IdbCollectionWrapper<T> {
     deletionListeners: IdbCollectionWrapperDeletionListener[] = []
 
-    constructor(private name: string, private config: ConfigFromDeclaration<T>) {}
+    constructor(private name: string, private config: FC.ConfigFromDeclaration<T>) {}
 
-    async onUpgrade(db: idb.IDBPDatabase) {
+    onUpgrade(db: idb.IDBPDatabase) {
         const store = db.createObjectStore(this.name)
         const configList = flattenDataDefinition(this.config)
         for(const [path, config] of configList) {

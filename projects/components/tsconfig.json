@@ -8,6 +8,7 @@
         "declarationMap": true,
         "composite": true,
         "moduleResolution": "node",
+        "module": "ESNext",
         "esModuleInterop": true,
         "rootDir": "src",
         "jsx": "react-jsx"

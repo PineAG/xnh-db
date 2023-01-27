@@ -1,11 +1,11 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { openLocalCacheDB } from '@xnh-db/components';
+import { createIdbClients } from '@xnh-db/components';
 
 function App() {
-  React.useEffect(() => {
-    openLocalCacheDB()
+  const clients = React.useMemo(() => {
+    createIdbClients()
   }, [])
   return (
     <div className="App">
