@@ -1,5 +1,5 @@
 import { flattenDataDefinition, IOfflineClient, IOnlineClient } from "@xnh-db/protocol"
-import { ConfigFromDeclaration } from "@xnh-db/protocol/src/client/config"
+import { ConfigFromDeclaration } from "@xnh-db/protocol"
 import * as idb from "idb"
 import { sortBy } from "lodash"
 import { extractFullTextTokensByConfig } from "./fulltext"
@@ -37,7 +37,11 @@ export module GlobalStatusWrapper {
     }
 }
 
+type IdbCollectionWrapperDeletionListener = (db: idb.IDBPDatabase, id: string) => Promise<void>
+
 export class IdbCollectionWrapper<T> {
+    deletionListeners: IdbCollectionWrapperDeletionListener[] = []
+
     constructor(private name: string, private config: ConfigFromDeclaration<T>) {}
 
     async onUpgrade(db: idb.IDBPDatabase) {
@@ -239,6 +243,13 @@ export class IdbCollectionWrapper<T> {
         return sortBy(list, it => -it.weight)
     }
 
+    async emitDeletion(db: idb.IDBPDatabase, id: string) {
+        return Promise.all(this.deletionListeners.map(it => it(db, id)))
+    }
+
+    onDelete(listener: IdbCollectionWrapperDeletionListener) {
+        this.deletionListeners.push(listener)
+    }
 
 }
 
@@ -274,6 +285,7 @@ export class IdbCollectionClient<T> implements IOnlineClient.Collection<T, IdbCo
         await this.wrapper.setIndex(this.db, id, updatedAt)
     }
     async deleteItem(id: string): Promise<void> {
+        await this.wrapper.emitDeletion(this.db, id)
         await this.wrapper.deleteIndex(this.db, id)
         await this.wrapper.deleteFullText(this.db, id)
         await this.wrapper.deleteFullText(this.db, id)
