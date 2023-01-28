@@ -92,9 +92,14 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
 export class IdbRelationClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<keyof C & string, Payload>, IOfflineClient.Relation<keyof C & string, Payload> {
     constructor(private db: idb.IDBPDatabase, private wrapper: IdbRelationWrapper<C, Payload>) {
     }
-
     getIndex(): Promise<IOfflineClient.CollectionIndex<Record<keyof C, string>>> {
         return this.wrapper.getIndex(this.db)
+    }
+    flushIndex(index: IOfflineClient.CollectionIndex<Record<keyof C & string, string>>): Promise<void> {
+        throw new Error("Method not implemented.")
+    }
+    updateRelation(keys: Record<keyof C & string, string>, payload: Payload): Promise<void> {
+        throw new Error("Method not implemented.")
     }
     getPayload(keys: Record<keyof C, string>): Promise<Payload> {
         return this.wrapper.getPayload(this.db, keys)

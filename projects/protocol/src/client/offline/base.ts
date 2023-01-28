@@ -5,15 +5,17 @@ export module IOfflineClient {
 
     export interface Collection<T> {
         getIndex(): Promise<CollectionIndex<string>>
+        flushIndex(index: CollectionIndex<string>): Promise<void>
         getItem(id: string): Promise<DeepPartial<T>>
-        updateItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void>
+        updateItem(id: string, value: DeepPartial<T>): Promise<void>
         deleteItem(id: string): Promise<void>
     }
     
     export interface Relation<Keys extends string, Payload> {
         getIndex(): Promise<CollectionIndex<Record<Keys, string>>>
+        flushIndex(index: CollectionIndex<Record<Keys, string>>): Promise<void>
         getPayload(keys: Record<Keys, string>): Promise<Payload>
-        putRelation(keys: Record<Keys, string>, payload: Payload, updatedAt: Date): Promise<void>
+        updateRelation(keys: Record<Keys, string>, payload: Payload): Promise<void>
         deleteRelation(keys: Record<Keys, string>): Promise<void>
     }
 

@@ -140,6 +140,15 @@ export class IdbCollectionWrapper<T> {
         })
     }
 
+    async flushAllIndices(db: idb.IDBPDatabase, indices: [string, Date][]): Promise<void> {
+        await this.indexTransaction(db, "readwrite", store => store.clear())
+        await Promise.all(indices.map(async ([key, date]) => {
+            await this.indexTransaction(db, "readwrite", async store => {
+                await store.put(date, key)
+            })
+        }))
+    }
+
     setIndex(db: idb.IDBPDatabase, id: string, updatedAt: Date): Promise<void> {
         return this.indexTransaction(db, "readwrite", async store => {
             store.put(updatedAt, id)
@@ -216,7 +225,6 @@ export class IdbCollectionWrapper<T> {
 
     async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<DeepPartial<T>[]> {
         const tx = db.transaction(this.name, "readonly")
-        console.log(tx.store.indexNames, this.dataIndexName(keys), tx.store.indexNames.contains(this.dataIndexName(keys)), value)
         const result = await tx.db.getAllFromIndex(this.name, this.dataIndexName(keys), value)
         await tx.done
         return result
@@ -271,13 +279,16 @@ export class IdbCollectionClient<T> implements IOnlineClient.Collection<T, IdbCo
         const indices = await this.wrapper.getAllIndices(this.db)
         return indices.map(([key, date]) => ({key, date}))
     }
+    flushIndex(index: IOfflineClient.CollectionIndex<string>): Promise<void> {
+        const list = index.map(({key, date}) => [key, date] as [string, Date])
+        return this.wrapper.flushAllIndices(this.db, list)
+    }
     getItem(id: string): Promise<DeepPartial<T>> {
         return this.wrapper.getItem(this.db, id)
     }
-    async updateItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void> {
+    async updateItem(id: string, value: DeepPartial<T>): Promise<void> {
         await this.wrapper.putItem(this.db, id, value)
         await this.wrapper.putFullText(this.db, id, value)
-        await this.wrapper.setIndex(this.db, id, updatedAt)
     }
 
     getItemById(id: string): Promise<DeepPartial<T>> {

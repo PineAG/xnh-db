@@ -36,15 +36,16 @@ export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Col
     for(const action of diffResult) {
         if(action.type === "create") {
             const item = await sourceClient.getItem(action.key)
-            await destinationClient.updateItem(action.key, item, action.date)
+            await destinationClient.updateItem(action.key, item)
         } else if(action.type === "update") {
             const item = await sourceClient.getItem(action.key)
-            await destinationClient.updateItem(action.key, item, action.date)
+            await destinationClient.updateItem(action.key, item)
         } else if(action.type === "delete") {
             await destinationClient.deleteItem(action.key)
         }
         yield [action, {current: counter++, total: diffResult.length}]
     }
+    await destinationClient.flushIndex(sourceIndex)
 }
 
 export async function* synchronizeRelation<Keys extends string, Payload>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<[CollectionSyncAction<Record<Keys, string>>, ProgressResult]> {
@@ -55,7 +56,7 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
     for(const action of diffResult) {
         if(action.type === "create" || action.type === "update") {
             const payload = await sourceClient.getPayload(action.key)
-            await destinationClient.putRelation(action.key, payload, action.date)
+            await destinationClient.updateRelation(action.key, payload)
         } else if(action.type === "delete") {
             destinationClient.deleteRelation(action.key)
         } else {
@@ -63,4 +64,5 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
         }
         yield [action, {current: counter++, total: diffResult.length}]
     }
+    await destinationClient.flushIndex(sourceIndex)
 }

@@ -69,12 +69,10 @@ export module PathSyncClient {
             }
         }
 
-        private async updateIndex(updater: (index: MapIndex<string>) => void): Promise<void> {
-            const data = await this.pathClient.read(this.paths.index())
-            const index = data === null ? {} : await JsonUtils.fromJson<MapIndex<string>>(data)
-            updater(index)
-            const b = await JsonUtils.toJson(index)
-            this.pathClient.write(this.paths.index(), b)
+        async flushIndex(index: IOfflineClient.CollectionIndex<string>): Promise<void> {
+            const map = this.idxCvt.arrayToMap(index)
+            const json = await JsonUtils.toJson(map)
+            await this.pathClient.write(this.paths.index(), json)
         }
 
         async getItem(id: string): Promise<DeepPartial<T>> {
@@ -85,18 +83,12 @@ export module PathSyncClient {
                 return await JsonUtils.fromJson(data)
             }
         }
-        async updateItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void> {
+        async updateItem(id: string, value: DeepPartial<T>): Promise<void> {
             const b = await JsonUtils.toJson(value)
             await this.pathClient.write(this.paths.item(id), b)
-            await this.updateIndex(index => {
-                index[id] = [id, updatedAt.getTime()]
-            })
         }
         async deleteItem(id: string): Promise<void> {
             await this.pathClient.delete(this.paths.item(id))
-            await this.updateIndex(index => {
-                delete index[id]
-            })
         }
     }
 
@@ -126,12 +118,10 @@ export module PathSyncClient {
             }
         }
 
-        private async updateIndex(updater: (index: MapIndex<Record<Keys, string>>) => void): Promise<void> {
-            const data = await this.pathClient.read(this.paths.index())
-            const index = data === null ? {} : await JsonUtils.fromJson<MapIndex<Record<Keys, string>>>(data)
-            updater(index)
-            const b = await JsonUtils.toJson(index)
-            this.pathClient.write(this.paths.index(), b)
+        async flushIndex(index: IOfflineClient.CollectionIndex<Record<Keys, string>>): Promise<void> {
+            const map = this.idxCvt.arrayToMap(index)
+            const json = await JsonUtils.toJson(map)
+            await this.pathClient.write(this.paths.index(), json)
         }
         
         async getPayload(keys: Record<Keys, string>): Promise<Payload> {
@@ -142,20 +132,12 @@ export module PathSyncClient {
                 return await JsonUtils.fromJson(data)
             }
         }
-        async putRelation(keys: Record<Keys, string>, payload: Payload, updatedAt: Date): Promise<void> {
+        async updateRelation(keys: Record<Keys, string>, payload: Payload): Promise<void> {
             const b = await JsonUtils.toJson(payload)
             await this.pathClient.write(this.paths.payload(keys), b)
-            await this.updateIndex(index => {
-                const sKey = IOfflineClient.stringifyRelationKey(keys)
-                index[sKey] = [keys, updatedAt.getTime()]
-            })
         }
         async deleteRelation(keys: Record<Keys, string>): Promise<void> {
             await this.pathClient.delete(this.paths.payload(keys))
-            await this.updateIndex(index => {
-                const sKey = IOfflineClient.stringifyRelationKey(keys)
-                delete index[sKey]
-            })
         }
     }
 }
