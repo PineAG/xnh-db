@@ -96,7 +96,7 @@ export class IdbRelationClient<C extends Record<string, any>, Payload> implement
         return this.wrapper.getIndex(this.db)
     }
     flushIndex(index: IOfflineClient.CollectionIndex<Record<keyof C & string, string>>): Promise<void> {
-        throw new Error("Method not implemented.")
+        return this.wrapper.in
     }
     updateRelation(keys: Record<keyof C & string, string>, payload: Payload): Promise<void> {
         throw new Error("Method not implemented.")
