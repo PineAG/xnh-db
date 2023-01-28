@@ -4,6 +4,7 @@ import * as idb from "idb"
 import { sortBy } from "lodash"
 import { DeepPartial } from "utility-types"
 import { extractFullTextTokensByConfig } from "./fulltext"
+import { GlobalStatusWrapper } from "./global"
 import {IdbIndexOption, IdbStoreWrapper} from "./wrapper"
 
 export interface FullTextItem {
@@ -16,32 +17,6 @@ export interface IdbCollectionQuery {
     value: any
 }
 
-export module GlobalStatusWrapper {
-    async function transaction<Mode extends IDBTransactionMode, R>(db: idb.IDBPDatabase, mode: Mode, cb: (store: idb.IDBPObjectStore<any, any, any, Mode>) => Promise<R>): Promise<R> {
-        const tx = db.transaction("sync_state", mode)
-        const result = await cb(tx.store)
-        await tx.done
-        return result
-    }
-
-    export function initialize(db: idb.IDBPDatabase) {
-        db.createObjectStore("sync_state")   
-    }
-
-    const DIRTY_NAME = "is_dirty"
-
-    export function isDirty(db: idb.IDBPDatabase): Promise<boolean> {
-        return transaction(db, "readonly", async (store) => {
-            return await store.get(DIRTY_NAME) ?? true
-        })
-    }
-
-    export function setDirty(db: idb.IDBPDatabase, value: boolean): Promise<void> {
-        return transaction(db, "readwrite", async store => {
-            await store.put(value, DIRTY_NAME)
-        })
-    }
-}
 
 type IdbCollectionWrapperDeletionListener = (db: idb.IDBPDatabase, id: string) => Promise<void>
 
@@ -76,13 +51,6 @@ export class IdbCollectionWrapper<T> {
         this.fullTextTermsWrapper.initialize(db)
     }
 
-    private async transaction<Mode extends IDBTransactionMode, R>(db: idb.IDBPDatabase, mode: Mode, cb: (store: idb.IDBPObjectStore<any, any, any, Mode>) => Promise<R>): Promise<R> {
-        const tx = db.transaction(this.name, mode)
-        const result = await cb(tx.store)
-        await tx.done
-        return result
-    }
-
     async getItem(db: idb.IDBPDatabase, id: string): Promise<DeepPartial<T>> {
         const flat = await this.dataWrapper.get(db, id)
         if(!flat) {
@@ -94,7 +62,6 @@ export class IdbCollectionWrapper<T> {
     async putItem(db: idb.IDBPDatabase, id: string, value: DeepPartial<T>): Promise<void> {
         const flat = flattenDataByConfig<T>(value, this.config)
         await this.dataWrapper.put(db, id, flat)
-        await GlobalStatusWrapper.setDirty(db, true)
     }
 
     async deleteItem(db: idb.IDBPDatabase, id: string): Promise<void> {
@@ -209,6 +176,14 @@ export class IdbCollectionWrapper<T> {
         this.deletionListeners.push(listener)
     }
 
+    setCollectionStatus(db: idb.IDBPDatabase, status: IOfflineClient.LatestStatus): Promise<void> {
+        return GlobalStatusWrapper.setCollectionStatus(db, this.name, status)
+    }
+
+    getCollectionStatus(db: idb.IDBPDatabase): Promise<IOfflineClient.LatestStatus> {
+        return GlobalStatusWrapper.getCollectionStatus(db, this.name)
+    }
+
 }
 
 export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
@@ -225,21 +200,30 @@ export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T,
     queryFullText(keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
         return this.wrapper.queryFullText(this.db, keywords)
     }
-    async putItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void> {
+    async putItem(id: string, value: DeepPartial<T>): Promise<void> {
+        const updatedAt = new Date()
         await this.wrapper.putItem(this.db, id, value)
         await this.wrapper.putFullText(this.db, id, value)
         await this.wrapper.setIndex(this.db, id, updatedAt)
+        await this.wrapper.setCollectionStatus(this.db, {updatedAt})
     }
     async deleteItem(id: string): Promise<void> {
         await this.wrapper.emitDeletion(this.db, id)
         await this.wrapper.deleteIndex(this.db, id)
         await this.wrapper.deleteFullText(this.db, id)
+        await this.wrapper.setCollectionStatus(this.db, {updatedAt: new Date()})
     }
 }
 
 export class IdbCollectionOfflineClient<T> implements IOfflineClient.Collection<T> {
     constructor(private db: idb.IDBPDatabase, private wrapper: IdbCollectionWrapper<T>) {
 
+    }
+    getStatus(): Promise<IOfflineClient.LatestStatus> {
+        return this.wrapper.getCollectionStatus(this.db)
+    }
+    setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
+        throw this.wrapper.setCollectionStatus(this.db, status)
     }
     async getIndex(): Promise<IOfflineClient.CollectionIndex<string>> {
         const indices = await this.wrapper.getAllIndices(this.db)

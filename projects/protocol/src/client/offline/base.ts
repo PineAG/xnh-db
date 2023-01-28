@@ -3,8 +3,14 @@ import {DeepPartial} from "utility-types"
 export module IOfflineClient {
     export type CollectionIndex<K> = {key: K, date: Date}[]
 
+    export interface LatestStatus {
+        updatedAt: Date
+    }
+
     export interface Collection<T> {
         getIndex(): Promise<CollectionIndex<string>>
+        getStatus(): Promise<LatestStatus>
+        setStatus(status: LatestStatus): Promise<void>
         flushIndex(index: CollectionIndex<string>): Promise<void>
         getItem(id: string): Promise<DeepPartial<T>>
         updateItem(id: string, value: DeepPartial<T>): Promise<void>
@@ -13,6 +19,8 @@ export module IOfflineClient {
     
     export interface Relation<Keys extends string, Payload> {
         getIndex(): Promise<CollectionIndex<Record<Keys, string>>>
+        getStatus(): Promise<LatestStatus>
+        setStatus(status: LatestStatus): Promise<void>
         flushIndex(index: CollectionIndex<Record<Keys, string>>): Promise<void>
         getPayload(keys: Record<Keys, string>): Promise<Payload>
         updateRelation(keys: Record<Keys, string>, payload: Payload): Promise<void>

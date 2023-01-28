@@ -52,6 +52,14 @@ export module PathSyncClient {
         item(id: string): string {
             return `items/${id}.json`
         }
+
+        status(): string {
+            return "status.json"
+        }
+    }
+
+    interface SerializedStatus {
+        updatedAt: number
     }
 
     export class Collection<T> implements IOfflineClient.Collection<T> {
@@ -90,6 +98,25 @@ export module PathSyncClient {
         async deleteItem(id: string): Promise<void> {
             await this.pathClient.delete(this.paths.item(id))
         }
+        async getStatus(): Promise<IOfflineClient.LatestStatus> {
+            const b = await this.pathClient.read(this.paths.status())
+            if(!b) {
+                return {
+                    updatedAt: new Date(0)
+                }
+            }
+            const data: SerializedStatus = await JsonUtils.fromJson(b)
+            return {
+                updatedAt: new Date(data.updatedAt)
+            }
+        }
+        async setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
+            const data: SerializedStatus = {
+                updatedAt: status.updatedAt.getTime()
+            }
+            const b = await JsonUtils.toJson(data)
+            await this.pathClient.write(this.paths.status(), b)
+        }
     }
 
     class RelationPathHelper<Keys extends string> {
@@ -100,6 +127,10 @@ export module PathSyncClient {
         payload(keys: Record<Keys, string>): string {
             const key = IOfflineClient.stringifyRelationKey(keys)
             return `payloads/${key}.json`
+        }
+
+        status(): string {
+            return "status.json"
         }
     }
 
@@ -138,6 +169,25 @@ export module PathSyncClient {
         }
         async deleteRelation(keys: Record<Keys, string>): Promise<void> {
             await this.pathClient.delete(this.paths.payload(keys))
+        }
+        async getStatus(): Promise<IOfflineClient.LatestStatus> {
+            const b = await this.pathClient.read(this.paths.status())
+            if(!b) {
+                return {
+                    updatedAt: new Date(0)
+                }
+            }
+            const data: SerializedStatus = await JsonUtils.fromJson(b)
+            return {
+                updatedAt: new Date(data.updatedAt)
+            }
+        }
+        async setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
+            const data: SerializedStatus = {
+                updatedAt: status.updatedAt.getTime()
+            }
+            const b = await JsonUtils.toJson(data)
+            await this.pathClient.write(this.paths.status(), b)
         }
     }
 }

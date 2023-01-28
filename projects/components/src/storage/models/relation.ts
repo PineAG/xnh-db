@@ -1,6 +1,7 @@
 import { IOfflineClient, IOnlineClient } from "@xnh-db/protocol"
 import * as idb from "idb"
 import { IdbCollectionWrapper } from "./collection"
+import { GlobalStatusWrapper } from "./global"
 import { IdbIndexOption, IdbStoreWrapper } from "./wrapper"
 
 export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
@@ -100,6 +101,14 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
         }))
     }
 
+    setCollectionStatus(db: idb.IDBPDatabase, status: IOfflineClient.LatestStatus): Promise<void> {
+        return GlobalStatusWrapper.setCollectionStatus(db, this.storeName, status)
+    }
+
+    getCollectionStatus(db: idb.IDBPDatabase): Promise<IOfflineClient.LatestStatus> {
+        return GlobalStatusWrapper.getCollectionStatus(db, this.storeName)
+    }
+
 }
 
 export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<keyof C & string, Payload> {
@@ -108,9 +117,11 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> imp
     getPayload(keys: Record<keyof C, string>): Promise<Payload> {
         return this.wrapper.getPayload(this.db, keys)
     }
-    async putRelation(keys: Record<keyof C, string>, payload: Payload, updatedAt: Date): Promise<void> {
+    async putRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
+        const updatedAt = new Date()
         await this.wrapper.putRelation(this.db, keys, payload)
         await this.wrapper.putDate(this.db, keys, updatedAt)
+        await this.wrapper.setCollectionStatus(this.db, {updatedAt})
     }
     deleteRelation(keys: Record<keyof C, string>): Promise<void> {
         return this.wrapper.deleteRelation(this.db, keys)
@@ -119,6 +130,12 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> imp
 
 export class IdbRelationOfflineClient<C extends Record<string, any>, Payload> implements IOfflineClient.Relation<keyof C & string, Payload> {
     constructor(private db: idb.IDBPDatabase, private wrapper: IdbRelationWrapper<C, Payload>) {
+    }
+    getStatus(): Promise<IOfflineClient.LatestStatus> {
+        return this.wrapper.getCollectionStatus(this.db)
+    }
+    setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
+        return this.wrapper.setCollectionStatus(this.db, status)
     }
     getPayload(keys: Record<keyof C, string>): Promise<Payload> {
         return this.wrapper.getPayload(this.db, keys)
@@ -135,5 +152,4 @@ export class IdbRelationOfflineClient<C extends Record<string, any>, Payload> im
     async updateRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
         await this.wrapper.putRelation(this.db, keys, payload)
     }
-    
 }
