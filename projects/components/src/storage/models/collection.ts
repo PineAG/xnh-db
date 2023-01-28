@@ -137,9 +137,8 @@ export class IdbCollectionWrapper<T> {
         await this.fullTextWrapper.delete(db, id)
     }
 
-    async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<DeepPartial<T>[]> {
-        const flatList = await this.dataWrapper.getAllByIndex(db, keyPathToFlattenedKey(keys), value)
-        return flatList.map(flat => extractFlatDataByConfig(flat, this.config))
+    async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<string[]> {
+        return await this.dataWrapper.getKeysByIndex(db, keyPathToFlattenedKey(keys), value)
     }
 
     async queryFullText(db: idb.IDBPDatabase, keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
@@ -193,7 +192,7 @@ export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T,
     getItemById(id: string): Promise<DeepPartial<T>> {
         return this.wrapper.getItem(this.db, id)
     }
-    queryItems(query: IdbCollectionQuery): Promise<DeepPartial<T>[]> {
+    queryItems(query: IdbCollectionQuery): Promise<string[]> {
         return this.wrapper.queryByField(this.db, query.keyPath, query.value)
     }
 

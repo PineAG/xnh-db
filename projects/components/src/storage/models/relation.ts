@@ -70,6 +70,10 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
         await this.relationWrapper.put(db, id, keys)
     }
 
+    async getRelationsByKey<K extends Extract<keyof C, string>>(db: idb.IDBPDatabase, key: K, id: string): Promise<Record<Extract<keyof C, string>, string>[]> {
+        return this.relationWrapper.getAllByIndex(db, key, id)
+    }
+
     async putDate(db: idb.IDBPDatabase, keys: Record<keyof C, string>, updatedAt: Date) {
         const id = this.extractId(keys)
         await this.timeWrapper.put(db, id, updatedAt)
@@ -111,8 +115,11 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
 
 }
 
-export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<keyof C & string, Payload> {
+export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<Extract<keyof C, string>, Payload> {
     constructor(private db: idb.IDBPDatabase, private wrapper: IdbRelationWrapper<C, Payload>) {
+    }
+    getRelationsByKey<K extends Extract<keyof C, string>>(key: K, id: string): Promise<Record<Extract<keyof C, string>, string>[]> {
+        return this.wrapper.getRelationsByKey(this.db, key, id)
     }
     getPayload(keys: Record<keyof C, string>): Promise<Payload> {
         return this.wrapper.getPayload(this.db, keys)
