@@ -22,3 +22,40 @@ export module GlobalStatusWrapper {
         await storageStatusWrapper.put(db, collectionName, {updatedAt: status.updatedAt.getTime()})
     }
 }
+
+export module IdbTagWrapper {
+    export interface ITag {
+        collection: string,
+        tag: string
+    }
+    const wrapper = new IdbStoreWrapper<ITag, "collection" | "tag">("_tags", {
+        collection: {isArray: false, unique: false, keyPath: "collection"},
+        tag: {isArray: false, unique: false, keyPath: "tag"},
+    })
+    
+    export function initialize(db: idb.IDBPDatabase) {
+        wrapper.initialize(db)
+    }
+
+    export async function putTag(db: idb.IDBPDatabase, collection: string, tag: string): Promise<void> {
+        await wrapper.put(db, `${collection}:${tag}`, {tag, collection})
+    }
+
+    export class Client {
+        constructor(private db: idb.IDBPDatabase) {}
+
+        async getTagsFromCollection(collection: string): Promise<string[]> {
+            const result = await wrapper.getAllByIndex(this.db, "collection", collection)
+            return result.map(it => it.tag)
+        }
+
+        async putTag(collection: string, tag: string): Promise<void> {
+            await putTag(this.db, collection, tag)
+        }
+
+        async deleteTag(collection: string, tag: string): Promise<void> {
+            await wrapper.put(this.db, `${collection}:${tag}`
+        }
+    }
+
+}

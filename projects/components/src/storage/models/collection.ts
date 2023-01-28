@@ -1,10 +1,10 @@
-import { flattenDataDefinition, IOfflineClient, IOnlineClient, keyPathToFlattenedKey, extractFlatDataByConfig, flattenDataByConfig } from "@xnh-db/protocol"
+import { flattenDataDefinition, IOfflineClient, IOnlineClient, keyPathToFlattenedKey, extractFlatDataByConfig, flattenDataByConfig, extractValuesAndConfigs } from "@xnh-db/protocol"
 import { FieldConfig as FC } from "@xnh-db/protocol"
 import * as idb from "idb"
 import { sortBy } from "lodash"
 import { DeepPartial } from "utility-types"
 import { extractFullTextTokensByConfig } from "./fulltext"
-import { GlobalStatusWrapper } from "./global"
+import { GlobalStatusWrapper, IdbTagWrapper } from "./global"
 import {IdbIndexOption, IdbStoreWrapper} from "./wrapper"
 
 export interface FullTextItem {
@@ -181,6 +181,16 @@ export class IdbCollectionWrapper<T> {
 
     getCollectionStatus(db: idb.IDBPDatabase): Promise<IOfflineClient.LatestStatus> {
         return GlobalStatusWrapper.getCollectionStatus(db, this.name)
+    }
+
+    async updateTags(db: idb.IDBPDatabase, data: T): Promise<void> {
+        for(const [value, conf] of extractValuesAndConfigs<T>(data, this.config)) {
+            if(conf.type === "string" && conf.options.type === "tag") {
+                const collection = conf.options.collection
+                const values: string[] = conf.isArray ? value : [value]
+                await Promise.all(values.map(v => IdbTagWrapper.putTag(db, collection, v)))
+            }
+        }
     }
 
 }

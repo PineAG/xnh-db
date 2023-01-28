@@ -59,3 +59,19 @@ export function extractFlatDataByConfig<T>(data: Record<string, any>, definition
 export function keyPathToFlattenedKey(keyPath: string[]): string {
     return keyPath.join("_")
 }
+
+export function extractValuesAndConfigs<T>(data: T, definition: FC.ConfigFromDeclaration<T>): [any, FC.FieldConfig][] {
+    return Array.from(walk(data, definition))
+
+    function* walk(node: any, def: any): Generator<[any, FC.FieldConfig]> {
+        if(node === undefined){
+            return
+        }else if(FC.isFieldConfig(def)) {
+            yield [node, def]
+        } else {
+            for(const [k, v] of Object.entries(def)) {
+                yield* walk(node[k], v)
+            }
+        }
+    }
+}

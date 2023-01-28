@@ -13,6 +13,7 @@ function createInternationalNameDefinition(): FC.ConfigFromDeclaration<Internati
 
 export interface ICharacter {
     id: string
+    title: string,
     name: InternationalName
     photos: string[]
     description: string,
@@ -28,6 +29,7 @@ export interface ICharacter {
 
 export const CharacterDefinition: FC.ConfigFromDeclaration<ICharacter> = {
     id: FC.id(),
+    title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1),
@@ -43,6 +45,7 @@ export const CharacterDefinition: FC.ConfigFromDeclaration<ICharacter> = {
 
 export interface IArtwork {
     id: string
+    title: string,
     name: InternationalName
     photos: string[]
     description: string
@@ -50,6 +53,7 @@ export interface IArtwork {
 
 export const ArtworkDefinition: FC.ConfigFromDeclaration<IArtwork> = {
     id: FC.id(),
+    title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1)
@@ -57,6 +61,7 @@ export const ArtworkDefinition: FC.ConfigFromDeclaration<IArtwork> = {
 
 export interface ICreator {
     id: string
+    title: string,
     name: InternationalName
     photos: string[]
     description: string
@@ -64,6 +69,7 @@ export interface ICreator {
 
 export const CreatorDefinition: FC.ConfigFromDeclaration<ICreator> = {
     id: FC.id(),
+    title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1)
@@ -71,6 +77,7 @@ export const CreatorDefinition: FC.ConfigFromDeclaration<ICreator> = {
 
 export interface IVoiceActor {
     id: string
+    title: string,
     name: InternationalName
     photos: string[]
     description: string
@@ -78,6 +85,7 @@ export interface IVoiceActor {
 
 export const VoiceActorDefinition: FC.ConfigFromDeclaration<IVoiceActor> = {
     id: FC.id(),
+    title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1)

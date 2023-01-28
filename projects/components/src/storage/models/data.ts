@@ -2,7 +2,7 @@ import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, IC
 import { IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient } from "./collection";
 import { IdbRelationOnlineClient, IdbRelationOfflineClient, IdbRelationWrapper } from "./relation";
 import * as idb from "idb"
-import { GlobalStatusWrapper } from "./global";
+import { GlobalStatusWrapper, IdbTagWrapper } from "./global";
 
 export function createDBWrappers() {
     const character = new IdbCollectionWrapper<ICharacter>("characters", CharacterDefinition)
@@ -28,6 +28,7 @@ export function createDBWrappers() {
 
 export function initializeWrappers(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
     GlobalStatusWrapper.initialize(db)
+    IdbTagWrapper.initialize(db)
     for(const c of Object.values(wrappers.collections)) {
         c.onUpgrade(db)
     }
