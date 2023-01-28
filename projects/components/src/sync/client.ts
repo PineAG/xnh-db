@@ -7,6 +7,11 @@ export module OctokitResults {
         owner: string,
         repo: string
     }
+    export interface Branch {
+        owner: string,
+        repo: string,
+        branch: string
+    }
 }
 
 export class OctokitClient {
@@ -29,15 +34,26 @@ export class OctokitClient {
         }))
     }
 
-    openRepo(repo: OctokitResults.Repo): OctokitRepoClient {
-        return new OctokitRepoClient(this.octokit, repo)
+    async getBranches(repo: OctokitResults.Repo): Promise<string[]> {
+        const result = await this.octokit.repos.listBranches({
+            owner: repo.owner,
+            repo: repo.repo
+        })
+        return result.data.map(it => it.name)
     }
 
+    openRepo(branch: OctokitResults.Branch): OctokitRepoClient {
+        return new OctokitRepoClient(this.octokit, branch)
+    }
+
+    openBranchMaintenance(branch: OctokitResults.Branch): OctokitBranchMaintenanceClient {
+        return new OctokitBranchMaintenanceClient(this.octokit, branch)
+    }
     
 }
 
 export class OctokitRepoClient implements PathSyncClient.IPathClient {
-    constructor(private octokit: Octokit, private repo: OctokitResults.Repo, private pathPrefix?: string) {}
+    constructor(private octokit: Octokit, private branch: OctokitResults.Branch, private pathPrefix?: string) {}
 
     private patchPath(path: string): string {
         if(this.pathPrefix === undefined) {
@@ -51,9 +67,10 @@ export class OctokitRepoClient implements PathSyncClient.IPathClient {
         let result: Awaited<ReturnType<typeof this.octokit.repos.getContent>>
         try {
             result = await this.octokit.repos.getContent({
-                owner: this.repo.owner,
-                repo: this.repo.repo,
-                path: this.patchPath(path)
+                owner: this.branch.owner,
+                repo: this.branch.repo,
+                path: this.patchPath(path),
+                ref: this.branch.branch
             })
         } catch (e) {
             if(e["message"] === "Not Found") {
@@ -77,8 +94,9 @@ export class OctokitRepoClient implements PathSyncClient.IPathClient {
         const b64 = base64.encode(new TextDecoder().decode(buf))
         console.log(b64)
         await this.octokit.repos.createOrUpdateFileContents({
-            owner: this.repo.owner,
-            repo: this.repo.repo,
+            owner: this.branch.owner,
+            repo: this.branch.repo,
+            ref: this.branch.branch,
             path: this.patchPath(path),
             content: b64,
             mediaType: {
@@ -92,8 +110,8 @@ export class OctokitRepoClient implements PathSyncClient.IPathClient {
     async getSHA(path: string): Promise<undefined | string> {
         try {
             const {data: shaResult} = await this.octokit.repos.getContent({
-                owner: this.repo.owner,
-                repo: this.repo.repo,
+                owner: this.branch.owner,
+                repo: this.branch.repo,
                 path: this.patchPath(path),
                 mediaType: {
                     format: "sha"
@@ -113,12 +131,47 @@ export class OctokitRepoClient implements PathSyncClient.IPathClient {
     async delete(path: string): Promise<void> {
         const sha = await this.getSHA(path)
         await this.octokit.repos.deleteFile({
-            owner: this.repo.owner,
-            repo: this.repo.repo,
+            owner: this.branch.owner,
+            repo: this.branch.repo,
+            ref: this.branch.branch,
             path: this.patchPath(path),
             message: `Delete ${path}`,
             sha
         })
     }
 
+}
+
+
+export class OctokitBranchMaintenanceClient {
+    constructor(private octokit: Octokit, private branch: OctokitResults.Branch) {}
+
+    async getCommit(): Promise<string> {
+        const result = await this.octokit.repos.getBranch({
+            owner: this.branch.owner,
+            repo: this.branch.repo,
+            branch: this.branch.branch
+        })
+        return result.data.commit.sha
+    }
+
+    async backup(): Promise<void> {
+        const currentCommit = await this.getCommit()
+        await this.octokit.git.createRef({
+            owner: this.branch.owner,
+            repo: this.branch.repo,
+            ref: `refs/heads/${this.branch.branch}-backup-${new Date().getTime()}`,
+            sha: currentCommit,
+        })
+    }
+
+    async rollback(commit: string): Promise<void> {
+        await this.octokit.git.updateRef({
+            owner: this.branch.owner,
+            repo: this.branch.repo,
+            ref: `heads/${this.branch.branch}`,
+            sha: commit,
+            force: true
+        })
+    }
 }

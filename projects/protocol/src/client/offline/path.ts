@@ -40,7 +40,7 @@ export module PathSyncClient {
 
     export interface IPathClient {
         read(path: string): Promise<Blob | null>
-        write(path: string, value: Blob): Promise<void>
+        branch(path: string, value: Blob): Promise<void>
         delete(path: string): Promise<void>
     }
 
@@ -80,7 +80,7 @@ export module PathSyncClient {
         async flushIndex(index: IOfflineClient.CollectionIndex<string>): Promise<void> {
             const map = this.idxCvt.arrayToMap(index)
             const json = await JsonUtils.toJson(map)
-            await this.pathClient.write(this.paths.index(), json)
+            await this.pathClient.branch(this.paths.index(), json)
         }
 
         async getItem(id: string): Promise<DeepPartial<T>> {
@@ -93,7 +93,7 @@ export module PathSyncClient {
         }
         async updateItem(id: string, value: DeepPartial<T>): Promise<void> {
             const b = await JsonUtils.toJson(value)
-            await this.pathClient.write(this.paths.item(id), b)
+            await this.pathClient.branch(this.paths.item(id), b)
         }
         async deleteItem(id: string): Promise<void> {
             await this.pathClient.delete(this.paths.item(id))
@@ -115,7 +115,7 @@ export module PathSyncClient {
                 updatedAt: status.updatedAt.getTime()
             }
             const b = await JsonUtils.toJson(data)
-            await this.pathClient.write(this.paths.status(), b)
+            await this.pathClient.branch(this.paths.status(), b)
         }
     }
 
@@ -152,7 +152,7 @@ export module PathSyncClient {
         async flushIndex(index: IOfflineClient.CollectionIndex<Record<Keys, string>>): Promise<void> {
             const map = this.idxCvt.arrayToMap(index)
             const json = await JsonUtils.toJson(map)
-            await this.pathClient.write(this.paths.index(), json)
+            await this.pathClient.branch(this.paths.index(), json)
         }
         
         async getPayload(keys: Record<Keys, string>): Promise<Payload> {
@@ -165,7 +165,7 @@ export module PathSyncClient {
         }
         async updateRelation(keys: Record<Keys, string>, payload: Payload): Promise<void> {
             const b = await JsonUtils.toJson(payload)
-            await this.pathClient.write(this.paths.payload(keys), b)
+            await this.pathClient.branch(this.paths.payload(keys), b)
         }
         async deleteRelation(keys: Record<Keys, string>): Promise<void> {
             await this.pathClient.delete(this.paths.payload(keys))
@@ -187,7 +187,7 @@ export module PathSyncClient {
                 updatedAt: status.updatedAt.getTime()
             }
             const b = await JsonUtils.toJson(data)
-            await this.pathClient.write(this.paths.status(), b)
+            await this.pathClient.branch(this.paths.status(), b)
         }
     }
 }

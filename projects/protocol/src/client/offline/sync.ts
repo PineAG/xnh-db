@@ -28,6 +28,13 @@ export function diffCollectionIndices<K>(sourceIndex: IOfflineClient.CollectionI
 
 type ProgressResult = {current: number, total: number}
 
+function getLatestDateFromIndex<T>(index: IOfflineClient.CollectionIndex<T>): Date {
+    if(index.length === 0) {
+        return new Date(0)
+    }
+    return new Date(index.map(it => it.date.getTime()).reduce((a, b) => Math.max(a, b)))
+}
+
 export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Collection<T>, destinationClient: IOfflineClient.Collection<T>): AsyncGenerator<[CollectionSyncAction<string>, ProgressResult]> {
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
@@ -46,6 +53,9 @@ export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Col
         yield [action, {current: counter++, total: diffResult.length}]
     }
     await destinationClient.flushIndex(sourceIndex)
+    await destinationClient.setStatus({
+        updatedAt: getLatestDateFromIndex(sourceIndex)
+    })
 }
 
 export async function* synchronizeRelation<Keys extends string, Payload>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<[CollectionSyncAction<Record<Keys, string>>, ProgressResult]> {
@@ -65,4 +75,7 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
         yield [action, {current: counter++, total: diffResult.length}]
     }
     await destinationClient.flushIndex(sourceIndex)
+    await destinationClient.setStatus({
+        updatedAt: getLatestDateFromIndex(sourceIndex)
+    })
 }

@@ -1,7 +1,8 @@
 import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IVoiceActor, VoiceActorDefinition } from "@xnh-db/protocol";
-import { GlobalStatusWrapper, IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient } from "./collection";
+import { IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient } from "./collection";
 import { IdbRelationOnlineClient, IdbRelationOfflineClient, IdbRelationWrapper } from "./relation";
 import * as idb from "idb"
+import { GlobalStatusWrapper } from "./global";
 
 export function createDBWrappers() {
     const character = new IdbCollectionWrapper<ICharacter>("characters", CharacterDefinition)
@@ -36,7 +37,6 @@ export function initializeWrappers(db: idb.IDBPDatabase, wrappers: ReturnType<ty
     for(const r of Object.values(wrappers.relations)){
         r.onUpgrade(db)
     }
-    console.log("Fuck yeah")
 }
 
 export function createOnlineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {

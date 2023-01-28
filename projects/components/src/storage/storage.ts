@@ -7,7 +7,6 @@ export async function createIdbClients() {
     const wrappers = createDBWrappers()
     const db = await idb.openDB(IndexedDBName, 1, {
         upgrade: (db, oldVersion, newVersion, tx) => {
-            console.log(db, oldVersion, newVersion)
             initializeWrappers(db, wrappers)
         }
     })
