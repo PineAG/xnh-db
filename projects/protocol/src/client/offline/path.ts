@@ -24,7 +24,7 @@ export module PathSyncClient {
         arrayToMap(a: IOfflineClient.CollectionIndex<Key>): MapIndex<Key> {
             const m = {}
             for(const {key, date} of a) {
-                m[this.serializer(key)] = {key, ts: date.getTime()}
+                m[this.serializer(key)] = [key, date.getTime()]
             }
             return m
         }
