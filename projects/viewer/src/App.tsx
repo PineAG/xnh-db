@@ -4,7 +4,7 @@ import './App.css';
 import { createIdbClients } from '@xnh-db/components';
 
 createIdbClients().then(async clients => {
-  const {character} = clients.collections
+  const {character} = clients.online.collections
   const id = crypto.randomUUID()
   await character.putItem(id, {
     id,

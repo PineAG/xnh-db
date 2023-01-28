@@ -1,6 +1,6 @@
 import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IVoiceActor, VoiceActorDefinition } from "@xnh-db/protocol";
-import { GlobalStatusWrapper, IdbCollectionClient, IdbCollectionWrapper } from "./collection";
-import { IdbRelationClient, IdbRelationWrapper } from "./relation";
+import { GlobalStatusWrapper, IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient } from "./collection";
+import { IdbRelationOnlineClient, IdbRelationOfflineClient, IdbRelationWrapper } from "./relation";
 import * as idb from "idb"
 
 export function createDBWrappers() {
@@ -39,22 +39,42 @@ export function initializeWrappers(db: idb.IDBPDatabase, wrappers: ReturnType<ty
     console.log("Fuck yeah")
 }
 
-export function createDBClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
+export function createOnlineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
     return {
         collections: {
-            character: new IdbCollectionClient(db, wrappers.collections.character), 
-            artwork: new IdbCollectionClient(db, wrappers.collections.artwork),
-            creator: new IdbCollectionClient(db, wrappers.collections.creator), 
-            voiceActor: new IdbCollectionClient(db, wrappers.collections.voiceActor)
+            character: new IdbCollectionOnlineClient(db, wrappers.collections.character), 
+            artwork: new IdbCollectionOnlineClient(db, wrappers.collections.artwork),
+            creator: new IdbCollectionOnlineClient(db, wrappers.collections.creator), 
+            voiceActor: new IdbCollectionOnlineClient(db, wrappers.collections.voiceActor)
         },
         inheritance: {
-            character: new IdbRelationClient(db, wrappers.inheritance.character),
-            artwork: new IdbRelationClient(db, wrappers.inheritance.artwork)
+            character: new IdbRelationOnlineClient(db, wrappers.inheritance.character),
+            artwork: new IdbRelationOnlineClient(db, wrappers.inheritance.artwork)
         },
         relations: {
-            character_artwork: new IdbRelationClient(db, wrappers.relations.character_artwork),
-            artwork_creator: new IdbRelationClient(db, wrappers.relations.artwork_creator),
-            character_voiceActor: new IdbRelationClient(db, wrappers.relations.character_voiceActor)
+            character_artwork: new IdbRelationOnlineClient(db, wrappers.relations.character_artwork),
+            artwork_creator: new IdbRelationOnlineClient(db, wrappers.relations.artwork_creator),
+            character_voiceActor: new IdbRelationOnlineClient(db, wrappers.relations.character_voiceActor)
+        }
+    }
+}
+
+export function createOfflineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
+    return {
+        collections: {
+            character: new IdbCollectionOfflineClient(db, wrappers.collections.character), 
+            artwork: new IdbCollectionOfflineClient(db, wrappers.collections.artwork),
+            creator: new IdbCollectionOfflineClient(db, wrappers.collections.creator), 
+            voiceActor: new IdbCollectionOfflineClient(db, wrappers.collections.voiceActor)
+        },
+        inheritance: {
+            character: new IdbRelationOfflineClient(db, wrappers.inheritance.character),
+            artwork: new IdbRelationOfflineClient(db, wrappers.inheritance.artwork)
+        },
+        relations: {
+            character_artwork: new IdbRelationOfflineClient(db, wrappers.relations.character_artwork),
+            artwork_creator: new IdbRelationOfflineClient(db, wrappers.relations.artwork_creator),
+            character_voiceActor: new IdbRelationOfflineClient(db, wrappers.relations.character_voiceActor)
         }
     }
 }

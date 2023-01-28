@@ -4,6 +4,7 @@ import * as idb from "idb"
 import { sortBy } from "lodash"
 import { DeepPartial } from "utility-types"
 import { extractFullTextTokensByConfig } from "./fulltext"
+import {IdbIndexOption, IdbStoreWrapper} from "./wrapper"
 
 export interface FullTextItem {
     keywords: string[]
@@ -47,50 +48,32 @@ type IdbCollectionWrapperDeletionListener = (db: idb.IDBPDatabase, id: string) =
 export class IdbCollectionWrapper<T> {
     deletionListeners: IdbCollectionWrapperDeletionListener[] = []
 
-    constructor(public readonly name: string, private config: FC.ConfigFromDeclaration<T>) {}
+    private dataWrapper: IdbStoreWrapper<Record<string, any>, string>
+    private timeWrapper: IdbStoreWrapper<Date, never>
+    private fullTextWrapper: IdbStoreWrapper<FullTextItem, "keywords">
+    private fullTextTermsWrapper: IdbStoreWrapper<number, never>
 
-    onUpgrade(db: idb.IDBPDatabase) {
-        const store = db.createObjectStore(this.name, {autoIncrement: false})
-        const configList = flattenDataDefinition(this.config)
+    constructor(public readonly name: string, private config: FC.ConfigFromDeclaration<T>) {
+        const dataIndices: Record<string, IdbIndexOption> = {}
+        const configList = flattenDataDefinition(config)
         for(const [path, config] of configList) {
             const isArray = config.type !== "id" && config.isArray
-            store.createIndex(this.dataIndexName(path), this.dataKeyPath(path), {multiEntry: isArray, unique: false})
+            const keyPath = keyPathToFlattenedKey(path)
+            dataIndices[keyPath] = {keyPath, isArray, unique: false}
         }
+        this.dataWrapper = new IdbStoreWrapper(`${name}:data`, dataIndices)
 
-        db.createObjectStore(this.indexStoreName())
+        this.timeWrapper = new IdbStoreWrapper(`${name}:updatedAt`, {})
+        this.fullTextWrapper = new IdbStoreWrapper(`${name}:fullText:documents`, {keywords: {keyPath: "keywords", isArray: true, unique: false}})
+        this.fullTextTermsWrapper = new IdbStoreWrapper(`${name}:fullText:terms`, {})
 
-        const fullTextStore = db.createObjectStore(this.fullTextStoreName())
-        fullTextStore.createIndex(this.fullTextIndexName(), this.fullTextIndexKeyPath(), {multiEntry: true, unique: false})
-
-        db.createObjectStore(this.fullTextTermStoreName())
     }
 
-    private dataIndexName(key: string[]): string {
-        return `${key.join("_")}`
-    }
-
-    private dataKeyPath(key: string[]): string {
-        return keyPathToFlattenedKey(key)
-    }
-
-    private fullTextStoreName(): string {
-        return `${this.name}:fullText:document`
-    }
-
-    private fullTextTermStoreName(): string {
-        return `${this.name}:fullText:term`
-    }
-
-    private fullTextIndexName(): string {
-        return "keywords"
-    }
-
-    private fullTextIndexKeyPath(): string {
-        return "keywords"
-    }
-
-    private indexStoreName(): string {
-        return `${this.name}:index`
+    onUpgrade(db: idb.IDBPDatabase) {
+        this.dataWrapper.initialize(db)
+        this.timeWrapper.initialize(db)
+        this.fullTextWrapper.initialize(db)
+        this.fullTextTermsWrapper.initialize(db)
     }
 
     private async transaction<Mode extends IDBTransactionMode, R>(db: idb.IDBPDatabase, mode: Mode, cb: (store: idb.IDBPObjectStore<any, any, any, Mode>) => Promise<R>): Promise<R> {
@@ -100,95 +83,63 @@ export class IdbCollectionWrapper<T> {
         return result
     }
 
-    getItem(db: idb.IDBPDatabase, id: string): Promise<DeepPartial<T>> {
-        return this.transaction(db, "readonly", async (store) => {
-            const result: Record<string, any> = await store.get(id)
-            if(!result) {
-                throw new Error(`Not exist: ${this.name}: ${id}`)
-            }
-            return extractFlatDataByConfig(result, this.config)
-        })
+    async getItem(db: idb.IDBPDatabase, id: string): Promise<DeepPartial<T>> {
+        const flat = await this.dataWrapper.get(db, id)
+        if(!flat) {
+            throw new Error(`Not exist: ${this.name}: ${id}`)
+        }
+        return extractFlatDataByConfig(flat, this.config)
     }
 
     async putItem(db: idb.IDBPDatabase, id: string, value: DeepPartial<T>): Promise<void> {
-        const flatValue = flattenDataByConfig<T>(value, this.config)
-        await this.transaction(db, "readwrite", async (store) => {
-            await store.put(flatValue, id)
-        })
+        const flat = flattenDataByConfig<T>(value, this.config)
+        await this.dataWrapper.put(db, id, flat)
         await GlobalStatusWrapper.setDirty(db, true)
     }
 
     async deleteItem(db: idb.IDBPDatabase, id: string): Promise<void> {
-        await this.transaction(db, "readwrite", async (store) => {
-            await store.delete(id)
-        })
+        await this.dataWrapper.delete(db, id)
     }
 
-    private async indexTransaction<Mode extends IDBTransactionMode, R>(db: idb.IDBPDatabase, mode: Mode, cb: (store: idb.IDBPObjectStore<any, any, any, Mode>) => Promise<R>): Promise<R> {
-        const tx = db.transaction(this.indexStoreName(), mode)
-        const result = await cb(tx.store)
-        await tx.done
-        return result
-    }
-
-    getAllIndices(db: idb.IDBPDatabase): Promise<[string, Date][]> {
-        return this.indexTransaction(db, "readonly", async store => {
-            const keys = await store.getAllKeys()
-            return await Promise.all(keys.map(async k => {
-                return [k, await store.get(k)] as [string, Date]
-            }))
-        })
-    }
-
-    async flushAllIndices(db: idb.IDBPDatabase, indices: [string, Date][]): Promise<void> {
-        await this.indexTransaction(db, "readwrite", store => store.clear())
-        await Promise.all(indices.map(async ([key, date]) => {
-            await this.indexTransaction(db, "readwrite", async store => {
-                await store.put(date, key)
-            })
+    async getAllIndices(db: idb.IDBPDatabase): Promise<[string, Date][]> {
+        const keys = await this.timeWrapper.getAllKeys(db)
+        return await Promise.all(keys.map(async k => {
+            const time = await this.timeWrapper.get(db, k)
+            return [k, time] as [string, Date]
         }))
     }
 
-    setIndex(db: idb.IDBPDatabase, id: string, updatedAt: Date): Promise<void> {
-        return this.indexTransaction(db, "readwrite", async store => {
-            store.put(updatedAt, id)
-        })
+    async flushAllIndices(db: idb.IDBPDatabase, indices: [string, Date][]): Promise<void> {
+        await this.timeWrapper.clear(db)
+        await Promise.all(indices.map(async ([key, date]) => {
+            await this.timeWrapper.put(db, key, date)
+        }))
     }
 
-    deleteIndex(db: idb.IDBPDatabase, id: string): Promise<void> {
-        return this.indexTransaction(db, "readwrite", async store => {
-            store.delete(id)
-        })
+    async setIndex(db: idb.IDBPDatabase, id: string, updatedAt: Date): Promise<void> {
+        await this.timeWrapper.put(db, id, updatedAt)
     }
 
-    private async fullTextTransaction<Mode extends IDBTransactionMode, R>(db: idb.IDBPDatabase, mode: Mode, cb: (docStore: idb.IDBPObjectStore<any, any, any, Mode>, termStore: idb.IDBPObjectStore<any, any, any, Mode>) => Promise<R>): Promise<R> {
-        const docTx = db.transaction(this.fullTextStoreName(), mode)
-        const termTx = db.transaction(this.fullTextTermStoreName(), mode)
-        const result = await cb(docTx.store, termTx.store)
-        await Promise.all([docTx.done, termTx.done])
-        return result
+    async deleteIndex(db: idb.IDBPDatabase, id: string): Promise<void> {
+        await this.timeWrapper.delete(db, id)
     }
 
     private async getFullText(db: idb.IDBPDatabase, id: string): Promise<FullTextItem | null> {
-        const docTx = db.transaction(this.fullTextStoreName(), "readonly")
-        const result = docTx.store.get(id)
-        await docTx.done
+        const result = await this.fullTextWrapper.get(db, id)
         return result
     }
 
     private async updateFullTextTerms(db: idb.IDBPDatabase, terms: Record<string, number>): Promise<void> {
-        const tx = db.transaction(this.fullTextTermStoreName(), "readwrite")
         await Promise.all(Object.keys(terms).map(async term => {
             const weight = terms[term]
-            const current: number = await tx.store.get(term) ?? 0
+            const current: number = await this.fullTextTermsWrapper.get(db, term) ?? 0
             const newValue = current + weight
             if(newValue <= 0) {
-                await tx.store.delete(term)
+                await this.fullTextTermsWrapper.delete(db, term)
             }else {
-                await tx.store.put(newValue, term)
+                await this.fullTextTermsWrapper.put(db, term, newValue)
             }
         }))
-        await tx.done
     }
 
     async putFullText(db: idb.IDBPDatabase, id: string, data: DeepPartial<T>): Promise<void> {
@@ -203,48 +154,37 @@ export class IdbCollectionWrapper<T> {
             keywords: Array.from(Object.keys(weights)),
             weights
         }
-        await this.fullTextTransaction(db, "readwrite", async (doc, term) => {
-            doc.put(newItem, id)
-        })
+        await this.fullTextWrapper.put(db, id, newItem)
         await this.updateFullTextTerms(db, newWeights)
     }
 
     async deleteFullText(db: idb.IDBPDatabase, id: string): Promise<void> {
         const currentIndex = await this.getFullText(db, id)
-        return this.fullTextTransaction(db, "readwrite", async (doc, term) => {
-            if(currentIndex) {
-                const weights = currentIndex.weights
-                for(const w of Object.keys(weights)){
-                    weights[w] = -weights[w]
-                }
-                await this.updateFullTextTerms(db, weights)
+        if(currentIndex) {
+            const weights = currentIndex.weights
+            for(const w of Object.keys(weights)){
+                weights[w] = -weights[w]
             }
-            await doc.delete(id)
-        })
+            await this.updateFullTextTerms(db, weights)
+        }
+        await this.fullTextWrapper.delete(db, id)
     }
 
     async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<DeepPartial<T>[]> {
-        const tx = db.transaction(this.name, "readonly")
-        const result = await tx.db.getAllFromIndex(this.name, this.dataIndexName(keys), value)
-        await tx.done
-        return result
+        const flatList = await this.dataWrapper.getAllByIndex(db, keyPathToFlattenedKey(keys), value)
+        return flatList.map(flat => extractFlatDataByConfig(flat, this.config))
     }
 
     async queryFullText(db: idb.IDBPDatabase, keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
         const resultByKeyword = await Promise.all(keywords.map(async keyword => {
-            const keys = await db.getAllKeysFromIndex(this.fullTextStoreName(), this.fullTextIndexName(), keyword)
+            const keys = await this.fullTextWrapper.getKeysByIndex(db, "keywords", keyword)
             const result: Record<string, number> = {}
             await Promise.all(keys.map(async id => {
-                const tx = db.transaction(this.fullTextStoreName(), "readonly")
-                const item: FullTextItem = await tx.store.get(id)
-                await tx.done
-                
-                const termTx = db.transaction(this.fullTextTermStoreName(), "readonly")
-                const termFreq = await termTx.store.get(keyword) ?? 0
-                await termTx.done
+                const item = await this.fullTextWrapper.get(db, id)
+                const termFreq = await this.fullTextTermsWrapper.get(db, keyword) ?? 0
                 
                 const weight = item.weights[keyword] * Math.log(termFreq + 1)
-                result[id as string] = weight
+                result[id] = weight
             }))
             return result
         }))
@@ -271,7 +211,33 @@ export class IdbCollectionWrapper<T> {
 
 }
 
-export class IdbCollectionClient<T> implements IOnlineClient.Collection<T, IdbCollectionQuery>, IOfflineClient.Collection<T> {
+export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
+    constructor(private db: idb.IDBPDatabase, private wrapper: IdbCollectionWrapper<T>) {
+
+    }
+    getItemById(id: string): Promise<DeepPartial<T>> {
+        return this.wrapper.getItem(this.db, id)
+    }
+    queryItems(query: IdbCollectionQuery): Promise<DeepPartial<T>[]> {
+        return this.wrapper.queryByField(this.db, query.keyPath, query.value)
+    }
+
+    queryFullText(keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
+        return this.wrapper.queryFullText(this.db, keywords)
+    }
+    async putItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void> {
+        await this.wrapper.putItem(this.db, id, value)
+        await this.wrapper.putFullText(this.db, id, value)
+        await this.wrapper.setIndex(this.db, id, updatedAt)
+    }
+    async deleteItem(id: string): Promise<void> {
+        await this.wrapper.emitDeletion(this.db, id)
+        await this.wrapper.deleteIndex(this.db, id)
+        await this.wrapper.deleteFullText(this.db, id)
+    }
+}
+
+export class IdbCollectionOfflineClient<T> implements IOfflineClient.Collection<T> {
     constructor(private db: idb.IDBPDatabase, private wrapper: IdbCollectionWrapper<T>) {
 
     }
@@ -290,25 +256,9 @@ export class IdbCollectionClient<T> implements IOnlineClient.Collection<T, IdbCo
         await this.wrapper.putItem(this.db, id, value)
         await this.wrapper.putFullText(this.db, id, value)
     }
-
-    getItemById(id: string): Promise<DeepPartial<T>> {
-        return this.wrapper.getItem(this.db, id)
-    }
-    queryItems(query: IdbCollectionQuery): Promise<DeepPartial<T>[]> {
-        return this.wrapper.queryByField(this.db, query.keyPath, query.value)
-    }
-    queryFullText(keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
-        return this.wrapper.queryFullText(this.db, keywords)
-    }
-    async putItem(id: string, value: DeepPartial<T>, updatedAt: Date): Promise<void> {
-        await this.wrapper.putItem(this.db, id, value)
-        await this.wrapper.putFullText(this.db, id, value)
-        await this.wrapper.setIndex(this.db, id, updatedAt)
-    }
     async deleteItem(id: string): Promise<void> {
         await this.wrapper.emitDeletion(this.db, id)
         await this.wrapper.deleteIndex(this.db, id)
-        await this.wrapper.deleteFullText(this.db, id)
         await this.wrapper.deleteFullText(this.db, id)
     }
 }

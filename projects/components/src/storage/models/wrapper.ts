@@ -1,6 +1,6 @@
 import * as idb from "idb"
 
-interface IdbIndexOption {
+export interface IdbIndexOption {
     keyPath: string
     isArray: boolean
     unique: boolean
@@ -29,6 +29,12 @@ export class IdbStoreWrapper<T, Indices extends string> {
     get(db: idb.IDBPDatabase, id: string): Promise<T | undefined> {
         return this.transaction(db, "readonly", async tx => {
             return await tx.store.get(id)
+        }) 
+    }
+
+    getAllKeys(db: idb.IDBPDatabase): Promise<string[]> {
+        return this.transaction(db, "readonly", async tx => {
+            return await tx.store.getAllKeys()
         }) 
     }
 

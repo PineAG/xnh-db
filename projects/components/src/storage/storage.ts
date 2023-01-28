@@ -1,5 +1,5 @@
 import * as idb from "idb"
-import { createDBClientsFromIdbInstance, createDBWrappers, initializeWrappers } from "./models/data"
+import { createOfflineClientsFromIdbInstance, createOnlineClientsFromIdbInstance, createDBWrappers, initializeWrappers } from "./models/data"
 
 const IndexedDBName = "xnh-db.cache"
 
@@ -11,5 +11,8 @@ export async function createIdbClients() {
             initializeWrappers(db, wrappers)
         }
     })
-    return createDBClientsFromIdbInstance(db, wrappers)
+    return {
+        online: createOnlineClientsFromIdbInstance(db, wrappers),
+        offline: createOfflineClientsFromIdbInstance(db, wrappers),
+    }
 }
