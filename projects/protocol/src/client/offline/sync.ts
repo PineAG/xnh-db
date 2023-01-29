@@ -91,7 +91,7 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
             const payload = await sourceClient.getPayload(action.key)
             await destinationClient.updateRelation(action.key, payload)
         } else if(action.type === "delete") {
-            destinationClient.deleteRelation(action.key)
+            await destinationClient.deleteRelation(action.key)
         } else {
             throw new Error(`Invalid state: ${action.type}`)
         }
