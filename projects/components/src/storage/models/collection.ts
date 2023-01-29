@@ -184,13 +184,7 @@ export class IdbCollectionWrapper<T> {
     }
 
     async updateTags(db: idb.IDBPDatabase, data: DeepPartial<T>): Promise<void> {
-        for(const [value, conf] of extractValuesAndConfigs<T>(data, this.config)) {
-            if(conf.type === "string" && conf.options.type === "tag") {
-                const collection = conf.options.collection
-                const values: string[] = conf.isArray ? value : [value]
-                await Promise.all(values.map(v => IdbTagWrapper.putTag(db, collection, v)))
-            }
-        }
+        await IdbTagWrapper.putTagsByConfig(db, data, this.config)
     }
 
 }

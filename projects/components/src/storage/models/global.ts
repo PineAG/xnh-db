@@ -1,5 +1,6 @@
-import { IOfflineClient } from "@xnh-db/protocol"
+import { IOfflineClient, FieldConfig as FC, extractValuesAndConfigs } from "@xnh-db/protocol"
 import * as idb from "idb"
+import { DeepPartial } from "utility-types"
 import {IdbStoreWrapper} from "./wrapper"
 
 export module GlobalStatusWrapper {
@@ -39,6 +40,16 @@ export module IdbTagWrapper {
 
     export async function putTag(db: idb.IDBPDatabase, collection: string, tag: string): Promise<void> {
         await wrapper.put(db, `${collection}:${tag}`, {tag, collection})
+    }
+
+    export async function putTagsByConfig<T>(db: idb.IDBPDatabase, data: DeepPartial<T>, config: FC.ConfigFromDeclaration<T>): Promise<void> {
+        for(const [value, conf] of extractValuesAndConfigs<T>(data, this.config)) {
+            if(conf.type === "string" && conf.options.type === "tag") {
+                const collection = conf.options.collection
+                const values: string[] = conf.isArray ? value : [value]
+                await Promise.all(values.map(v => IdbTagWrapper.putTag(db, collection, v)))
+            }
+        }
     }
 
     export class Client {

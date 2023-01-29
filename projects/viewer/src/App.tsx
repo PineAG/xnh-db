@@ -21,11 +21,11 @@ function App() {
     // await branchMaintenance.rollback("023ad3950787fedc01683d971a04c039a09afca3")
     // console.log()
 
-    // const repo = client.openRepo({owner: "PineAG", repo: "tmp-test-repo", branch: "main"})
-    // const collection = new PathSyncClient.Collection(repo)
-    // for await(const p of synchronizeCollection(idbClient.offline.collections.character, collection)) {
-    //   console.log(p)
-    // }
+    const repo = client.openRepo({owner: "PineAG", repo: "tmp-test-repo", branch: "main"})
+    const collection = new PathSyncClient.Collection(repo)
+    for await(const p of synchronizeCollection(collection, idbClient.offline.collections.character)) {
+      console.log(p)
+    }
   }
   return (
     <div>

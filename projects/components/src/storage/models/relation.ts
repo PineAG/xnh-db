@@ -1,7 +1,8 @@
-import { IOfflineClient, IOnlineClient } from "@xnh-db/protocol"
+import { IOfflineClient, IOnlineClient, FieldConfig as FC } from "@xnh-db/protocol"
 import * as idb from "idb"
+import { DeepPartial } from "utility-types"
 import { IdbCollectionWrapper } from "./collection"
-import { GlobalStatusWrapper } from "./global"
+import { GlobalStatusWrapper, IdbTagWrapper } from "./global"
 import { IdbIndexOption, IdbStoreWrapper } from "./wrapper"
 
 export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
@@ -12,7 +13,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
     private timeWrapper: IdbStoreWrapper<number, never>
     private payloadWrapper: IdbStoreWrapper<Payload, never>
 
-    constructor(wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}) {
+    constructor(wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}, private config: FC.ConfigFromDeclaration<Payload>) {
         for(const key in wrappers) {
             const wrapper = wrappers[key]
             wrapper.onDelete((db, id) => {
@@ -113,6 +114,9 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
         return GlobalStatusWrapper.getCollectionStatus(db, this.storeName)
     }
 
+    async updateTags(db: idb.IDBPDatabase, data: DeepPartial<Payload>): Promise<void> {
+        await IdbTagWrapper.putTagsByConfig(db, data, this.config)
+    }
 }
 
 export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<Extract<keyof C, string>, Payload> {
@@ -129,6 +133,7 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> imp
         await this.wrapper.putRelation(this.db, keys, payload)
         await this.wrapper.putDate(this.db, keys, updatedAt)
         await this.wrapper.setCollectionStatus(this.db, {updatedAt})
+        await this.wrapper.updateTags(this.db, payload as DeepPartial<Payload>)
     }
     deleteRelation(keys: Record<keyof C, string>): Promise<void> {
         return this.wrapper.deleteRelation(this.db, keys)
@@ -158,5 +163,6 @@ export class IdbRelationOfflineClient<C extends Record<string, any>, Payload> im
     }
     async updateRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
         await this.wrapper.putRelation(this.db, keys, payload)
+        await this.wrapper.updateTags(this.db, payload as DeepPartial<Payload>)
     }
 }
