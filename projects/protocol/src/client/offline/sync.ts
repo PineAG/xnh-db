@@ -1,4 +1,5 @@
 import { IOfflineClient } from "./base";
+import { ProgressResult } from "./progress";
 
 export type CollectionSyncAction<Key> = {type: "create" | "update" | "delete", key: Key, date: Date}
 
@@ -26,8 +27,6 @@ export function diffCollectionIndices<K>(sourceIndex: IOfflineClient.CollectionI
     return result
 }
 
-type ProgressResult = {current: number, total: number}
-
 function getLatestDateFromIndex<T>(index: IOfflineClient.CollectionIndex<T>): Date {
     if(index.length === 0) {
         return new Date(0)
@@ -35,12 +34,24 @@ function getLatestDateFromIndex<T>(index: IOfflineClient.CollectionIndex<T>): Da
     return new Date(index.map(it => it.date.getTime()).reduce((a, b) => Math.max(a, b)))
 }
 
-export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Collection<T>, destinationClient: IOfflineClient.Collection<T>): AsyncGenerator<[CollectionSyncAction<string>, ProgressResult]> {
+export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Collection<T>, destinationClient: IOfflineClient.Collection<T>): AsyncGenerator<ProgressResult.Progress> {
+    yield {type: "index", action: "pull"}
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
     let counter = 0
     for(const action of diffResult) {
+        yield {
+            type: "item",
+            action: {
+                type: action.type,
+                id: action.key,
+                progress: {
+                    current: counter++,
+                    total: diffResult.length
+                }
+            }
+        }
         if(action.type === "create") {
             const item = await sourceClient.getItem(action.key)
             await destinationClient.updateItem(action.key, item)
@@ -50,20 +61,32 @@ export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Col
         } else if(action.type === "delete") {
             await destinationClient.deleteItem(action.key)
         }
-        yield [action, {current: counter++, total: diffResult.length}]
     }
+    yield {type: "index", action: "push"}
     await destinationClient.flushIndex(sourceIndex)
     await destinationClient.setStatus({
         updatedAt: getLatestDateFromIndex(sourceIndex)
     })
 }
 
-export async function* synchronizeRelation<Keys extends string, Payload>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<[CollectionSyncAction<Record<Keys, string>>, ProgressResult]> {
+export async function* synchronizeRelation<Keys extends string, Payload>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<ProgressResult.Progress> {
+    yield {type: "index", action: "pull"}
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex, IOfflineClient.stringifyRelationKey)
     let counter = 0
     for(const action of diffResult) {
+        yield {
+            type: "item",
+            action: {
+                type: action.type,
+                id: JSON.stringify(action.key),
+                progress: {
+                    current: counter++,
+                    total: diffResult.length
+                }
+            }
+        }
         if(action.type === "create" || action.type === "update") {
             const payload = await sourceClient.getPayload(action.key)
             await destinationClient.updateRelation(action.key, payload)
@@ -72,8 +95,8 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
         } else {
             throw new Error(`Invalid state: ${action.type}`)
         }
-        yield [action, {current: counter++, total: diffResult.length}]
     }
+    yield {type: "index", action: "push"}
     await destinationClient.flushIndex(sourceIndex)
     await destinationClient.setStatus({
         updatedAt: getLatestDateFromIndex(sourceIndex)
