@@ -20,10 +20,13 @@ export interface ICharacter {
     description: string,
     appearance: {
         eyes: {
-            color: string[]
+            color: string[],
+            features: string[]
         }
         hair: {
-            color: string[]
+            color: string[],
+            shape: string[],
+            features: string[]
         }
     }
 }
@@ -36,10 +39,13 @@ export const CharacterDefinition: FC.ConfigFromDeclaration<ICharacter> = {
     description: FC.fullTextField(0.1),
     appearance: {
         eyes: {
-            color: FC.tagList("color")
+            color: FC.tagList("color"),
+            features: FC.tagList("eyes.features")
         },
         hair: {
-            color: FC.tagList("color")
+            color: FC.tagList("color"),
+            shape: FC.tagList("hair.shape"),
+            features: FC.tagList("hair.features")
         }
     },
 }

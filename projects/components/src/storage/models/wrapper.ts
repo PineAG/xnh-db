@@ -19,6 +19,18 @@ export class IdbStoreWrapper<T, Indices extends string> {
         }
     }
 
+    async updateStoreIndices(db: idb.IDBPDatabase) {
+        const tx = db.transaction(this.storeName, "versionchange")
+        const names = new Set(tx.store.indexNames)
+        for(const name in this.indices) {
+            if(!names.has(name)) {
+                const options = this.indices[name]
+                tx.store.createIndex(name, options.keyPath, {multiEntry: options.isArray, unique: options.unique})
+            }
+        }
+        await tx.done
+    }
+
     private async transaction<Mode extends "readonly" | "readwrite", R>(db: idb.IDBPDatabase, mode: Mode, cb: (tx: idb.IDBPTransaction<any, any, Mode>) => Promise<R>): Promise<R> {
         const tx = db.transaction(this.storeName, mode)
         const result = await cb(tx)

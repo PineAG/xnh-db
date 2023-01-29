@@ -19,10 +19,13 @@ export module ConfigTitles {
         photos: "照片",
         appearance: {
             eyes: {
-                color: "瞳色"
+                color: "瞳色",
+                features: "眼睛特征"
             },
             hair: {
-                color: "发色"
+                color: "发色",
+                shape: "发型",
+                features: "头发特征"
             }
         }
     }

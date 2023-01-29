@@ -51,6 +51,10 @@ export class IdbCollectionWrapper<T> {
         this.fullTextTermsWrapper.initialize(db)
     }
 
+    async onLaunch(db: idb.IDBPDatabase) {
+        await this.dataWrapper.updateStoreIndices(db)
+    }
+
     async getItem(db: idb.IDBPDatabase, id: string): Promise<DeepPartial<T>> {
         const flat = await this.dataWrapper.get(db, id)
         if(!flat) {

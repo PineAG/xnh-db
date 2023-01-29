@@ -41,6 +41,12 @@ export function initializeWrappers(db: idb.IDBPDatabase, wrappers: ReturnType<ty
     }
 }
 
+export async function upgradeWrapperIndices(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
+    for(const c of Object.values(wrappers.collections)) {
+        await c.onLaunch(db)
+    }
+}
+
 export function createOnlineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>): IOnlineClientSet<IdbCollectionQuery> {
     return {
         collections: {

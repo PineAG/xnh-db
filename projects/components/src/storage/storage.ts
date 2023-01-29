@@ -1,5 +1,5 @@
 import * as idb from "idb"
-import { createOfflineClientsFromIdbInstance, createOnlineClientsFromIdbInstance, createDBWrappers, initializeWrappers } from "./models/data"
+import { createOfflineClientsFromIdbInstance, createOnlineClientsFromIdbInstance, createDBWrappers, initializeWrappers, upgradeWrapperIndices } from "./models/data"
 
 const IndexedDBName = "xnh-db.cache"
 
