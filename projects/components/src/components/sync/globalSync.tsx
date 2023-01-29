@@ -33,7 +33,7 @@ type DataSynchronizationGlobalResults = {
 
 function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
     const [state, setState] = useState<keyof DataSynchronizationGlobalState>("pending")
-    const [message, setMessage] = useState<string[]>([])
+    const [message, setPendingMessage] = useState<string[]>([])
     const [fetalMessage, setFetalMessage] = useState<string>("")
 
     const [clients, setClients] = useState<null | InitializedClients>(null)
@@ -88,6 +88,11 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }
     }
 
+    function setMessage(message: string[]) {
+        console.log(message)
+        setPendingMessage(message)
+    }
+
     async function initialize() {
         setMessage(["正在检查同步状态..."])
         setState("pending")
@@ -95,7 +100,6 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
             const cert = OctokitCertificationStore.cert.get()
             const version = OctokitCertificationStore.version.get()
             let state: keyof DataSynchronizationGlobalState
-            let idbClients = await _getDB()
             if(cert) { // online
                 setMessage(["正在校验登陆凭证..."])
                 const validCert = await _checkCert(cert)
@@ -106,26 +110,30 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                     if(commit) {
                         state = "broken_remote"
                     } else {
-                        await _syncOctokit(["正在同步数据...", "首次同步可能花费较长时间"], cert, idbClients.offline)
-                        state = "online"
-                        setClients({
-                            query: idbClients.online,
-                            local: idbClients.offline, 
-                            remote: createRestfulOfflineClientsSet()
-                        })
+                        if(version && version !== XNH_DB_DATA_VERSION) {
+                            state = "low_version"
+                        }else{
+                            const idbClients = await _getDB()
+                            await _syncOctokit(["正在同步数据...", "首次同步可能花费较长时间"], cert, idbClients.offline)
+                            state = "online"
+                            setClients({
+                                query: idbClients.online,
+                                local: idbClients.offline, 
+                                remote: createRestfulOfflineClientsSet()
+                            })
+                        }
                     }
                 }
             } else { // offline
-                if(version !== XNH_DB_DATA_VERSION) {
+                let idbClients: Awaited<ReturnType<typeof _getDB>>
+                if(version && version !== XNH_DB_DATA_VERSION) {
                     setMessage(["版本不一致, 正在重新同步..."])
                     await destroyIdbStorage()
-                    idbClients = await _getDB()
-                    await _syncRestful(["版本不一致, 正在重新同步...", "可能花费较长时间"], idbClients.offline)
-                    OctokitCertificationStore.version.set(XNH_DB_DATA_VERSION)
-                    setMessage(["同步完成"])
-                } else {
-                    await _syncRestful(["正在同步..."], idbClients.offline)
-                }
+                } 
+                idbClients = await _getDB()
+                await _syncRestful(["正在同步数据", "首次同步可能花费较长时间"], idbClients.offline)
+                OctokitCertificationStore.version.set(XNH_DB_DATA_VERSION)
+                setMessage(["同步完成"])
                 state = "offline"
                 setClients({
                     query: idbClients.online,
@@ -135,9 +143,10 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
             }
             setState(state)
         }catch(e) {
+            console.error(e)
             setFetalMessage(e.toString())
             setState("fetal")
-            throw e
+            throw(e)
         }
     }
 
@@ -204,7 +213,8 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
-            throw e
+            console.error(e)
+            throw(e)
         }
     }
 
@@ -240,7 +250,8 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
-            throw e
+            console.error(e)
+            throw(e)
         }
     }
 
@@ -254,7 +265,8 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
-            throw e
+            console.error(e)
+            throw(e)
         }
     }
 
@@ -267,7 +279,8 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
-            throw e
+            console.error(e)
+            throw(e)
         }
     }
 }

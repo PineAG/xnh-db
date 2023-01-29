@@ -17,5 +17,15 @@ export async function createIdbClients() {
 }
 
 export async function destroyIdbStorage() {
+    // const db = await idb.openDB(IndexedDBName, 1)
+    // for(const storeName of db.objectStoreNames) {
+    //     const tx = db.transaction(storeName, "readwrite")
+    //     tx.store.clear()
+    //     await tx.done
+    //     db.deleteObjectStore(storeName)
+    // }
+    // db.close()
+    console.log("Before delete")
     await idb.deleteDB(IndexedDBName)
+    console.log("After delete")
 }
