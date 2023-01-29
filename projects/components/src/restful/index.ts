@@ -5,7 +5,10 @@ export class RestfulPathClient implements PathSyncClient.IPathClient {
 
     async read(path: string): Promise<Blob> {
         const res = await fetch(`/${this.rootPath}/${path}`, {
-            method: "GET"
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
         })
         if(res.status === 404) {
             return null
@@ -18,7 +21,10 @@ export class RestfulPathClient implements PathSyncClient.IPathClient {
     async write(path: string, value: Blob): Promise<void> {
         const res = await fetch(`/${this.rootPath}/${path}`, {
             method: "PUT",
-            body: value
+            body: value,
+            headers: {
+                "Content-Type": "application/json"
+            }
         })
         if(res.status !== 200){
             throw new Error(res.statusText)
@@ -26,7 +32,10 @@ export class RestfulPathClient implements PathSyncClient.IPathClient {
     }
     async delete(path: string): Promise<void> {
         const res = await fetch(`/${this.rootPath}/${path}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            }
         })
         if(res.status !== 200){
             throw new Error(res.statusText)

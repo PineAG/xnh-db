@@ -58,7 +58,7 @@
     classnames "^2.2.6"
     rc-util "^5.9.4"
 
-"@ant-design/icons@^5.0.0":
+"@ant-design/icons@^5.0.0", "@ant-design/icons@^5.0.1":
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/@ant-design/icons/-/icons-5.0.1.tgz#febb1fdc5776f58187b2c953ac9a4496069d045b"
   integrity sha512-ZyF4ksXCcdtwA/1PLlnFLcF/q8/MhwxXhKHh4oCHDA4Ip+ZzAHoICtyp4wZWfiCVDP0yuz3HsjyvuldHFb3wjA==
@@ -2342,7 +2342,7 @@
 
 "@types/serve-static@*", "@types/serve-static@^1.13.10":
   version "1.15.0"
-  resolved "https://registry.npmjs.org/@types/serve-static/-/serve-static-1.15.0.tgz"
+  resolved "https://registry.yarnpkg.com/@types/serve-static/-/serve-static-1.15.0.tgz#c7930ff61afb334e121a9da780aac0d9b8f34155"
   integrity sha512-z5xyF6uh8CbjAu9760KDKsH2FcDxZ2tFCsA4HIMWE6IkiYMXfVoa+4f9KX+FN0ZLsaMw1WNG2ETLA6N+/YA+cg==
   dependencies:
     "@types/mime" "*"
@@ -8793,7 +8793,7 @@ serve-index@^1.9.1:
 
 serve-static@1.15.0:
   version "1.15.0"
-  resolved "https://registry.npmjs.org/serve-static/-/serve-static-1.15.0.tgz"
+  resolved "https://registry.yarnpkg.com/serve-static/-/serve-static-1.15.0.tgz#faaef08cffe0a1a62f60cad0c4e513cff0ac9540"
   integrity sha512-XGuRDNjXUijsUL0vl6nSD7cwURuzEgglbOaFuZM9g3kwDXOWVTck0jLzjPzGD+TazWbboZYu52/9/XPdUgne9g==
   dependencies:
     encodeurl "~1.0.2"

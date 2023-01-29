@@ -86,7 +86,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
             type: state,
             actions: clients
         }
-    } 
+    }
 
     async function initialize() {
         setMessage(["正在检查同步状态..."])
@@ -95,6 +95,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
             const cert = OctokitCertificationStore.cert.get()
             const version = OctokitCertificationStore.version.get()
             let state: keyof DataSynchronizationGlobalState
+            let idbClients = await _getDB()
             if(cert) { // online
                 setMessage(["正在校验登陆凭证..."])
                 const validCert = await _checkCert(cert)
@@ -105,31 +106,30 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                     if(commit) {
                         state = "broken_remote"
                     } else {
-                        await _syncOctokit(["正在同步数据...", "首次同步可能花费较长时间"], cert)
+                        await _syncOctokit(["正在同步数据...", "首次同步可能花费较长时间"], cert, idbClients.offline)
                         state = "online"
-                        setMessage(["准备本地数据库"])
-                        const localClients = await createIdbClients()
                         setClients({
-                            query: localClients.online,
-                            local: localClients.offline, 
-                            remote: createOctokitOfflineClientSet(cert)
+                            query: idbClients.online,
+                            local: idbClients.offline, 
+                            remote: createRestfulOfflineClientsSet()
                         })
                     }
                 }
             } else { // offline
                 if(version !== XNH_DB_DATA_VERSION) {
+                    setMessage(["版本不一致, 正在重新同步..."])
                     await destroyIdbStorage()
-                    await _syncRestful(["版本不一致, 正在重新同步...", "可能花费较长时间"])
+                    idbClients = await _getDB()
+                    await _syncRestful(["版本不一致, 正在重新同步...", "可能花费较长时间"], idbClients.offline)
                     OctokitCertificationStore.version.set(XNH_DB_DATA_VERSION)
+                    setMessage(["同步完成"])
                 } else {
-                    await _syncRestful(["正在同步..."])
+                    await _syncRestful(["正在同步..."], idbClients.offline)
                 }
                 state = "offline"
-                setMessage(["准备本地数据库"])
-                const localClients = await createIdbClients()
                 setClients({
-                    query: localClients.online,
-                    local: localClients.offline, 
+                    query: idbClients.online,
+                    local: idbClients.offline, 
                     remote: createRestfulOfflineClientsSet()
                 })
             }
@@ -137,7 +137,13 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
+            throw e
         }
+    }
+
+    async function _getDB(): ReturnType<typeof createIdbClients> {
+        setMessage(["正在准备本地数据库"])
+        return await createIdbClients()
     }
 
     async function _checkCert(cert: OctokitCertificationStore.IGithubCert): Promise<boolean> {
@@ -150,19 +156,17 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }
     }
 
-    async function _syncOctokit(prefixMessages: string[], cert: OctokitCertificationStore.IGithubCert) {
+    async function _syncOctokit(prefixMessages: string[], cert: OctokitCertificationStore.IGithubCert, localClients: IOfflineClientSet) {
         const octokitClient = createOctokitOfflineClientSet(cert)
-        await _sync(prefixMessages, octokitClient)
+        await _sync(prefixMessages, octokitClient, localClients)
     }
 
-    async function _syncRestful(prefixMessages: string[]) {
+    async function _syncRestful(prefixMessages: string[], localClients: IOfflineClientSet) {
         const restfulClient = createRestfulOfflineClientsSet()
-        await _sync(prefixMessages, restfulClient)
+        await _sync(prefixMessages, restfulClient, localClients)
     }
 
-    async function _sync(prefixMessages: string[], remoteClients: IOfflineClientSet) {
-        setMessage([...prefixMessages, "准备本地数据库"])
-        const {offline: localClients} = await createIdbClients()
+    async function _sync(prefixMessages: string[], remoteClients: IOfflineClientSet, localClients: IOfflineClientSet) {
         for await(const [itemType, progress] of synchronizeOfflineClientSet(remoteClients, localClients)) {
             setMessage([
                 ...prefixMessages,
@@ -200,6 +204,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
+            throw e
         }
     }
 
@@ -235,6 +240,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
+            throw e
         }
     }
 
@@ -248,6 +254,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
+            throw e
         }
     }
 
@@ -260,6 +267,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }catch(e) {
             setFetalMessage(e.toString())
             setState("fetal")
+            throw e
         }
     }
 }
@@ -282,7 +290,7 @@ export function GlobalDataSynchronizationWrapper(props: {children: React.ReactNo
     } else if (syncState.type === "fetal") {
         return <MessageDialog title="出现严重错误">
             <p>请尝试刷新页面</p>
-            <pre style={{color: "red"}}>{syncState.actions.message}</pre>
+            <pre style={{color: "red", whiteSpace: "break-spaces"}}>{syncState.actions.message}</pre>
         </MessageDialog>
     } else if (syncState.type === "online" || syncState.type === "offline") {
         const clients: IGlobalClients = {
