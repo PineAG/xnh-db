@@ -16,7 +16,7 @@ export module FieldConfig {
     }
 
     export function isFieldConfig(obj: object): obj is FieldConfig {
-        return ConfigIdentifier in obj
+        return obj && ConfigIdentifier in obj
     }
 
     export type IdFieldConfig = {

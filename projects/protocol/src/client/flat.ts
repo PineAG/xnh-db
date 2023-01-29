@@ -64,12 +64,13 @@ export function extractValuesAndConfigs<T>(data: DeepPartial<T>, definition: FC.
     return Array.from(walk(data, definition))
 
     function* walk(node: any, def: any): Generator<[any, FC.FieldConfig]> {
-        if(node === undefined){
+        if(node === undefined || def === undefined){
             return
         }else if(FC.isFieldConfig(def)) {
             yield [node, def]
         } else {
-            for(const [k, v] of Object.entries(def)) {
+            for(const k in def) {
+                const v = def[k]
                 yield* walk(node[k], v)
             }
         }
