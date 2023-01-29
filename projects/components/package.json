@@ -15,6 +15,7 @@
     "@pltk/components": "*",
     "@types/lodash": "^4.14.191",
     "@xnh-db/protocol": "*",
+    "antd": "^5.1.6",
     "idb": "^7.1.1",
     "js-base64": "^3.7.4",
     "lodash": "^4.17.21",

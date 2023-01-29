@@ -36,6 +36,11 @@ function getLatestDateFromIndex<T>(index: IOfflineClient.CollectionIndex<T>): Da
 
 export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Collection<T>, destinationClient: IOfflineClient.Collection<T>): AsyncGenerator<ProgressResult.Progress> {
     yield {type: "index", action: "pull"}
+    const [sourceStatus, destinationStatus] = await Promise.all([sourceClient.getStatus(), destinationClient.getStatus()])
+    if(sourceStatus.updatedAt.getTime() <= destinationStatus.updatedAt.getTime()) {
+        return
+    }
+
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
@@ -71,6 +76,11 @@ export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Col
 
 export async function* synchronizeRelation<Keys extends string, Payload>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<ProgressResult.Progress> {
     yield {type: "index", action: "pull"}
+    const [sourceStatus, destinationStatus] = await Promise.all([sourceClient.getStatus(), destinationClient.getStatus()])
+    if(sourceStatus.updatedAt.getTime() <= destinationStatus.updatedAt.getTime()) {
+        return
+    }
+
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
     const diffResult = diffCollectionIndices(sourceIndex, destinationIndex, IOfflineClient.stringifyRelationKey)

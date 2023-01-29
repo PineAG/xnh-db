@@ -1739,7 +1739,7 @@
   dependencies:
     "@octokit/openapi-types" "^16.0.0"
 
-"@pltk/components@^1.0.34":
+"@pltk/components@*":
   version "1.0.34"
   resolved "https://registry.yarnpkg.com/@pltk/components/-/components-1.0.34.tgz#f83f73f8501ebfbb691c0514e3ef87939125797c"
   integrity sha512-84fn48PLUJ5YSEaDUyPhZrdXsHrJDuf3O/twNLXO7OkxZ7xEkKu4uQ440fslgtJvhEEC646h1bg3N87LRz/B2g==
@@ -2774,7 +2774,7 @@ ansi-styles@^5.0.0:
   resolved "https://registry.npmjs.org/ansi-styles/-/ansi-styles-5.2.0.tgz"
   integrity sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==
 
-antd@^5.1.2:
+antd@^5.1.2, antd@^5.1.6:
   version "5.1.6"
   resolved "https://registry.yarnpkg.com/antd/-/antd-5.1.6.tgz#9ac912279f9f8e571674b3220b668897b4ffb0b3"
   integrity sha512-9bn2B4rZ1c7IXtn5U95aNGJXmLOZyL1V5TiGq3pk3S3bGD13BA2eynSI//e3c2FAslZlqQlQEGV+NHms9ygAVA==
