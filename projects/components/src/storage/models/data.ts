@@ -1,4 +1,4 @@
-import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClientSet, IOnlineClientSet, IVoiceActor, RelationPayloads, VoiceActorDefinition } from "@xnh-db/protocol";
+import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClient, IOfflineClientSet, IOnlineClientSet, IVoiceActor, ProgressResult, RelationPayloads, synchronizeCollection, synchronizeRelation, VoiceActorDefinition } from "@xnh-db/protocol";
 import { IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient, IdbCollectionQuery } from "./collection";
 import { IdbRelationOnlineClient, IdbRelationOfflineClient, IdbRelationWrapper } from "./relation";
 import * as idb from "idb"
@@ -86,5 +86,62 @@ export function createOfflineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappe
             artwork_creator: new IdbRelationOfflineClient(db, wrappers.relations.artwork_creator),
             character_voiceActor: new IdbRelationOfflineClient(db, wrappers.relations.character_voiceActor)
         }
+    }
+}
+
+interface SyncOfflineClientSetProgress {
+    type: "collection" | "relation"
+    name: string
+}
+
+export async function* synchronizeOfflineClientSet(srcSet: IOfflineClientSet, destSet: IOfflineClientSet): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
+    yield* onCollections(srcSet.collections, destSet.collections, {
+        character: "角色信息",
+        artwork: "作品信息",
+        creator: "创作者信息",
+        voiceActor: "配音演员信息"
+    })
+
+    yield* onRelations(srcSet.inheritance, destSet.inheritance, {
+        character: "角色继承关系",
+        artwork: "作品继承关系"
+    })
+
+    yield* onRelations(srcSet.relations, destSet.relations, {
+        interpersonal: "角色间关系",
+        character_artwork: "角色所属作品",
+        artwork_creator: "创作者关系",
+        character_voiceActor: "角色配音演员"
+    })
+
+    async function* onCollections<K extends string>(src: Record<K, IOfflineClient.Collection<any>>, dst: Record<K, IOfflineClient.Collection<any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
+        for(const k in names) {
+            const name = names[k]
+            for await(const p of synchronizeCollection(src[k], dst[k])) {
+                yield [{type: "collection", name}, p]
+            }
+        }
+    }
+
+    async function* onRelations<K extends string>(src: Record<K, IOfflineClient.Relation<any, any>>, dst: Record<K, IOfflineClient.Relation<any, any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
+        for(const k in names) {
+            const name = names[k]
+            for await(const p of synchronizeRelation(src[k], dst[k])) {
+                yield [{type: "relation", name}, p]
+            }
+        }
+    }
+}
+
+export function stringifyProgressResult(progress: ProgressResult.Progress): string {
+    if(progress.type === "item") {
+        const actionName = {
+            create: "创建",
+            update: "覆盖",
+            delete: "删除"
+        }[progress.action.type]
+        return `正在 ${actionName} 条目: ${progress.action.type} (${progress.action.progress.current}/${progress.action.progress.total})`
+    } else {
+        return `正在 ${progress.action === "pull" ? "下载" : "上传"} 条目索引`
     }
 }

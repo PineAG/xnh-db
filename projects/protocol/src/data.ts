@@ -4,7 +4,7 @@ import {FieldConfig as FC} from "./client/config"
 export type Languages = "zhs" | "ja" | "en"
 export type InternationalName = Record<Languages, string>
 
-export type XNH_DB_DATA_VERSION = 1
+export const XNH_DB_DATA_VERSION = 1
 
 function createInternationalNameDefinition(): FC.ConfigFromDeclaration<InternationalName> {
     return {

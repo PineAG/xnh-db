@@ -15,3 +15,7 @@ export async function createIdbClients() {
         offline: createOfflineClientsFromIdbInstance(db, wrappers),
     }
 }
+
+export async function destroyIdbStorage() {
+    await idb.deleteDB(IndexedDBName)
+}

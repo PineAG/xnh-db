@@ -16,10 +16,9 @@ export module OctokitResults {
 
 export class OctokitClient {
     readonly octokit: Octokit
-    constructor(){
-        const pat = localStorage["github.pat"]
+    constructor(authToken: string){
         this.octokit = new Octokit({
-            auth: pat
+            auth: authToken
         })
     }
 
