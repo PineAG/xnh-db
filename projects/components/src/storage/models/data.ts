@@ -140,7 +140,7 @@ export function stringifyProgressResult(progress: ProgressResult.Progress): stri
             update: "覆盖",
             delete: "删除"
         }[progress.action.type]
-        return `正在 ${actionName} 条目: ${progress.action.type} (${progress.action.progress.current}/${progress.action.progress.total})`
+        return `正在 ${actionName} 条目: ${progress.action.id} (${progress.action.progress.current+1}/${progress.action.progress.total})`
     } else {
         return `正在 ${progress.action === "pull" ? "下载" : "上传"} 条目索引`
     }

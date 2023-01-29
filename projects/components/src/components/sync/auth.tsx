@@ -1,4 +1,4 @@
-import { Button, useLocalDBinding } from "@pltk/components";
+import { Button } from "@pltk/components";
 import { Input, Modal, Select, Steps } from "antd";
 import { useEffect, useState } from "react";
 import { OctokitCertificationStore, OctokitClient, OctokitResults } from "../../sync";

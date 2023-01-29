@@ -5,7 +5,7 @@ import { createIdbClients, destroyIdbStorage, IdbCollectionQuery } from "../../s
 import { stringifyProgressResult, synchronizeOfflineClientSet } from "../../storage/models/data";
 import { createOctokitOfflineClientSet, OctokitCertificationStore, OctokitClient } from "../../sync";
 import {message, Modal} from "antd"
-import { createNullableContext, DBinding, useLocalDBinding, useNullableContext } from "@pltk/components";
+import { createNullableContext, useLocalDBinding, useNullableContext } from "@pltk/components";
 import { GithubAuthDialog } from "./auth";
 
 type ForceProceedingAction = {proceed: () => Promise<void>}
@@ -302,7 +302,7 @@ export function useDBClients(): IGlobalClients {
 
 export function GlobalDataSynchronizationWrapper(props: {children: React.ReactNode}) {
     const syncState = useDataSynchronizationGlobal()
-    const syncMessageBinding = useLocalDBinding<SyncMessage>({sync: false})
+    const [syncMessage, setSyncMessage] = useState<SyncMessage>({sync: false})
 
     if(syncState.type === "pending") {
         return <MessageDialog title="加载中">
@@ -319,10 +319,10 @@ export function GlobalDataSynchronizationWrapper(props: {children: React.ReactNo
             ...syncState.actions
         }
         return <GlobalClientsContext.Provider value={clients}>
-            <SyncMessageContext.Provider value={syncMessageBinding}>
+            <SyncMessageContext.Provider value={{value: syncMessage, update: setSyncMessage}}>
                 {props.children}
-                <InternalSyncMessageDialog/>
             </SyncMessageContext.Provider>
+            <InternalSyncMessageDialog sync={syncMessage}/>
         </GlobalClientsContext.Provider>
     } else if (syncState.type === "broken_remote") {
         return <ProgressActionDialog title="远程数据库损坏" proceed={syncState.actions.proceed}>
@@ -369,26 +369,25 @@ function ProgressActionDialog(props: {title: string, children: React.ReactNode, 
 
 
 type SyncMessage = {sync: true, messages: string[]} | {sync: false}
-const SyncMessageContext = createNullableContext<DBinding<SyncMessage>>("Sync context not initialized")
+type Binding<T> = {value: T, update(value: T): void}
+const SyncMessageContext = createNullableContext<Binding<SyncMessage>>("Sync context not initialized")
 
 export function useSyncDialog() {
     const binding = useNullableContext(SyncMessageContext)
     async function startSync(name: string, progress: AsyncGenerator<ProgressResult.Progress>) {
-        await binding.update({sync: true, messages: [`开始同步: ${name}`]})
+        binding.update({sync: true, messages: [`开始同步: ${name}`]})
         for await(const p of progress) {
-            await binding.update({sync: true, messages: [`正在同步: ${name}`, stringifyProgressResult(p)]})
+            binding.update({sync: true, messages: [`正在同步: ${name}`, stringifyProgressResult(p)]})
         }
-        await binding.update({sync: false})
+        binding.update({sync: false})
     }
-
     return startSync
 }
 
-function InternalSyncMessageDialog() {
-    const binding = useNullableContext(SyncMessageContext)
-    if(binding.value.sync) {
-        <MessageDialog title="正在同步">
-            {binding.value.messages.map((it, i) => <p key={i}>{it}</p>)}
+function InternalSyncMessageDialog(props: {sync: SyncMessage}) {
+    if(props.sync.sync) {
+        return <MessageDialog title="正在同步">
+            {props.sync.messages.map((it, i) => <p key={i}>{it}</p>)}
         </MessageDialog>
     } else {
         return <></>
