@@ -16,9 +16,9 @@ function App() {
     await idbClient.online.collections.character.putItem(crypto.randomUUID(), {name: {zhs: "啊啊啊啊"}, appearance: {hair: {color: ["蓝色"]}}})
     const client = new OctokitClient()
 
-    const branchMaintenance = client.openBranchMaintenance({owner: "PineAG", repo: "tmp-test-repo", branch: "main"})
-    await branchMaintenance.backup()
-    await branchMaintenance.rollback("023ad3950787fedc01683d971a04c039a09afca3")
+    // const branchMaintenance = client.openBranchMaintenance({owner: "PineAG", repo: "tmp-test-repo", branch: "main"})
+    // await branchMaintenance.backup()
+    // await branchMaintenance.rollback("023ad3950787fedc01683d971a04c039a09afca3")
     // console.log()
 
     // const repo = client.openRepo({owner: "PineAG", repo: "tmp-test-repo", branch: "main"})

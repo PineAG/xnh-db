@@ -60,7 +60,7 @@ export function keyPathToFlattenedKey(keyPath: string[]): string {
     return keyPath.join("_")
 }
 
-export function extractValuesAndConfigs<T>(data: T, definition: FC.ConfigFromDeclaration<T>): [any, FC.FieldConfig][] {
+export function extractValuesAndConfigs<T>(data: DeepPartial<T>, definition: FC.ConfigFromDeclaration<T>): [any, FC.FieldConfig][] {
     return Array.from(walk(data, definition))
 
     function* walk(node: any, def: any): Generator<[any, FC.FieldConfig]> {

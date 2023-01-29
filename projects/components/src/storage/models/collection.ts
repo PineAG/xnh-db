@@ -24,7 +24,7 @@ export class IdbCollectionWrapper<T> {
     deletionListeners: IdbCollectionWrapperDeletionListener[] = []
 
     private dataWrapper: IdbStoreWrapper<Record<string, any>, string>
-    private timeWrapper: IdbStoreWrapper<Date, never>
+    private timeWrapper: IdbStoreWrapper<number, never>
     private fullTextWrapper: IdbStoreWrapper<FullTextItem, "keywords">
     private fullTextTermsWrapper: IdbStoreWrapper<number, never>
 
@@ -72,19 +72,19 @@ export class IdbCollectionWrapper<T> {
         const keys = await this.timeWrapper.getAllKeys(db)
         return await Promise.all(keys.map(async k => {
             const time = await this.timeWrapper.get(db, k)
-            return [k, time] as [string, Date]
+            return [k, new Date(time)] as [string, Date]
         }))
     }
 
     async flushAllIndices(db: idb.IDBPDatabase, indices: [string, Date][]): Promise<void> {
         await this.timeWrapper.clear(db)
         await Promise.all(indices.map(async ([key, date]) => {
-            await this.timeWrapper.put(db, key, date)
+            await this.timeWrapper.put(db, key, date.getTime())
         }))
     }
 
     async setIndex(db: idb.IDBPDatabase, id: string, updatedAt: Date): Promise<void> {
-        await this.timeWrapper.put(db, id, updatedAt)
+        await this.timeWrapper.put(db, id, updatedAt.getTime())
     }
 
     async deleteIndex(db: idb.IDBPDatabase, id: string): Promise<void> {
@@ -183,7 +183,7 @@ export class IdbCollectionWrapper<T> {
         return GlobalStatusWrapper.getCollectionStatus(db, this.name)
     }
 
-    async updateTags(db: idb.IDBPDatabase, data: T): Promise<void> {
+    async updateTags(db: idb.IDBPDatabase, data: DeepPartial<T>): Promise<void> {
         for(const [value, conf] of extractValuesAndConfigs<T>(data, this.config)) {
             if(conf.type === "string" && conf.options.type === "tag") {
                 const collection = conf.options.collection
@@ -215,6 +215,7 @@ export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T,
         await this.wrapper.putFullText(this.db, id, value)
         await this.wrapper.setIndex(this.db, id, updatedAt)
         await this.wrapper.setCollectionStatus(this.db, {updatedAt})
+        await this.wrapper.updateTags(this.db, value)
     }
     async deleteItem(id: string): Promise<void> {
         await this.wrapper.emitDeletion(this.db, id)
@@ -248,6 +249,7 @@ export class IdbCollectionOfflineClient<T> implements IOfflineClient.Collection<
     async updateItem(id: string, value: DeepPartial<T>): Promise<void> {
         await this.wrapper.putItem(this.db, id, value)
         await this.wrapper.putFullText(this.db, id, value)
+        await this.wrapper.updateTags(this.db, value)
     }
     async deleteItem(id: string): Promise<void> {
         await this.wrapper.emitDeletion(this.db, id)

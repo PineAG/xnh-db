@@ -9,7 +9,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
     readonly sortedKeys: string[]
 
     private relationWrapper: IdbStoreWrapper<Record<keyof C, string>, keyof C & string>
-    private timeWrapper: IdbStoreWrapper<Date, never>
+    private timeWrapper: IdbStoreWrapper<number, never>
     private payloadWrapper: IdbStoreWrapper<Payload, never>
 
     constructor(wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}) {
@@ -76,7 +76,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
 
     async putDate(db: idb.IDBPDatabase, keys: Record<keyof C, string>, updatedAt: Date) {
         const id = this.extractId(keys)
-        await this.timeWrapper.put(db, id, updatedAt)
+        await this.timeWrapper.put(db, id, updatedAt.getTime())
     }
 
     async deleteRelation(db: idb.IDBPDatabase, keys: Record<keyof C, string>) {
@@ -93,7 +93,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
                 this.relationWrapper.get(db, k), 
                 this.timeWrapper.get(db, k)
             ])
-            return {key, date}
+            return {key, date: new Date(date)}
         }))
     }
 
@@ -101,7 +101,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
         await this.timeWrapper.clear(db)
         await Promise.all(indices.map(async ({key, date}) => {
             const id = this.extractId(key)
-            await this.timeWrapper.put(db, id, date)
+            await this.timeWrapper.put(db, id, date.getTime())
         }))
     }
 

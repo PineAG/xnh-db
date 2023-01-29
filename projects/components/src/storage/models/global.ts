@@ -54,7 +54,7 @@ export module IdbTagWrapper {
         }
 
         async deleteTag(collection: string, tag: string): Promise<void> {
-            await wrapper.put(this.db, `${collection}:${tag}`
+            await wrapper.delete(this.db, `${collection}:${tag}`)
         }
     }
 
