@@ -12,11 +12,13 @@
   "dependencies": {
     "@octokit/auth-token": "^3.0.3",
     "@octokit/rest": "^19.0.7",
+    "@pltk/components": "*",
     "@types/lodash": "^4.14.191",
     "@xnh-db/protocol": "*",
     "idb": "^7.1.1",
     "js-base64": "^3.7.4",
     "lodash": "^4.17.21",
+    "react": "^18.2.0",
     "typescript": "^4.9.4",
     "utility-types": "^3.10.0"
   },
