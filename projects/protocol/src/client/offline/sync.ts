@@ -3,8 +3,9 @@ import { ProgressResult } from "./progress";
 
 export type CollectionSyncAction<Key> = {type: "create" | "update" | "delete", key: Key, date: Date}
 
-export function diffCollectionIndices<K>(sourceIndex: IOfflineClient.CollectionIndex<K>, destinationIndex: IOfflineClient.CollectionIndex<K>, keySerializer: (key: K) => string): CollectionSyncAction<K>[] {
+export function diffCollectionIndices<K>(sourceIndex: IOfflineClient.CollectionIndex<K>, destinationIndex: IOfflineClient.CollectionIndex<K>, keySerializer: (key: K) => string): [IOfflineClient.CollectionIndex<K>, CollectionSyncAction<K>[]] {
     const result: CollectionSyncAction<K>[] = []
+    const newIndexMap = new Map<string, {key: K, date: Date}>()
     const sourceKeys = new Map(sourceIndex.map(it => [keySerializer(it.key), it]))
     const destKeys = new Map(destinationIndex.map(it => [keySerializer(it.key), it]))
     for(const k of sourceKeys.keys()) {
@@ -13,9 +14,19 @@ export function diffCollectionIndices<K>(sourceIndex: IOfflineClient.CollectionI
             const dstItem = destKeys.get(k)
             if(srcItem.date.getTime() > dstItem.date.getTime()) {
                 result.push({type: "update", key: srcItem.key, date: srcItem.date})
+                newIndexMap.set(k, {
+                    key: srcItem.key,
+                    date: srcItem.date
+                })
+            } else {
+                newIndexMap.set(k, {
+                    key: srcItem.key,
+                    date: dstItem.date
+                })
             }
         } else {
             result.push({type: "create", key: srcItem.key, date: srcItem.date})
+            newIndexMap.set(k, srcItem)
         }
     }
     for(const k of destKeys.keys()) {
@@ -24,7 +35,8 @@ export function diffCollectionIndices<K>(sourceIndex: IOfflineClient.CollectionI
             result.push({type: "delete", key: dstItem.key, date: dstItem.date})
         }
     }
-    return result
+    const newIndex = Array.from(newIndexMap.values())
+    return [newIndex, result]
 }
 
 function getLatestDateFromIndex<T>(index: IOfflineClient.CollectionIndex<T>): Date {
@@ -43,7 +55,7 @@ export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Col
 
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
-    const diffResult = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
+    const [newIndex, diffResult] = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
     let counter = 0
     for(const action of diffResult) {
         yield {
@@ -68,9 +80,9 @@ export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Col
         }
     }
     yield {type: "index", action: "push"}
-    await destinationClient.flushIndex(sourceIndex)
+    await destinationClient.flushIndex(newIndex)
     await destinationClient.setStatus({
-        updatedAt: getLatestDateFromIndex(sourceIndex)
+        updatedAt: getLatestDateFromIndex(newIndex)
     })
 }
 
@@ -83,7 +95,7 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
 
     const sourceIndex = await sourceClient.getIndex()
     const destinationIndex = await destinationClient.getIndex()
-    const diffResult = diffCollectionIndices(sourceIndex, destinationIndex, IOfflineClient.stringifyRelationKey)
+    const [newIndex, diffResult] = diffCollectionIndices(sourceIndex, destinationIndex, IOfflineClient.stringifyRelationKey)
     let counter = 0
     for(const action of diffResult) {
         yield {
@@ -107,8 +119,8 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
         }
     }
     yield {type: "index", action: "push"}
-    await destinationClient.flushIndex(sourceIndex)
+    await destinationClient.flushIndex(newIndex)
     await destinationClient.setStatus({
-        updatedAt: getLatestDateFromIndex(sourceIndex)
+        updatedAt: getLatestDateFromIndex(newIndex)
     })
 }
