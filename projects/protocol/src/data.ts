@@ -18,6 +18,7 @@ export interface ICharacter {
     id: string
     title: string,
     name: InternationalName
+    profile: string,
     photos: string[]
     description: string,
     appearance: {
@@ -37,6 +38,7 @@ export const CharacterDefinition: FC.ConfigFromDeclaration<ICharacter> = {
     id: FC.id(),
     title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
+    profile: FC.file(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1),
     appearance: {
