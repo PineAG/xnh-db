@@ -1,4 +1,3 @@
-import { Octokit } from "@octokit/rest";
 import { createNullableContext, Loading } from "@pltk/components";
 import { FilesSynchronization, IOfflineClient, IOfflineClientSet, IOnlineClient, IOnlineClientSet, RelationPayloads, retrieveRemoteFile, synchronizeCollection, synchronizeRelation } from "@xnh-db/protocol";
 import { useEffect, useState } from "react";

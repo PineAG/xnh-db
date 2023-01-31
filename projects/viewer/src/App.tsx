@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import { Button, createIdbClients, DBLoginButton, GlobalDataSynchronizationWrapper, OctokitClient, useDBClients, useSyncDialog } from '@xnh-db/components';
+import { Button, createIdbClients, DBLoginButton, DBSearchContextProvider, DBSearchInput, DBSearchResultList, GlobalDataSynchronizationWrapper, OctokitClient, useDBClients, useSyncDialog } from '@xnh-db/components';
 import { PathSyncClient, synchronizeCollection } from '@xnh-db/protocol';
 import { Input } from 'antd';
 
@@ -34,7 +34,10 @@ function Body() {
 
 function App() {
   return <GlobalDataSynchronizationWrapper>
-    <Body/>
+    <DBSearchContextProvider collection="character">
+      <DBSearchInput collection="character"/>
+      <DBSearchResultList collection="character"/>
+    </DBSearchContextProvider>
   </GlobalDataSynchronizationWrapper>
 }
 

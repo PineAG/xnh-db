@@ -142,33 +142,20 @@ export class IdbCollectionWrapper<T> {
     }
 
     async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<string[]> {
-        return await this.dataWrapper.getKeysByIndex(db, keyPathToFlattenedKey(keys), value)
+        const results = await this.dataWrapper.getKeysByIndex(db, keyPathToFlattenedKey(keys), value)
+        console.log(results)
+        return results
     }
 
-    async queryFullText(db: idb.IDBPDatabase, keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
-        const resultByKeyword = await Promise.all(keywords.map(async keyword => {
-            const keys = await this.fullTextWrapper.getKeysByIndex(db, "keywords", keyword)
-            const result: Record<string, number> = {}
-            await Promise.all(keys.map(async id => {
-                const item = await this.fullTextWrapper.get(db, id)
-                const termFreq = await this.fullTextTermsWrapper.get(db, keyword) ?? 0
-                
-                const weight = item.weights[keyword] * Math.log(termFreq + 1)
-                result[id] = weight
-            }))
-            return result
+    async queryFullText(db: idb.IDBPDatabase, keyword: string): Promise<IOnlineClient.FullTextQueryResult[]> {
+        const keys = await this.fullTextWrapper.getKeysByIndex(db, "keywords", keyword)
+        return await Promise.all(keys.map(async id => {
+            const item = await this.fullTextWrapper.get(db, id)
+            const termFreq = await this.fullTextTermsWrapper.get(db, keyword) ?? 0
+            
+            const weight = item.weights[keyword] * Math.log(termFreq + 1)
+            return {id, weight}
         }))
-        const finalResult = resultByKeyword.reduce((left, right) => {
-            const result: Record<string, number> = {}
-            for(const k of Object.keys(left)) {
-                if(k in right) {
-                    result[k] = left[k] + right[k]
-                }
-            }
-            return result
-        })
-        const list = Array.from(Object.entries(finalResult)).map(([id, weight]) => ({id, weight}))
-        return sortBy(list, it => -it.weight)
     }
 
     async emitDeletion(db: idb.IDBPDatabase, id: string) {
@@ -204,8 +191,8 @@ export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T,
         return this.wrapper.queryByField(this.db, query.keyPath, query.value)
     }
 
-    queryFullText(keywords: string[]): Promise<IOnlineClient.FullTextQueryResult[]> {
-        return this.wrapper.queryFullText(this.db, keywords)
+    queryFullText(keyword: string): Promise<IOnlineClient.FullTextQueryResult[]> {
+        return this.wrapper.queryFullText(this.db, keyword)
     }
     async putItem(id: string, value: DeepPartial<T>): Promise<void> {
         const updatedAt = new Date()

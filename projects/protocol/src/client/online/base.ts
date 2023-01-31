@@ -9,7 +9,7 @@ export module IOnlineClient {
     export interface Collection<T, Query> {
         getItemById(id: string): Promise<DeepPartial<T>>
         queryItems(query: Query): Promise<string[]>
-        queryFullText(keywords: string[]): Promise<FullTextQueryResult[]>
+        queryFullText(keywords: string): Promise<FullTextQueryResult[]>
         putItem(id: string, value: DeepPartial<T>): Promise<void>
         deleteItem(id: string): Promise<void>
     }
