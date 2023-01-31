@@ -10,5 +10,5 @@ export module ProgressResult {
         }
     }
     
-    export type Progress = {type: "index", action: "pull" | "push"} | {type: "item", action: ItemAction}
+    export type Progress = {type: "index", action: "pull" | "push"} | {type: "item" | "file", action: ItemAction}
 }

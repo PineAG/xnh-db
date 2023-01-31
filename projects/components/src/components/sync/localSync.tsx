@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { createNullableContext, Loading } from "@pltk/components";
-import { IOfflineClient, IOfflineClientSet, IOnlineClient, IOnlineClientSet, RelationPayloads, synchronizeCollection, synchronizeRelation } from "@xnh-db/protocol";
+import { FilesSynchronization, IOfflineClient, IOfflineClientSet, IOnlineClient, IOnlineClientSet, RelationPayloads, retrieveRemoteFile, synchronizeCollection, synchronizeRelation } from "@xnh-db/protocol";
 import { useEffect, useState } from "react";
 import { DeepPartial } from "utility-types";
 import { IdbCollectionQuery } from "../../storage";
@@ -75,9 +75,11 @@ export type LocalSyncWrapperState<T, R extends RelationsBase> = {
     mode: "online"
     data: ILocalSyncData<T, R>
     update(data: ILocalSyncRequest<T, R>): Promise<void>
+    fetchFile(name: string): Promise<Blob>
 } | {
     mode: "offline"
     data: ILocalSyncData<T, R>
+    fetchFile(name: string): Promise<Blob>
 }
 
 type UseLocalSyncResult<T, R extends RelationsBase> = {pending: true} | {pending: false, result: LocalSyncWrapperState<T, R>}
@@ -101,6 +103,7 @@ function useLocalSync<T, R extends RelationsBase>(props: UseLocalSyncProps<T, R>
         const localClients = props.offlineFactory(clients.local)
         const remoteClients = props.offlineFactory(clients.remote)
         await syncOfflineClients(syncDialog, remoteClients, localClients)
+        await _downloadFiles()
         await finalizeOnline()
     }
 
@@ -124,6 +127,7 @@ function useLocalSync<T, R extends RelationsBase>(props: UseLocalSyncProps<T, R>
         await updateData<T, R>(queryClients, props.id, oldData, req)
         OctokitCertificationStore.backupCommit.set(backupCommit)
         await syncOfflineClients(syncDialog, localClients, remoteClients)
+        await _uploadFiles()
         OctokitCertificationStore.backupCommit.clear()
         await finalizeOnline()
     }
@@ -137,7 +141,8 @@ function useLocalSync<T, R extends RelationsBase>(props: UseLocalSyncProps<T, R>
             result: {
                 mode: "online",
                 data,
-                update
+                update,
+                fetchFile
             }
         })
     }
@@ -149,9 +154,22 @@ function useLocalSync<T, R extends RelationsBase>(props: UseLocalSyncProps<T, R>
             pending: false, 
             result: {
                 mode: "offline",
-                data
+                data,
+                fetchFile
             }
         })
+    }
+
+    async function _downloadFiles() {
+        await syncDialog("下载文件索引", FilesSynchronization.download(clients.local.files, clients.remote.files))
+    }
+
+    async function _uploadFiles() {
+        await syncDialog("上传文件", FilesSynchronization.upload(clients.local.files, clients.remote.files))
+    }
+
+    function fetchFile(name: string): Promise<Blob> {
+        return retrieveRemoteFile(name, clients.query.files, clients.local.files, clients.remote.files)
     }
 }
 

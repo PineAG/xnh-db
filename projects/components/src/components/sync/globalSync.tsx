@@ -1,4 +1,4 @@
-import { IOfflineClient, IOfflineClientSet, IOnlineClientSet, PathSyncClient, ProgressResult, XNH_DB_DATA_VERSION } from "@xnh-db/protocol";
+import { FilesSynchronization, IOfflineClient, IOfflineClientSet, IOnlineClientSet, PathSyncClient, ProgressResult, XNH_DB_DATA_VERSION } from "@xnh-db/protocol";
 import React, { createContext, useContext, useEffect, useState, version } from "react";
 import { createRestfulOfflineClientsSet } from "../../restful";
 import { createIdbClients, destroyIdbStorage, IdbCollectionQuery } from "../../storage";
@@ -184,6 +184,12 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                 stringifyProgressResult(progress)
             ])
         }
+        for await(const progress of FilesSynchronization.download(localClients.files, remoteClients.files)) {
+            setMessage([
+                ...prefixMessages,
+                stringifyProgressResult(progress)
+            ])
+        }
     }
 
     async function _reverseSync(prefixMessages: string[]) {
@@ -198,6 +204,12 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
             setMessage([
                 ...prefixMessages,
                 `正在更新 ${itemType.type === "collection" ? "条目集" : "关系集"}: ${itemType.name}`,
+                stringifyProgressResult(progress)
+            ])
+        }
+        for await(const progress of FilesSynchronization.upload(localClients.files, remoteClients.files)) {
+            setMessage([
+                ...prefixMessages,
                 stringifyProgressResult(progress)
             ])
         }

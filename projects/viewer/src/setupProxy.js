@@ -14,7 +14,13 @@ module.exports = function(app) {
                 res.status(404).end()
             }
             
-        }else {
+        }else if(req.method === "HEAD") {
+            if(fs.existsSync(filePath)) {
+                res.status(200).end()
+            } else {
+                res.status(404).end()
+            }
+        } else {
             res.status(405).end()
         }
     })

@@ -163,7 +163,8 @@ export type IOnlineClientSet<CollectionQuery> = {
         character_artwork: IOnlineClient.Relation<"character" | "artwork", RelationPayloads.Character_Artwork>
         artwork_creator: IOnlineClient.Relation<"artwork" | "creator", RelationPayloads.Artwork_Creator>
         character_voiceActor: IOnlineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
-    }
+    },
+    files: IOnlineClient.Files
 }
 
 export type IOfflineClientSet = {
@@ -182,5 +183,15 @@ export type IOfflineClientSet = {
         character_artwork: IOfflineClient.Relation<"character" | "artwork", RelationPayloads.Character_Artwork>
         artwork_creator: IOfflineClient.Relation<"artwork" | "creator", RelationPayloads.Artwork_Creator>
         character_voiceActor: IOfflineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
+    },
+    files: IOfflineClient.Files
+}
+
+
+export async function retrieveRemoteFile(name: string, query: IOnlineClient.Files, local: IOfflineClient.Files, remote: IOfflineClient.Files): Promise<Blob> {
+    if(!await query.available(name)) {
+        const data = await remote.read(name)
+        await local.write(name, data)
     }
+    return query.read(name)
 }

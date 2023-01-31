@@ -1,8 +1,9 @@
-import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClient, IOfflineClientSet, IOnlineClientSet, IVoiceActor, ProgressResult, RelationPayloads, synchronizeCollection, synchronizeRelation, VoiceActorDefinition } from "@xnh-db/protocol";
+import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClient, IOfflineClientSet, IOnlineClientSet, IVoiceActor, ProgressResult, RelationPayloads, synchronizeCollection, FilesSynchronization, synchronizeRelation, VoiceActorDefinition } from "@xnh-db/protocol";
 import { IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient, IdbCollectionQuery } from "./collection";
 import { IdbRelationOnlineClient, IdbRelationOfflineClient, IdbRelationWrapper } from "./relation";
 import * as idb from "idb"
 import { GlobalStatusWrapper, IdbTagWrapper } from "./global";
+import { IdbFileClientWrapper, IdbFileOfflineClient, IdbFileOnlineClient } from "./files";
 
 export function createDBWrappers() {
     const character = new IdbCollectionWrapper<ICharacter>("characters", CharacterDefinition)
@@ -30,6 +31,7 @@ export function createDBWrappers() {
 export function initializeWrappers(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>) {
     GlobalStatusWrapper.initialize(db)
     IdbTagWrapper.initialize(db)
+    IdbFileClientWrapper.initialize(db)
     for(const c of Object.values(wrappers.collections)) {
         c.onUpgrade(db)
     }
@@ -64,7 +66,8 @@ export function createOnlineClientsFromIdbInstance(db: idb.IDBPDatabase, wrapper
             character_artwork: new IdbRelationOnlineClient(db, wrappers.relations.character_artwork),
             artwork_creator: new IdbRelationOnlineClient(db, wrappers.relations.artwork_creator),
             character_voiceActor: new IdbRelationOnlineClient(db, wrappers.relations.character_voiceActor)
-        }
+        },
+        files: new IdbFileOnlineClient(db)
     }
 }
 
@@ -85,7 +88,8 @@ export function createOfflineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappe
             character_artwork: new IdbRelationOfflineClient(db, wrappers.relations.character_artwork),
             artwork_creator: new IdbRelationOfflineClient(db, wrappers.relations.artwork_creator),
             character_voiceActor: new IdbRelationOfflineClient(db, wrappers.relations.character_voiceActor)
-        }
+        },
+        files: new IdbFileOfflineClient(db)
     }
 }
 
@@ -133,15 +137,20 @@ export async function* synchronizeOfflineClientSet(srcSet: IOfflineClientSet, de
     }
 }
 
+const ProgressResultActionNames = {
+    create: "创建",
+    update: "覆盖",
+    delete: "删除"
+}
+
 export function stringifyProgressResult(progress: ProgressResult.Progress): string {
-    if(progress.type === "item") {
-        const actionName = {
-            create: "创建",
-            update: "覆盖",
-            delete: "删除"
-        }[progress.action.type]
+    if(progress.type === "item"){
+        const actionName = ProgressResultActionNames[progress.action.type]
         return `正在 ${actionName} 条目: ${progress.action.id} (${progress.action.progress.current+1}/${progress.action.progress.total})`
-    } else {
+    } else if(progress.type === "index") {
         return `正在 ${progress.action === "pull" ? "下载" : "上传"} 条目索引`
+    } else {
+        const actionName = ProgressResultActionNames[progress.action.type]
+        return `正在 ${actionName} 文件: ${progress.action.id} (${progress.action.progress.current+1}/${progress.action.progress.total})`
     }
 }

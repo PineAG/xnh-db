@@ -31,4 +31,16 @@ export module IOfflineClient {
         const names = Array.from(Object.keys(keys))
         return names.map(n => keys[n]).join(":")
     }
+
+    export interface Files {
+        getStatus(): Promise<LatestStatus>
+        setStatus(status: LatestStatus): Promise<void>
+        
+        getIndex(): Promise<CollectionIndex<string>>
+        flushIndex(index: CollectionIndex<string>): Promise<void>
+    
+        read(name: string): Promise<Blob>
+        write(name: string, value: Blob): Promise<void>
+        delete(name: string): Promise<void>
+    }
 }

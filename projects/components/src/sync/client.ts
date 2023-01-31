@@ -83,15 +83,13 @@ export class OctokitRepoClient implements PathSyncClient.IPathClient {
             throw new Error("Cannot open directory")
         } else if (data.type === "file") {
             const b64 = data.content
-            const text = base64.decode(b64)
-            return new Blob([new TextEncoder().encode(text)])
+            const bin = base64.toUint8Array(b64)
+            return new Blob([bin])
         }
     }
     async write(path: string, value: Blob): Promise<void> {
+        const b64 = base64.fromUint8Array(new Uint8Array(await value.arrayBuffer()))
         const sha = await this.getSHA(path)
-        const buf = await value.arrayBuffer()
-        const b64 = base64.encode(new TextDecoder().decode(buf))
-        console.log(b64)
         await this.octokit.repos.createOrUpdateFileContents({
             owner: this.branch.owner,
             repo: this.branch.repo,

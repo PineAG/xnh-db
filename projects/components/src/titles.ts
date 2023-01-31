@@ -16,6 +16,7 @@ export module ConfigTitles {
             ja: "日文名"
         },
         description: "描述",
+        profile: "头像",
         photos: "照片",
         appearance: {
             eyes: {

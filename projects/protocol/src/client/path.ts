@@ -192,6 +192,64 @@ export module PathSyncClient {
         }
     }
 
+    export class Files implements IOfflineClient.Files {
+        private readonly statusFile = "status.json"
+        private readonly indexFile = "index.json"
+        private idxCvt = new MapIndexHelper<string>(it => it)
+
+        constructor(private pathClient: IPathClient) {}
+
+        async getStatus(): Promise<IOfflineClient.LatestStatus> {
+            const b = await this.pathClient.read(this.statusFile)
+            if(!b) {
+                return {
+                    updatedAt: new Date(0)
+                }
+            }
+            const data: SerializedStatus = await JsonUtils.fromJson(b)
+            return {
+                updatedAt: new Date(data.updatedAt)
+            }
+        }
+        async setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
+            const data: SerializedStatus = {
+                updatedAt: status.updatedAt.getTime()
+            }
+            const b = await JsonUtils.toJson(data)
+            await this.pathClient.write(this.statusFile, b)
+        }
+        async getIndex(): Promise<IOfflineClient.CollectionIndex<string>> {
+            const data = await this.pathClient.read(this.indexFile)
+            if(data === null) {
+                return []
+            } else {
+                const m = await JsonUtils.fromJson<MapIndex<string>>(data)
+                return this.idxCvt.mapToArray(m)
+            }
+        }
+
+        async flushIndex(index: IOfflineClient.CollectionIndex<string>): Promise<void> {
+            const map = this.idxCvt.arrayToMap(index)
+            const json = await JsonUtils.toJson(map)
+            await this.pathClient.write(this.indexFile, json)
+        }
+
+        async read(name: string): Promise<Blob> {
+            const b = await this.pathClient.read(name)
+            if(!b) {
+                throw new Error(`File not exist: ${name}`)
+            }
+            return b
+        }
+        async write(name: string, value: Blob): Promise<void> {
+            await this.pathClient.write(name, value)
+        }
+        async delete(name: string): Promise<void> {
+            await this.pathClient.delete(name)
+        }
+        
+    }
+
     export type PathClientFactory = (root: string) => IPathClient
     export function createPathOfflineClientSet(factory: PathClientFactory): IOfflineClientSet {
         return {
@@ -210,7 +268,8 @@ export module PathSyncClient {
                 character_artwork: new Relation(factory("rel_character_artwork")),
                 character_voiceActor: new Relation(factory("rel_character_voiceActor")),
                 artwork_creator: new Relation(factory("rel_artwork_creator"))
-            }
+            },
+            files: new Files(factory("files"))
         }
     }
 }

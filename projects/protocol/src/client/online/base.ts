@@ -20,4 +20,12 @@ export module IOnlineClient {
         getRelationsByKey<K extends Keys>(key: K, id: string): Promise<Record<Keys, string>[]>
         deleteRelation(keys: Record<Keys, string>): Promise<void>
     }
+
+    export interface Files {
+        list(): Promise<string[]>
+        read(name: string): Promise<Blob>
+        available(name: string): Promise<boolean>
+        write(name: string, value: Blob): Promise<void>
+        delete(name: string): Promise<void>
+    }
 }

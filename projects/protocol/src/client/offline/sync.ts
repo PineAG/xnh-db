@@ -124,3 +124,75 @@ export async function* synchronizeRelation<Keys extends string, Payload>(sourceC
         updatedAt: getLatestDateFromIndex(newIndex)
     })
 }
+
+export module FilesSynchronization {
+    export async function* upload(localClient: IOfflineClient.Files, remoteClient: IOfflineClient.Files): AsyncGenerator<ProgressResult.Progress> {
+        yield {type: "index", action: "pull"}
+        const [localStatus, remoteStatus] = await Promise.all([localClient.getStatus(), remoteClient.getStatus()])
+        if(localStatus.updatedAt.getTime() >= remoteStatus.updatedAt.getTime()) {
+            return
+        }
+    
+        const sourceIndex = await localClient.getIndex()
+        const destinationIndex = await remoteClient.getIndex()
+        const [newIndex, diffResult] = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
+        let counter = 0
+        for(const action of diffResult) {
+            yield {
+                type: "file",
+                action: {
+                    type: action.type,
+                    id: action.key,
+                    progress: {
+                        current: counter++,
+                        total: diffResult.length
+                    }
+                }
+            }
+            if(action.type === "create" || "update") {
+                const data = await localClient.read(action.key)
+                await remoteClient.write(action.key, data)
+            } else if(action.type === "delete") {
+                await remoteClient.delete(action.key)
+            }
+        }
+        yield {type: "index", action: "push"}
+        await remoteClient.flushIndex(newIndex)
+        await remoteClient.setStatus({
+            updatedAt: getLatestDateFromIndex(newIndex)
+        })
+    }
+
+    
+    export async function* download(localClient: IOfflineClient.Files, remoteClient: IOfflineClient.Files): AsyncGenerator<ProgressResult.Progress> {
+        yield {type: "index", action: "pull"}
+        const [remoteStatus, localStatus] = await Promise.all([remoteClient.getStatus(), localClient.getStatus()])
+        if(remoteStatus.updatedAt.getTime() <= localStatus.updatedAt.getTime()) {
+            return
+        }
+    
+        const sourceIndex = await remoteClient.getIndex()
+        const destinationIndex = await localClient.getIndex()
+        const [newIndex, diffResult] = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
+        let counter = 0
+        for(const action of diffResult) {
+            yield {
+                type: "file",
+                action: {
+                    type: action.type,
+                    id: action.key,
+                    progress: {
+                        current: counter++,
+                        total: diffResult.length
+                    }
+                }
+            }
+            await localClient.delete(action.key)
+        }
+        yield {type: "index", action: "push"}
+        await localClient.flushIndex(newIndex)
+        await localClient.setStatus({
+            updatedAt: getLatestDateFromIndex(newIndex)
+        })
+    }
+}
