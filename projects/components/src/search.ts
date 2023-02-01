@@ -3,53 +3,128 @@ import { sortBy } from "lodash"
 import { IdbCollectionQuery } from "./storage"
 
 export module DBSearch {
-    export interface IQuery {
-        fullText: string[]
-        property: IdbCollectionQuery[]
-    }
-
-    export function mergeQuery(left: IQuery, right: IQuery): IQuery {
-        const fullText = [...left.fullText, ...right.fullText]
-        const props: Record<string, IdbCollectionQuery> = {}
-        for(const p of left.property) {
-            props[p.keyPath.join(".")] = p
-        }
-        for(const p of right.property) {
-            props[p.keyPath.join(".")] = p
-        }
-        const property = Array.from(Object.values(props))
-        return {fullText, property}
-    }
-
     export async function search(query: IQuery, collection: IOnlineClient.Collection<any, IdbCollectionQuery>) {
-        const results: Record<string, number>[] = await Promise.all([
-            ...query.fullText.map(async keyword => {
-                return collection.queryFullText(keyword)
-            }),
-            ...query.property.map(async q => {
-                const r = await collection.queryItems(q)
-                const ans = {}
-                for(const p of r) {
-                    ans[p] = 0
-                }
-                return ans
-            })
-        ])
+        const results = await Operators.evaluate(query, collection)
+        return sortBy(results, it => -it.weight)
+    }
 
-        if(results.length === 0) {
-            return []
+    
+    export type IQuery = {
+        type: "property",
+        property: IdbCollectionQuery
+    } | {
+        type: "fullText",
+        keyword: string
+    } | {
+        type: "operator",
+        operator: "and" | "or",
+        children: IQuery[]
+    } | {
+        type: "operator",
+        operator: "exclude",
+        children: [IQuery, IQuery]
+    }
+
+    export module Operators {
+        
+        export function and(children: IQuery[]): IQuery {
+            return {
+                type: "operator",
+                operator: "and",
+                children
+            }
         }
 
-        const finalResult: Record<string, number> = results.reduce((left, right) => {
-            const r = {}
-            for(const k in left){
-                if(k in right) {
-                    r[k] = left[k] + right[k]
-                }
+        export function or(children: IQuery[]): IQuery {
+            return {
+                type: "operator",
+                operator: "or",
+                children
             }
-            return r
-        })
-        const list: IOnlineClient.FullTextQueryResult[] = Object.entries(finalResult).map(([id, weight]) => ({id, weight}))
-        return sortBy(list, it => -it.weight)
-    }
+        }
+
+        export function exclude(children: [IQuery, IQuery]): IQuery {
+            return {
+                type: "operator",
+                operator: "exclude",
+                children
+            }
+        }
+
+        export function property(keyPath: string[], value: any): IQuery {
+            return {
+                type: "property",
+                property: {keyPath, value}
+            }
+        }
+        
+        export function fullText(keyword: string): IQuery {
+            return {
+                type: "fullText",
+                keyword
+            }
+        }
+        
+        export async function evaluate(operator: IQuery, collection: IOnlineClient.Collection<any, IdbCollectionQuery>): Promise<IOnlineClient.FullTextQueryResult[]> {
+            const results = await internalEval(operator, collection)
+            return Object.entries(results).map(([id, weight]) => ({id, weight}))
+        }
+
+        async function internalEval(operator: IQuery, collection: IOnlineClient.Collection<any, IdbCollectionQuery>): Promise<Record<string, number>> {
+            switch(operator.type) {
+                case "fullText": {
+                    const results: Record<string, number> = {}
+                    for(const {id, weight} of await collection.queryFullText(operator.keyword)) {
+                        results[id] = weight
+                    }
+                    return results
+                }
+                case "property": {
+                    const results: Record<string, number> = {}
+                    for(const id of await collection.queryItems(operator.property)) {
+                        results[id] = 0
+                    }
+                    return results
+                }
+                case "operator":
+                    if(operator.children.length === 0) {
+                        return {}
+                    }
+                    switch(operator.operator) {
+                        case "and": {
+                            const res = await Promise.all(operator.children.map(op => internalEval(op, collection)))
+                            return res.reduce((left, right) => {
+                                const results = {}
+                                for(const key in left) {
+                                    if(key in right) {
+                                        results[key] = left[key] + right[key]
+                                    }
+                                }
+                                return results
+                            })
+                        }
+                        case "or": {
+                            const res = await Promise.all(operator.children.map(op => internalEval(op, collection)))
+                            return res.reduce((left, right) => {
+                                const results = {...left}
+                                for(const key in right) {
+                                    results[key] = (results[key] ?? 0) + right[key]
+                                }
+                                return results
+                            })
+                        }
+                        case "exclude": {
+                            const [left, right] = await Promise.all([
+                                internalEval(operator.children[0], collection), 
+                                internalEval(operator.children[1], collection)
+                            ])
+                            for(const key in right) {
+                                delete left[key]
+                            }
+                            return left
+                        }
+                    }
+            }
+        }
+    } 
 }

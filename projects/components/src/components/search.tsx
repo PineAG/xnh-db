@@ -1,5 +1,5 @@
 import { arrayBinding, createNullableContext, Flex, IconButton, Icons, Loading, propertyBinding, StringField, useLocalDBinding, useNullableContext } from "@pltk/components";
-import { IOnlineClientSet } from "@xnh-db/protocol";
+import { IOnlineClient, IOnlineClientSet } from "@xnh-db/protocol";
 import {Button, Input as AntInput} from "antd";
 import * as AntdIcons from "@ant-design/icons"
 import { createContext, useContext, useEffect, useState } from "react";
@@ -12,8 +12,8 @@ type CollectionName = keyof IOnlineClientSet<IdbCollectionQuery>["collections"]
 type CollectionType<N extends CollectionName> = Awaited<ReturnType<IOnlineClientSet<IdbCollectionQuery>["collections"][N]["getItemById"]>>
 
 type DBSearchState<C extends CollectionName> = {
-    query: DBSearch.IQuery
-    search(query: DBSearch.IQuery): Promise<void>
+    query: IQuery
+    search(query: IQuery): Promise<void>
     getItem(id: string): Promise<DeepPartial<CollectionType<C>>>
     result: {
         state: "pending"
@@ -25,7 +25,19 @@ type DBSearchState<C extends CollectionName> = {
 
 type StateSet = {[C in CollectionName]: DBSearchState<C>}
 const StateContext = createContext<Partial<StateSet>>({})
-const InheritanceContext = createContext<Partial<Record<CollectionName, DBSearch.IQuery>>>({})
+const InheritanceContext = createContext<Partial<Record<CollectionName, IQuery>>>({})
+
+type IQuery = {
+    type: "operator"
+    operator: "and"
+    children: ({
+        type: "fullText"
+        keyword: string
+    } | {
+        type: "property"
+        property: IdbCollectionQuery
+    })[]
+}
 
 export function useDBSearch<C extends CollectionName>(collectionName: C): DBSearchState<C> {
     const ctx = useContext(StateContext)
@@ -38,16 +50,16 @@ export function useDBSearch<C extends CollectionName>(collectionName: C): DBSear
 
 export interface DBSearchContextProviderProps<C extends CollectionName> {
     collection: C
-    initialQuery?: DBSearch.IQuery
+    initialQuery?: IQuery
     inherit?: boolean
     children: React.ReactNode
-    onSearch?: (query: DBSearch.IQuery) => Promise<void>
+    onSearch?: (query: IQuery) => Promise<void>
 }
 
 export function DBSearchContextProvider<C extends CollectionName>(props: DBSearchContextProviderProps<C>) {
     const inheritedQuery = useContext(InheritanceContext)
     const inheritedResults = useContext(StateContext)
-    const queryBinding = XBinding.useBinding({fullText: [], property: []})
+    const queryBinding = XBinding.useBinding<IQuery>({type: "operator", operator: "and", children: []})
     const [pending, setPending] = useState(false)
     const [items, setItems] = useState<string[]>([])
     const clients = useDBClients()
@@ -55,7 +67,10 @@ export function DBSearchContextProvider<C extends CollectionName>(props: DBSearc
     useEffect(() => {
         const parentQuery = inheritedQuery[props.collection]
         if(props.inherit && parentQuery && props.initialQuery) {
-            queryBinding.update(DBSearch.mergeQuery(parentQuery, props.initialQuery))
+            queryBinding.update({type: "operator", operator: "and", children: [
+                ...parentQuery.children,
+                ...props.initialQuery.children
+            ]})
         } else if (props.inherit && parentQuery) {
             queryBinding.update(parentQuery)
         } else if(props.initialQuery) {
@@ -89,7 +104,7 @@ export function DBSearchContextProvider<C extends CollectionName>(props: DBSearc
         </InheritanceContext.Provider>
     </StateContext.Provider>
 
-    async function search(query: DBSearch.IQuery) {
+    async function search(query: IQuery) {
         queryBinding.update(query)
         if(props.onSearch) {
             props.onSearch(query)   
@@ -113,12 +128,25 @@ type CollectionProps<C extends CollectionName> = {collection: C}
 export function DBSearchInput<C extends CollectionName>({collection}: CollectionProps<C>) {
     const search = useDBSearch(collection)
 
+    type TagQuery = {keyPath: string, value: string}
+
     const [searchText, setSearchText] = useState("")
-    const tagList = arrayBinding(useLocalDBinding<{keyPath: string, value: string}[]>([]))
+    const tagList = arrayBinding(useLocalDBinding<TagQuery[]>([]))
 
     useEffect(() => {
-        tagList.update(search.query.property.map(it => ({keyPath: it.keyPath.join("."), value: it.value})))
-    }, [search.query.property])
+        const fullTextQuery: string[] = []
+        const tagsQuery: TagQuery[] = []
+        for(const q of search.query.children) {
+            if(q.type === "fullText") {
+                fullTextQuery.push(q.keyword)
+            } else {
+                tagsQuery.push({
+                    keyPath: q.property.keyPath.join("."),
+                    value: q.property.value.toString()
+                })
+            }
+        }
+    }, [search.query])
 
     return <Flex direction="vertical" spacing={16}>
         <Flex direction="horizontal" nowrap spacing={8}>
@@ -140,8 +168,15 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
     async function onSearch(){
         const keywords = searchText.split(/\s+/).filter(it => it.length > 0)
         await search.search({
-            fullText: keywords,
-            property: tagList.value.map(it => ({keyPath: it.keyPath.split("."), value: it.value}))
+            type: "operator",
+            operator: "and",
+            children: [
+                ...keywords.map(keyword => ({type: "fullText" as const, keyword})),
+                ...tagList.value.map(it => ({
+                    type: "property" as const,
+                    property: {keyPath: it.keyPath.split("."), value: it.value}
+                }))
+            ]
         })
     }
 }
