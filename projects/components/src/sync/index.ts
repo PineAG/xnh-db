@@ -4,6 +4,7 @@ import {OctokitRepoClient, OctokitClient} from "./client"
 
 export * from "./client"
 export * from "./local"
+export * from "./inherit"
 
 export function createOctokitOfflineClientSet(repo: OctokitCertificationStore.IGithubCert): IOfflineClientSet {
     return PathSyncClient.createPathOfflineClientSet(path => {

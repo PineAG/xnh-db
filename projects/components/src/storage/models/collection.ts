@@ -143,7 +143,6 @@ export class IdbCollectionWrapper<T> {
 
     async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<string[]> {
         const results = await this.dataWrapper.getKeysByIndex(db, keyPathToFlattenedKey(keys), value)
-        console.log(results)
         return results
     }
 

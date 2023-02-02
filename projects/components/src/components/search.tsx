@@ -8,6 +8,7 @@ import { DeepPartial } from "utility-types";
 import { DBSearch } from "../search";
 import { Titles } from "../titles";
 import { useDBClients, XBinding } from "./sync";
+import { entitySearchResultViews } from "./view";
 
 type CollectionName = keyof DBDeclaration
 type CollectionType<N extends CollectionName> = DBDeclaration[N]
@@ -225,6 +226,7 @@ module PropertyQuery {
                 showSearch
                 allowClear
                 value={valueBinding.value}
+                onClear={() => valueBinding.update(undefined)}
                 onSelect={value => {
                     if(!value) {
                         valueBinding.update(undefined)
@@ -332,16 +334,15 @@ module PropertyQuery {
 
 export function DBSearchResultList<C extends CollectionName>({collection}: CollectionProps<C>) {
     const search = useDBSearch(collection)
+    const Item: React.FC<{id: string}> = entitySearchResultViews[collection]
     if(search.result.state === "pending") {
         return <Loading/>
     } else {
-        return <ul>
+        return <Flex>
             {search.result.items.map(id => (
-                <li key={id}><DBSearchResultConsumer collection={collection} id={id}>
-                    {(item) => (item.title)}
-                </DBSearchResultConsumer>
-                </li>))}
-        </ul>
+                <Item key={id} id={id}/>
+            ))}
+        </Flex>
     }
 }
 
