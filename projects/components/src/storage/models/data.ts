@@ -67,7 +67,8 @@ export function createOnlineClientsFromIdbInstance(db: idb.IDBPDatabase, wrapper
             artwork_creator: new IdbRelationOnlineClient(db, wrappers.relations.artwork_creator),
             character_voiceActor: new IdbRelationOnlineClient(db, wrappers.relations.character_voiceActor)
         },
-        files: new IdbFileOnlineClient(db)
+        files: new IdbFileOnlineClient(db),
+        tags: new IdbTagWrapper.Client(db)
     }
 }
 
@@ -120,6 +121,7 @@ export async function* synchronizeOfflineClientSet(srcSet: IOfflineClientSet, de
 
     async function* onCollections<K extends string>(src: Record<K, IOfflineClient.Collection<any>>, dst: Record<K, IOfflineClient.Collection<any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
         for(const k in names) {
+            console.log(`Update collection ${k}`)
             const name = names[k]
             for await(const p of synchronizeCollection(src[k], dst[k])) {
                 yield [{type: "collection", name}, p]
@@ -129,6 +131,7 @@ export async function* synchronizeOfflineClientSet(srcSet: IOfflineClientSet, de
 
     async function* onRelations<K extends string>(src: Record<K, IOfflineClient.Relation<any, any>>, dst: Record<K, IOfflineClient.Relation<any, any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
         for(const k in names) {
+            console.log(`Update relation ${k}`)
             const name = names[k]
             for await(const p of synchronizeRelation(src[k], dst[k])) {
                 yield [{type: "relation", name}, p]

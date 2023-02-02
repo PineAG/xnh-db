@@ -47,4 +47,22 @@ export module XBinding {
             }
         }
     }
+
+    class ArrayItemBinding<T> implements Binding<T> {
+        constructor(private parent: Binding<T[]>, private index: number) {}
+        
+        get value(): T {
+            return this.parent.value[this.index]
+        }
+        
+        update(value: T): void {
+            const newArray = Array.from(this.parent.value)
+            newArray[this.index] = value
+            this.parent.update(newArray)
+        } 
+    }
+
+    export function fromArray<T>(binding: Binding<T[]>): Binding<T>[] {
+        return binding.value.map((v, i) => new ArrayItemBinding(binding, i))
+    }
 }

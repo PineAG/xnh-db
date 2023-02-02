@@ -28,4 +28,8 @@ export module IOnlineClient {
         write(name: string, value: Blob): Promise<void>
         delete(name: string): Promise<void>
     }
+
+    export interface Tags {
+        getTagsByCollection(collection: string): Promise<string[]>
+    }
 }

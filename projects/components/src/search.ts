@@ -8,28 +8,35 @@ export module DBSearch {
         return sortBy(results, it => -it.weight)
     }
 
-    
-    export type IQuery = {
-        type: "property",
-        property: IdbCollectionQuery
-    } | {
-        type: "fullText",
-        keyword: string
-    } | {
-        type: "operator",
-        operator: "and" | "or",
-        children: IQuery[]
-    } | {
-        type: "operator",
-        operator: "exclude",
-        children: [IQuery, IQuery]
+    export type IQueryDef = {
+        "property": {
+            type: "property"
+            property: IdbCollectionQuery
+        }
+        "fullText": {
+            type: "fullText"
+            keyword: string
+        }
+        "merge": {
+            type: "merge"
+            operator: "and" | "or",
+            children: IQuery[]
+        }
+        "exclude": {
+            type: "exclude"
+            children: [IQuery, IQuery]
+        }
     }
+
+    export type IQuery = {
+        [K in keyof IQueryDef]: IQueryDef[K]
+    }[keyof IQueryDef]
 
     export module Operators {
         
         export function and(children: IQuery[]): IQuery {
             return {
-                type: "operator",
+                type: "merge",
                 operator: "and",
                 children
             }
@@ -37,7 +44,7 @@ export module DBSearch {
 
         export function or(children: IQuery[]): IQuery {
             return {
-                type: "operator",
+                type: "merge",
                 operator: "or",
                 children
             }
@@ -45,8 +52,7 @@ export module DBSearch {
 
         export function exclude(children: [IQuery, IQuery]): IQuery {
             return {
-                type: "operator",
-                operator: "exclude",
+                type: "exclude",
                 children
             }
         }
@@ -86,7 +92,7 @@ export module DBSearch {
                     }
                     return results
                 }
-                case "operator":
+                case "merge":
                     if(operator.children.length === 0) {
                         return {}
                     }
@@ -113,17 +119,17 @@ export module DBSearch {
                                 return results
                             })
                         }
-                        case "exclude": {
-                            const [left, right] = await Promise.all([
-                                internalEval(operator.children[0], collection), 
-                                internalEval(operator.children[1], collection)
-                            ])
-                            for(const key in right) {
-                                delete left[key]
-                            }
-                            return left
-                        }
                     }
+                case "exclude": {
+                    const [left, right] = await Promise.all([
+                        internalEval(operator.children[0], collection), 
+                        internalEval(operator.children[1], collection)
+                    ])
+                    for(const key in right) {
+                        delete left[key]
+                    }
+                    return left
+                }
             }
         }
     } 

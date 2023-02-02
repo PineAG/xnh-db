@@ -16,11 +16,11 @@ function createInternationalNameDefinition(): FC.ConfigFromDeclaration<Internati
 
 export interface ICharacter {
     id: string
-    title: string,
+    title: string
     name: InternationalName
-    profile: string,
+    profile: string
     photos: string[]
-    description: string,
+    description: string
     appearance: {
         eyes: {
             color: string[],
@@ -165,6 +165,7 @@ export type IOnlineClientSet<CollectionQuery> = {
         character_voiceActor: IOnlineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
     },
     files: IOnlineClient.Files
+    tags: IOnlineClient.Tags
 }
 
 export type IOfflineClientSet = {
@@ -195,3 +196,18 @@ export async function retrieveRemoteFile(name: string, query: IOnlineClient.File
     }
     return query.read(name)
 }
+
+export type DBDeclaration = {
+    character: ICharacter
+    artwork: IArtwork
+    voiceActor: IVoiceActor
+    creator: ICreator
+}
+
+export const DBDefinitions: {[K in keyof DBDeclaration]: FC.ConfigFromDeclaration<DBDeclaration[K]>} = {
+    character: CharacterDefinition,
+    artwork: ArtworkDefinition,
+    creator: CreatorDefinition,
+    voiceActor: VoiceActorDefinition
+}
+

@@ -1,12 +1,13 @@
-import { ICharacter, IArtwork, ICreator, IVoiceActor } from "@xnh-db/protocol";
+import { ICharacter, IArtwork, ICreator, IVoiceActor, FieldConfig } from "@xnh-db/protocol";
+import { DeepPartial } from "utility-types";
 
-type Title<T> = T extends number | string | (number|string)[] ?
-    string :
-    T extends Record<string, any> ?
-    {[K in keyof T]: Title<T[K]>} & {$title: string} :
-    never
+export module Titles {
+    export type Title<T> = T extends number | string | (number | string)[] ?
+        string :
+        T extends Record<string, any> ?
+        { [K in keyof T]: Title<T[K]> } & { $title: string } :
+        never
 
-export module ConfigTitles {
     export const Character: Title<ICharacter> = {
         $title: "角色",
         id: "ID",
@@ -76,5 +77,12 @@ export module ConfigTitles {
         },
         description: "描述",
         photos: "照片",
+    }
+
+    export const titles = {
+        character: Character,
+        artwork: Artwork,
+        voiceActor: VoiceActor,
+        creator: Creator
     }
 }
