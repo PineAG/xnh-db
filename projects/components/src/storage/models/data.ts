@@ -1,15 +1,16 @@
-import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClient, IOfflineClientSet, IOnlineClientSet, IVoiceActor, ProgressResult, RelationPayloads, synchronizeCollection, FilesSynchronization, synchronizeRelation, VoiceActorDefinition } from "@xnh-db/protocol";
-import { IdbCollectionWrapper, IdbCollectionOfflineClient, IdbCollectionOnlineClient, IdbCollectionQuery } from "./collection";
-import { IdbRelationOnlineClient, IdbRelationOfflineClient, IdbRelationWrapper } from "./relation";
-import * as idb from "idb"
-import { GlobalStatusWrapper, IdbTagWrapper } from "./global";
+import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClient, IOfflineClientSet, IOnlineClientSet, IVoiceActor, ProgressResult, RelationPayloads, synchronizeCollection, synchronizeRelation, VoiceActorDefinition, FieldConfig } from "@xnh-db/protocol";
+import * as idb from "idb";
+import { IdbCollectionOfflineClient, IdbCollectionOnlineClient, IdbCollectionQuery, IdbCollectionWrapper } from "./collection";
 import { IdbFileClientWrapper, IdbFileOfflineClient, IdbFileOnlineClient } from "./files";
+import { GlobalStatusWrapper, IdbTagWrapper } from "./global";
+import { IdbRelationOfflineClient, IdbRelationOnlineClient, IdbRelationWrapper } from "./relation";
 
 export function createDBWrappers() {
     const character = new IdbCollectionWrapper<ICharacter>("characters", CharacterDefinition)
     const artwork = new IdbCollectionWrapper<IArtwork>("artworks", ArtworkDefinition)
     const creator = new IdbCollectionWrapper<ICreator>("creators", CreatorDefinition)
     const voiceActor = new IdbCollectionWrapper<IVoiceActor>("voice_actors", VoiceActorDefinition)
+    
     return {
         collections: {
             character, artwork,
@@ -20,10 +21,10 @@ export function createDBWrappers() {
             artwork: new IdbRelationWrapper({parent: artwork, child: artwork}, RelationPayloads.Inheritance_Definition)
         },
         relations: {
-            interpersonal: new IdbRelationWrapper({left: character, right: character}, RelationPayloads.Interpersonal_Definition),
-            character_artwork: new IdbRelationWrapper({character, artwork}, RelationPayloads.Character_Artwork_Definition),
-            artwork_creator: new IdbRelationWrapper({artwork, creator}, RelationPayloads.Artwork_Creator_Definition),
-            character_voiceActor: new IdbRelationWrapper({character, voiceActor}, RelationPayloads.Character_VoiceActor_Definition)
+            interpersonal: new IdbRelationWrapper<{left: ICharacter, right: ICharacter}, RelationPayloads.Interpersonal>({left: character, right: character}, RelationPayloads.Interpersonal_Definition),
+            character_artwork: new IdbRelationWrapper<{character: ICharacter, artwork: IArtwork}, RelationPayloads.Character_Artwork>({character, artwork}, RelationPayloads.Character_Artwork_Definition),
+            artwork_creator: new IdbRelationWrapper<{artwork: IArtwork, creator: ICreator}, RelationPayloads.Artwork_Creator>({artwork, creator}, RelationPayloads.Artwork_Creator_Definition),
+            character_voiceActor: new IdbRelationWrapper<{character: ICharacter, voiceActor: IVoiceActor}, RelationPayloads.Character_VoiceActor>({character, voiceActor}, RelationPayloads.Character_VoiceActor_Definition)
         }
     }
 }

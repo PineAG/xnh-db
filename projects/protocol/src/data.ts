@@ -34,7 +34,7 @@ export interface ICharacter {
     }
 }
 
-export const CharacterDefinition: FC.ConfigFromDeclaration<ICharacter> = {
+export const CharacterDefinition = FC.wrapConfig<ICharacter>()({
     id: FC.id(),
     title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
@@ -52,7 +52,7 @@ export const CharacterDefinition: FC.ConfigFromDeclaration<ICharacter> = {
             features: FC.tagList("hair.features")
         }
     },
-}
+})
 
 export interface IArtwork {
     id: string
@@ -62,13 +62,13 @@ export interface IArtwork {
     description: string
 }
 
-export const ArtworkDefinition: FC.ConfigFromDeclaration<IArtwork> = {
+export const ArtworkDefinition = FC.wrapConfig<IArtwork>()({
     id: FC.id(),
     title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1)
-}
+})
 
 export interface ICreator {
     id: string
@@ -78,13 +78,13 @@ export interface ICreator {
     description: string
 }
 
-export const CreatorDefinition: FC.ConfigFromDeclaration<ICreator> = {
+export const CreatorDefinition = FC.wrapConfig<ICreator>()({
     id: FC.id(),
     title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1)
-}
+})
 
 export interface IVoiceActor {
     id: string
@@ -94,13 +94,13 @@ export interface IVoiceActor {
     description: string
 }
 
-export const VoiceActorDefinition: FC.ConfigFromDeclaration<IVoiceActor> = {
+export const VoiceActorDefinition = FC.wrapConfig<IVoiceActor>()({
     id: FC.id(),
     title: FC.fullTextField(1.5),
     name: createInternationalNameDefinition(),
     photos: FC.fileList(),
     description: FC.fullTextField(0.1)
-}
+})
 
 /**
  * Character - VoiceActor
@@ -112,39 +112,47 @@ export const VoiceActorDefinition: FC.ConfigFromDeclaration<IVoiceActor> = {
 export module RelationPayloads {
     export interface Inheritance {}
 
-    export const Inheritance_Definition: FC.ConfigFromDeclaration<Inheritance> = {}
+    export const Inheritance_Definition = FC.wrapConfig<Inheritance>()({})
 
     export interface Character_Artwork {
         characterType: string[]
     }
 
-    export const Character_Artwork_Definition: FC.ConfigFromDeclaration<Character_Artwork> = {
+    export const Character_Artwork_Definition = FC.wrapConfig<Character_Artwork>()({
         characterType: FC.tagList("character_artwork.characterType")
-    }
+    })
 
     export interface Artwork_Creator {
         creatorType: string[]
     }
 
-    export const Artwork_Creator_Definition: FC.ConfigFromDeclaration<Artwork_Creator> = {
+    export const Artwork_Creator_Definition = FC.wrapConfig<Artwork_Creator>()({
         creatorType: FC.tagList("artwork_creator.creatorType")
-    }
+    })
 
     export interface Character_VoiceActor {
         voiceType: string[]
     }
 
-    export const Character_VoiceActor_Definition: FC.ConfigFromDeclaration<Character_VoiceActor> = {
+    export const Character_VoiceActor_Definition = FC.wrapConfig<Character_VoiceActor>()({
         voiceType: FC.tagList("character_voiceActor.voiceType")
-    }
+    })
 
     export interface Interpersonal {
         relation: [string, string]
     }
 
-    export const Interpersonal_Definition: FC.ConfigFromDeclaration<Interpersonal> = {
+    export const Interpersonal_Definition = FC.wrapConfig<Interpersonal>()({
         relation: FC.tagList("interpersonal.relation")
-    }
+    })
+}
+
+export module RelationKeys {
+    export type Inheritance = "parent" | "child"
+    export type Interpersonal = "left" | "right"
+    export type Character_Artwork = "character" | "artwork"
+    export type Artwork_Creator = "artwork" | "creator"
+    export type Character_VoiceActor = "character" | "voiceActor"
 }
 
 export type IOnlineClientSet<CollectionQuery> = {

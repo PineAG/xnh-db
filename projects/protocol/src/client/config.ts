@@ -1,6 +1,6 @@
-export module FieldConfig {
-    const ConfigIdentifier = Symbol()
+const ConfigIdentifier = Symbol()
 
+export module FieldConfig {
     type ItemConfig<T, TypeStr extends string, Options> = {
         [ConfigIdentifier]: true,
         isArray: false,
@@ -97,21 +97,41 @@ export module FieldConfig {
 
     export type ConfigFromDeclaration<T> = {
         [K in keyof T]: (
-            T[K] extends (infer U)[] ? (
-                U extends string ?
-                    StringListConfig:
-                    never
-            ) : (
-                T[K] extends string ?
-                    StringFieldConfig | IdFieldConfig :
-                T[K] extends number ?
-                    NumberConfig :
-                T[K] extends Record<string, any> ?
-                    ConfigFromDeclaration<T[K]>:
-                    never
-            )
+            T[K] extends string | number | any[] ? EndpointConfig<T[K]>: ConfigFromDeclaration<T[K]>
         )
     }
+
+    export type EndpointConfig<T> = (
+        T extends string ?
+            StringFieldConfig | IdFieldConfig :
+        T extends number ?
+            NumberConfig :
+        T extends (infer U)[] ? (
+            U extends string ?
+            StringListConfig:
+            never):
+        never
+    )
+
+    export const wrapConfig = <T>() => <C extends ConfigFromDeclaration<T>>(conf: C) => conf
+    
+    // export type ConfigFromDeclaration<T> = {
+    //     [K in keyof T]: (
+    //         T[K] extends (infer U)[] ? (
+    //             U extends string ?
+    //                 StringListConfig:
+    //                 never
+    //         ) : (
+    //             T[K] extends string ?
+    //                 StringFieldConfig | IdFieldConfig :
+    //             T[K] extends number ?
+    //                 NumberConfig :
+    //             T[K] extends Record<string, any> ?
+    //                 ConfigFromDeclaration<T[K]>:
+    //                 never
+    //         )
+    //     )
+    // }
 
     type StringListConfig = FullTextListConfig | TagListConfig | FileListConfig
     type StringFieldConfig = FullTextFieldConfig | FileConfig

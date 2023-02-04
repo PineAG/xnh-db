@@ -5,7 +5,7 @@ import { createIdbClients, destroyIdbStorage, IdbCollectionQuery } from "../../s
 import { stringifyProgressResult, synchronizeOfflineClientSet } from "../../storage/models/data";
 import { createOctokitOfflineClientSet, OctokitCertificationStore, OctokitClient } from "../../sync";
 import {message, Modal} from "antd"
-import { createNullableContext, useLocalDBinding, useNullableContext } from "@pltk/components";
+import { createNullableContext, useNullableContext } from "@pltk/components";
 import { GithubAuthDialog } from "./auth";
 
 type ForceProceedingAction = {proceed: () => Promise<void>}

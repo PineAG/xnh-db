@@ -1,9 +1,9 @@
 import * as AntdIcons from "@ant-design/icons";
-import { Collapse, Flex, FormItem, Loading } from "@pltk/components";
+import { Collapse, createNullableContext, Flex, FormItem, Loading } from "@pltk/components";
 import { DBDeclaration, DBDefinitions, FieldConfig } from "@xnh-db/protocol";
-import { Button, Input as AntInput, Select, Tree } from "antd";
+import { Button, Card, Input as AntInput, Select, Tree } from "antd";
 import { DataNode } from "antd/es/tree";
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { DeepPartial } from "utility-types";
 import { DBSearch } from "../search";
 import { Titles } from "../titles";
@@ -137,18 +137,20 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
         treeBinding.update(PropertyQuery.propertiesToTree(collection, propertyQuery))
     }, [search.query])
 
-    return <Flex direction="vertical" spacing={16}>
-        <Flex direction="horizontal" nowrap spacing={8}>
-            <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/>
-            <Button icon={<AntdIcons.SearchOutlined/>} onClick={onSearch} type="primary">搜索</Button>
+    return <Card>
+        <Flex direction="vertical" spacing={16}>
+            <Flex direction="horizontal" nowrap spacing={8}>
+                <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/>
+                <Button icon={<AntdIcons.SearchOutlined/>} onClick={onSearch} type="primary">搜索</Button>
+            </Flex>
+            <Collapse title="选择属性">
+                <Tree
+                    blockNode
+                    defaultExpandAll
+                    treeData={PropertyQuery.renderTree(treeBinding)}/>
+            </Collapse>
         </Flex>
-        <Collapse title="选择属性">
-            <Tree
-                blockNode
-                defaultExpandAll
-                treeData={PropertyQuery.renderTree(treeBinding)}/>
-        </Collapse>
-    </Flex>
+    </Card>
 
     async function onSearch(){
         const keywords = searchText.split(/\s+/).filter(it => it.length > 0)
@@ -373,4 +375,17 @@ export function DBSearchResultConsumer<C extends CollectionName>(props: DBSearch
         </>
     }
 
+}
+
+type SearchItemOnClickCallback = (collection: CollectionName, id: string) => void
+const SearchItemOpenerContext = createContext<null | SearchItemOnClickCallback>(null)
+
+export function SearchItemOpenerProvider(props: {onOpen: SearchItemOnClickCallback, children: React.ReactNode}) {
+    return <SearchItemOpenerContext.Provider value={props.onOpen}>
+        {props.children}
+    </SearchItemOpenerContext.Provider>
+} 
+
+export function useSearchItemOpener(): SearchItemOnClickCallback | null {
+    return useContext(SearchItemOpenerContext)
 }

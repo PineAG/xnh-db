@@ -1,4 +1,4 @@
-import { createNullableContext, Loading } from "@pltk/components";
+import { createNullableContext, Loading, useNullableContext } from "@pltk/components";
 import { FilesSynchronization, IOfflineClient, IOfflineClientSet, IOnlineClient, IOnlineClientSet, RelationPayloads, retrieveRemoteFile, synchronizeCollection, synchronizeRelation } from "@xnh-db/protocol";
 import { useEffect, useState } from "react";
 import { DeepPartial } from "utility-types";
@@ -6,9 +6,10 @@ import { IdbCollectionQuery } from "../../storage";
 import { OctokitCertificationStore, OctokitClient } from "../../sync";
 import { useDBClients, useSyncDialog } from "./globalSync";
 
-type RelationsBase = Record<string, {payload: any, keys: string}>
+export type LocalSyncRelationsBase = Record<string, {payload: any, keys: string}>
+export type CreateLocalSyncRelations<C extends LocalSyncRelationsBase> = C
 
-export interface ILocalSyncOfflineClients<T, Relations extends RelationsBase> {
+export interface ILocalSyncOfflineClients<T, Relations extends LocalSyncRelationsBase> {
     collection: IOfflineClient.Collection<T>
     inheritance?: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
     relations: {
@@ -16,15 +17,19 @@ export interface ILocalSyncOfflineClients<T, Relations extends RelationsBase> {
     }
 }
 
-export interface ILocalSyncOnlineClients<T, Relations extends RelationsBase> {
+export interface ILocalSyncOnlineClients<T, Relations extends LocalSyncRelationsBase> {
     collection: IOnlineClient.Collection<T, IdbCollectionQuery>
     inheritance?: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
     relations: {
-        [K in keyof Relations]: IOnlineClient.Relation<Relations[K]["keys"], Relations[K]["payload"]>
+        [K in keyof Relations]: {
+            selfKey: Relations[K]["keys"]
+            targetKey: Relations[K]["keys"]
+            client: IOnlineClient.Relation<Relations[K]["keys"], Relations[K]["payload"]>
+        }
     }
 }
 
-export interface ILocalSyncData<T, Relations extends RelationsBase> {
+export interface ILocalSyncData<T, Relations extends LocalSyncRelationsBase> {
     item: DeepPartial<T>
     parent?: {
         id: string,
@@ -38,18 +43,19 @@ export interface ILocalSyncData<T, Relations extends RelationsBase> {
     }
 }
 
-export interface ILocalSyncRequest<T, Relations extends RelationsBase> {
+export interface ILocalSyncRequest<T, Relations extends LocalSyncRelationsBase> {
     item: DeepPartial<T>
     parentId?: string
     relations: {
         [K in keyof Relations]: {
+            selfKey: Record<Relations[K]["keys"], string>,
             keys: Record<Relations[K]["keys"], string>,
             payload: Relations[K]["payload"]
         }[]
     }
 }
 
-async function syncOfflineClients<T, R extends RelationsBase>(syncDialog: ReturnType<typeof useSyncDialog>, src: ILocalSyncOfflineClients<T, R>, dst: ILocalSyncOfflineClients<T, R>): Promise<void> {
+async function syncOfflineClients<T, R extends LocalSyncRelationsBase>(syncDialog: ReturnType<typeof useSyncDialog>, src: ILocalSyncOfflineClients<T, R>, dst: ILocalSyncOfflineClients<T, R>): Promise<void> {
     await syncDialog("数据集", synchronizeCollection(src.collection, dst.collection))
     if(src.inheritance && dst.inheritance) {
         await syncDialog("继承关系", synchronizeRelation(src.inheritance, dst.inheritance))
@@ -61,16 +67,16 @@ async function syncOfflineClients<T, R extends RelationsBase>(syncDialog: Return
     }
 }
 
-type LocalSyncOnlineClientsFactory<T, R extends RelationsBase> = (clients: IOnlineClientSet<IdbCollectionQuery>) => ILocalSyncOnlineClients<T, R>
-type LocalSyncOfflineClientsFactory<T, R extends RelationsBase> = (clients: IOfflineClientSet) => ILocalSyncOfflineClients<T, R>
+type LocalSyncOnlineClientsFactory<T, R extends LocalSyncRelationsBase> = (clients: IOnlineClientSet<IdbCollectionQuery>) => ILocalSyncOnlineClients<T, R>
+type LocalSyncOfflineClientsFactory<T, R extends LocalSyncRelationsBase> = (clients: IOfflineClientSet) => ILocalSyncOfflineClients<T, R>
 
-interface UseLocalSyncProps<T, R extends RelationsBase> {
+interface UseLocalSyncProps<T, R extends LocalSyncRelationsBase> {
     id: string
     offlineFactory: LocalSyncOfflineClientsFactory<T, R>
     onlineFactory: LocalSyncOnlineClientsFactory<T, R>
 }
 
-export type LocalSyncWrapperState<T, R extends RelationsBase> = {
+export type LocalSyncWrapperState<T, R extends LocalSyncRelationsBase> = {
     mode: "online"
     data: ILocalSyncData<T, R>
     update(data: ILocalSyncRequest<T, R>): Promise<void>
@@ -81,9 +87,9 @@ export type LocalSyncWrapperState<T, R extends RelationsBase> = {
     fetchFile(name: string): Promise<Blob>
 }
 
-type UseLocalSyncResult<T, R extends RelationsBase> = {pending: true} | {pending: false, result: LocalSyncWrapperState<T, R>}
+type UseLocalSyncResult<T, R extends LocalSyncRelationsBase> = {pending: true} | {pending: false, result: LocalSyncWrapperState<T, R>}
 
-function useLocalSync<T, R extends RelationsBase>(props: UseLocalSyncProps<T, R>): UseLocalSyncResult<T, R> {
+function useLocalSync<T, R extends LocalSyncRelationsBase>(props: UseLocalSyncProps<T, R>): UseLocalSyncResult<T, R> {
     const [result, setResult] = useState<UseLocalSyncResult<T, R>>({pending: true})
     const syncDialog = useSyncDialog()
     const clients = useDBClients()
@@ -172,7 +178,7 @@ function useLocalSync<T, R extends RelationsBase>(props: UseLocalSyncProps<T, R>
     }
 }
 
-async function retrieveData<T, R extends RelationsBase>(clients: ILocalSyncOnlineClients<T, R>, id: string): Promise<ILocalSyncData<T, R>> {
+async function retrieveData<T, R extends LocalSyncRelationsBase>(clients: ILocalSyncOnlineClients<T, R>, id: string): Promise<ILocalSyncData<T, R>> {
     const item = await clients.collection.getItemById(id)
     let parent: ILocalSyncData<T, R>["parent"]
     
@@ -190,11 +196,11 @@ async function retrieveData<T, R extends RelationsBase>(clients: ILocalSyncOnlin
 
     const relations: Partial<ILocalSyncData<T, R>["relations"]> = {}
     for(const k in clients.relations) {
-        const rel = clients.relations[k]
-        const keys = await rel.getRelationsByKey(k, id)
+        const {client, selfKey} = clients.relations[k]
+        const keys = await client.getRelationsByKey(selfKey, id)
         relations[k] = await Promise.all(keys.map(async key => ({
             keys: key,
-            payload: await rel.getPayload(key)
+            payload: await client.getPayload(key)
         })))
     }
 
@@ -205,7 +211,7 @@ async function retrieveData<T, R extends RelationsBase>(clients: ILocalSyncOnlin
     }
 }
 
-async function updateData<T, R extends RelationsBase>(clients: ILocalSyncOnlineClients<T, R>, id: string, oldData: ILocalSyncData<T, R>, request: ILocalSyncRequest<T, R>): Promise<void> {
+async function updateData<T, R extends LocalSyncRelationsBase>(clients: ILocalSyncOnlineClients<T, R>, id: string, oldData: ILocalSyncData<T, R>, request: ILocalSyncRequest<T, R>): Promise<void> {
     await clients.collection.putItem(id, request.item)
     if(clients.inheritance) {
         const deletedKeys = await clients.inheritance.getRelationsByKey("child", id)
@@ -215,22 +221,22 @@ async function updateData<T, R extends RelationsBase>(clients: ILocalSyncOnlineC
         }
     }
     for(const relName in clients.relations) {
-        const rel = clients.relations[relName]
-        const currentKeys = await rel.getRelationsByKey(relName, id)
-        await Promise.all(currentKeys.map(k => rel.deleteRelation(k)))
+        const {client} = clients.relations[relName]
+        const currentKeys = await client.getRelationsByKey(relName, id)
+        await Promise.all(currentKeys.map(k => client.deleteRelation(k)))
         for(const relReq of request.relations[relName]) {
-            await rel.putRelation(relReq.keys, relReq.payload)
+            await client.putRelation(relReq.keys, relReq.payload)
         }
     }
 }
 
-interface LocalSyncWrapperProps<T, R extends RelationsBase> extends UseLocalSyncProps<T, R> {
+interface LocalSyncWrapperProps<T, R extends LocalSyncRelationsBase> extends UseLocalSyncProps<T, R> {
     children: React.ReactNode
 }
 
 const LocalSyncWrapperStateContext = createNullableContext<LocalSyncWrapperState<any, any>>("Local state not initialized")
 
-export function LocalSyncWrapper<T, R extends RelationsBase>(props: LocalSyncWrapperProps<T, R>){
+export function LocalSyncWrapper<T, R extends LocalSyncRelationsBase>(props: LocalSyncWrapperProps<T, R>){
     const localSync = useLocalSync(props)
     if(localSync.pending === false) {
         return <LocalSyncWrapperStateContext.Provider value={localSync.result}>
@@ -239,4 +245,8 @@ export function LocalSyncWrapper<T, R extends RelationsBase>(props: LocalSyncWra
     } else {
         return <Loading/>
     }
+}
+
+export function useLocalSyncResult<T, R extends LocalSyncRelationsBase>(): LocalSyncWrapperState<T, R> {
+    return useNullableContext(LocalSyncWrapperStateContext)
 }
