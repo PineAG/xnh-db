@@ -1,9 +1,10 @@
 import * as AntdIcons from "@ant-design/icons";
-import { Collapse, createNullableContext, Flex, FormItem, Loading } from "@pltk/components";
-import { DBDeclaration, DBDefinitions, FieldConfig } from "@xnh-db/protocol";
-import { Button, Card, Input as AntInput, Select, Tree } from "antd";
+import { Collapse, createNullableContext, Flex, FormItem, HStack, Loading } from "@pltk/components";
+import { DBDeclaration, DBDefinitions, FieldConfig, flattenDataDefinition, ICharacter } from "@xnh-db/protocol";
+import { Button, Card, Input as AntInput, Tag, TreeDataNode, TreeSelect, Select } from "antd";
+import { DefaultOptionType } from "antd/es/select";
 import { DataNode } from "antd/es/tree";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { DeepPartial } from "utility-types";
 import { DBSearch } from "../search";
 import { Titles } from "../titles";
@@ -119,219 +120,168 @@ type CollectionProps<C extends CollectionName> = {collection: C}
 
 export function DBSearchInput<C extends CollectionName>({collection}: CollectionProps<C>) {
     const search = useDBSearch(collection)
-
     const [searchText, setSearchText] = useState("")
-    const treeBinding = XBinding.useBinding<PropertyQuery.TreeNode | null>(null)
-
-    useEffect(() => {
-        const fullTextQuery: string[] = []
-        const propertyQuery: DBSearch.IQueryDef["property"][] = []
-        for(const q of search.query.children) {
-            if(q.type === "fullText") {
-                fullTextQuery.push(q.keyword)
-            } else {
-                propertyQuery.push(q)
-            }
-        }
-        setSearchText(fullTextQuery.join(" "))
-        treeBinding.update(PropertyQuery.propertiesToTree(collection, propertyQuery))
-    }, [search.query])
+    const [propertyPath, setPropertyPath] = useState<string>("")
+    const [propertyTags, setPropertyTags] = useState<string[]>([])
+    const [selectedTag, setSelectedTag] = useState("")
+    const [flatTitles, flatPath, flatConfig, propertyTree] = useMemo(() => {
+        return getConfigInfo()
+    }, [collection])
+    const clients = useDBClients()
 
     return <Card>
-        <Flex direction="vertical" spacing={16}>
-            <Flex direction="horizontal" nowrap spacing={8}>
-                <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/>
-                <Button icon={<AntdIcons.SearchOutlined/>} onClick={onSearch} type="primary">搜索</Button>
+        <Flex direction="vertical" spacing={8}>
+            <Flex direction="horizontal" spacing={8}>
+                {search.query.children.map((q, i) => (
+                    <Tag
+                        key={i}
+                        style={{fontSize: "1rem"}}
+                        closable
+                        onClose={(evt) => {
+                            evt.preventDefault()
+                            deleteIthQuery(i)
+                        }}
+                    >{
+                        q.type === "fullText" ? 
+                            q.keyword :
+                            `${flatTitles[Titles.stringifyPath(q.property.keyPath)]}: ${q.property.value}`
+                    }</Tag>
+                ))}
             </Flex>
-            <Collapse title="选择属性">
-                <Tree
-                    blockNode
-                    defaultExpandAll
-                    treeData={PropertyQuery.renderTree(treeBinding)}/>
-            </Collapse>
+            <HStack layout={["1fr", "1fr"]} spacing={24}>
+                <FormItem label="关键字">    
+                    <HStack layout={["1fr", "auto"]} spacing={8}>
+                        <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/>
+                        <Button icon={<AntdIcons.PlusOutlined/>} onClick={searchFullText} type="primary">搜索关键字</Button>
+                    </HStack>
+                </FormItem>
+                <FormItem label="属性">
+                    <HStack layout={["1fr", "1fr", "auto"]} spacing={8}>
+                        <TreeSelect
+                            treeDefaultExpandAll
+                            value={propertyPath}
+                            onChange={value => {
+                                setPropertyPath(value)
+                                loadTags(value)
+                            }}
+                            treeData={propertyTree}/>
+                        <Select
+                            value={selectedTag}
+                            onChange={setSelectedTag}
+                            disabled={!propertyPath || flatConfig[propertyPath] === undefined}
+                            options={propertyTags.map(it => ({
+                                label: it,
+                                value: it
+                            }))}
+                        />
+                        <Button icon={<AntdIcons.PlusOutlined/>} disabled={!selectedTag} onClick={searchProperty} type="primary">搜索属性</Button>
+                    </HStack>
+                </FormItem>
+            </HStack>
         </Flex>
     </Card>
 
-    async function onSearch(){
+    async function deleteIthQuery(i: number) {
+        const newList = Array.from(search.query.children)
+        newList.splice(i, 1)
+        await search.search({
+            type: "merge",
+            operator: "and",
+            children: newList
+        })
+    }
+
+    async function searchFullText(){
         const keywords = searchText.split(/\s+/).filter(it => it.length > 0)
         const newQuery: IQuery = {
             type: "merge",
             operator: "and",
             children: [
-                ...keywords.map(keyword => ({type: "fullText" as const, keyword})),
-                ...PropertyQuery.treeToProperties(treeBinding.value)
+                ...search.query.children,
+                ...keywords.map(keyword => ({
+                    type: "fullText",
+                    keyword 
+                } as DBSearch.IQueryDef["fullText"]))
+            ]
+        }
+        await search.search(newQuery)
+        setSearchText("")
+    }
+
+    async function searchProperty() {
+        if(!selectedTag || !propertyPath) return;
+        const newQuery: IQuery = {
+            type: "merge",
+            operator: "and",
+            children: [
+                ...search.query.children,
+                {
+                    type: "property",
+                    property: {
+                        keyPath: flatPath[propertyPath],
+                        value: selectedTag
+                    }
+                }
             ]
         }
         await search.search(newQuery)
     }
-}
 
-module PropertyQuery {
-    type ParentNode = {
-        keyPath: string[]
-        title: string
-        children: TreeNode[]
-    }
-    type LeafNode = {
-        keyPath: string[]
-        title: string
-        collection: string
-        value: string | undefined
-    }
-
-    export type TreeNode = LeafNode | ParentNode
-
-    export function renderTree(tree: XBinding.Binding<TreeNode | null>): DataNode[] {
-        if(tree.value === null) {
-            return []
+    async function loadTags(propertyPath: string) {
+        setPropertyTags([])
+        setSelectedTag("")
+        const conf = flatConfig[propertyPath]
+        if(!FieldConfig.isFieldConfig(conf) || conf.type !== "string") {
+            return
         }
-        const [node, _] = walk(tree)
-        return node.children
-        function walk(node: XBinding.Binding<TreeNode>): [DataNode, number] {
-            if("children" in node.value) {
-                let count = 0
-                const childrenBinding = XBinding.propertyOf(node as XBinding.Binding<ParentNode>).join("children")
-                const children = XBinding.fromArray(childrenBinding).map((n) => {
-                    const [nd, c] = walk(n)
-                    count += c
-                    return nd
-                })
-                return [{
-                    title: `${node.value.title} [${count}]`,
-                    key: node.value.keyPath.join("."),
-                    isLeaf: false,
-                    children
-                }, count]
-            } else {
-                return [{
-                    title: <TreeLeafComp binding={node as XBinding.Binding<LeafNode>}/>,
-                    key: node.value.keyPath.join("."),
-                    isLeaf: true
-                }, node.value.value === undefined ? 0 : 1]
-            }
+        if(conf.options.type !== "tag") {
+            return
         }
+        const tags = await clients.query.tags.getTagsByCollection(conf.options.collection)
+        setPropertyTags(tags)
     }
 
-    type TreeLeafCompProps = {binding: XBinding.Binding<LeafNode>}
-    function TreeLeafComp(props: TreeLeafCompProps): JSX.Element {
-        const clients = useDBClients()
-        const [options, setOptions] = useState<string[]>([])
-        const valueBinding = XBinding.propertyOf(props.binding).join("value")
-        useEffect(() => {
-            clients.query.tags.getTagsByCollection(props.binding.value.collection).then(collections => {
-                collections.sort()
-                setOptions(collections)
-            })
-        }, [props.binding.value.collection])
-        return <FormItem label={props.binding.value.title}>
-            <Select<string>
-                showSearch
-                allowClear
-                value={valueBinding.value}
-                onClear={() => valueBinding.update(undefined)}
-                onSelect={value => {
-                    if(!value) {
-                        valueBinding.update(undefined)
-                    } else {
-                        valueBinding.update(value)
-                    }
-                }}
-                options={options.map(op => ({
-                    label: op,
-                    value: op
-                }))}
-            />
-        </FormItem>
-    }
+    function getConfigInfo(): [Record<string, string>, Record<string, string[]>, Record<string, FieldConfig.FieldConfig>, DefaultOptionType[]] {
+        const titles = Titles.titles[collection]
+        const config = DBDefinitions[collection]
+        const flatTitles = Titles.flattenTitlesByConfig<CollectionType<C>>(titles, config)
+        const flatConfList = flattenDataDefinition(config)
+        const flatPath = Object.fromEntries(flatConfList.map(([it, _]) => [Titles.stringifyPath(it), it]))
+        const flatConf = Object.fromEntries(flatConfList.map(([keyPath, conf]) => [Titles.stringifyPath(keyPath), conf]))
+        const propertyTree = walk([], config)
+        const properties = (propertyTree?.children ?? []) as DefaultOptionType[]
+        return [flatTitles, flatPath, flatConf, properties]
 
-    export function propertiesToTree<C extends CollectionName>(collection: C, properties: DBSearch.IQueryDef["property"][]): TreeNode {
-        const partialData = convertListToTree(properties)
-        const tree = walk([], partialData, Titles.titles[collection], DBDefinitions[collection])
-        if(!tree) {
-            throw new Error("Invalid state")
-        }
-        return tree
-
-        function walk(keyPath: string[], data: any, titles: any, config: any): TreeNode | undefined {
+        function walk(path: string[], config: any): DefaultOptionType | undefined {
+            const pathStr = Titles.stringifyPath(path)
             if(FieldConfig.isFieldConfig(config)) {
                 if(config.type === "string" && config.options.type === "tag") {
                     return {
-                        keyPath,
-                        title: titles,
-                        collection: config.options.collection,
-                        value: data
+                        label: flatTitles[pathStr],
+                        value: pathStr
                     }
                 } else {
                     return undefined
                 }
             } else {
-                const children: TreeNode[] = []
-                for(const key in config) {
-                    const d = data ? data[key] : undefined
-                    const t = titles[key]
-                    const c = config[key]
-                    if(t && c) {
-                        const r = walk([...keyPath, key], d, t, c)
-                        if(r) {
-                            children.push(r)
-                        }
+                const children: DefaultOptionType[] = []
+                for(const k in config) {
+                    const res = walk([...path, k], config[k])
+                    if(res) {
+                        children.push(res)
                     }
                 }
                 if(children.length === 0) {
                     return undefined
                 }
                 return {
-                    keyPath,
-                    title: titles["$title"],
+                    label: flatTitles[pathStr],
+                    value: flatTitles[pathStr],
                     children
                 }
             }
         }
     }
-
-    export function treeToProperties(tree: TreeNode): DBSearch.IQueryDef["property"][] {
-        const result = Array.from(walk(tree))
-        return result
-
-        function* walk(node: TreeNode): Generator<DBSearch.IQueryDef["property"]> {
-            if("children" in node) {
-                for(const c of node.children) {
-                    yield* walk(c)
-                }
-            } else {
-                if(node.value !== undefined) {
-                    yield {
-                        type: "property",
-                        property: {
-                            keyPath: node.keyPath,
-                            value: node.value
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-
-    function convertListToTree<T>(properties: DBSearch.IQueryDef["property"][]): any {
-        const result = {}
-        for(const p of properties) {
-            let n = result
-            const keyPath = p.property.keyPath
-            const value = p.property.value
-            const len = keyPath.length
-            for(let i=0; i<len-1; i++) {
-                if(n[keyPath[i]]) {
-                    n = n[keyPath[i]]
-                } else {
-                    n = n[keyPath[i]] = {}
-                }
-            }
-            n[keyPath[len-1]] = value
-        }
-        return result
-    }
-
 }
 
 export function DBSearchResultList<C extends CollectionName>({collection}: CollectionProps<C>) {

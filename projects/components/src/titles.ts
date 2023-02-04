@@ -1,4 +1,4 @@
-import { ICharacter, IArtwork, ICreator, IVoiceActor, FieldConfig } from "@xnh-db/protocol";
+import { ICharacter, IArtwork, ICreator, IVoiceActor, FieldConfig, DBDeclaration } from "@xnh-db/protocol";
 import { DeepPartial } from "utility-types";
 
 export module Titles {
@@ -79,7 +79,7 @@ export module Titles {
         photos: "照片",
     }
 
-    export const titles = {
+    export const titles: {[K in keyof DBDeclaration]: Title<DBDeclaration[K]>} = {
         character: Character,
         artwork: Artwork,
         voiceActor: VoiceActor,
@@ -101,6 +101,7 @@ export module Titles {
             }else if(FieldConfig.isFieldConfig(c)) {
                 result[stringifyPath(path)] = t
             } else {
+                result[stringifyPath(path)] = t["$title"]
                 for(const k in c) {
                     walk([...path, k], t[k], c[k])
                 }
