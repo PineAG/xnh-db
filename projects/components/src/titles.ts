@@ -85,4 +85,26 @@ export module Titles {
         voiceActor: VoiceActor,
         creator: Creator
     }
+
+    export function stringifyPath(path: string[]): string {
+        return path.join("_")
+    }
+
+    export function flattenTitlesByConfig<T>(titles: Title<T>, conf: FieldConfig.ConfigFromDeclaration<T>): Record<string, string> {
+        const result: Record<string, string> = {}
+        walk([], titles, conf)
+        return result
+
+        function walk(path: string[], t: any, c: any) {
+            if(t === undefined) {
+                return
+            }else if(FieldConfig.isFieldConfig(c)) {
+                result[stringifyPath(path)] = t
+            } else {
+                for(const k in c) {
+                    walk([...path, k], t[k], c[k])
+                }
+            }
+        }
+    }
 }

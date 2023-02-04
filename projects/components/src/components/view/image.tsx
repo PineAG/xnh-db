@@ -98,7 +98,7 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
             canvas.height = height
             const ctx = canvas.getContext("2d")
             console.log(crop)
-            ctx.drawImage(img, x, y, width, height, -x, -y, width, height)
+            ctx.drawImage(img, x, y, width, height, 0, 0, width, height)
         })
         console.log("DONE!", out)
         await props.onComplete(out)
@@ -117,7 +117,7 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
             canvas.width = Math.floor(img.width * scale)
             canvas.height = Math.floor(img.height * scale)
             const ctx = canvas.getContext("2d")
-            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, img.width, img.height)
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height)
         })
         setDisplayBlob(out)
     }
