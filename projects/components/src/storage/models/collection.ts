@@ -177,6 +177,10 @@ export class IdbCollectionWrapper<T> {
         await IdbTagWrapper.putTagsByConfig(db, data, this.config)
     }
 
+    async getFullTextKeysByPrefix(db: idb.IDBPDatabase, prefix: string, count: number): Promise<string[]> {
+        return this.fullTextTermsWrapper.queryKeys(db, IDBKeyRange.lowerBound(prefix), count)
+    }
+
 }
 
 export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
@@ -206,6 +210,10 @@ export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T,
         await this.wrapper.deleteIndex(this.db, id)
         await this.wrapper.deleteFullText(this.db, id)
         await this.wrapper.setCollectionStatus(this.db, {updatedAt: new Date()})
+    }
+    
+    async autocompleteFullText(prefix: string, limit: number): Promise<string[]> {
+        return this.wrapper.getFullTextKeysByPrefix(this.db, prefix, limit)
     }
 }
 

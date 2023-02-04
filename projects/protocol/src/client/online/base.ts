@@ -12,6 +12,7 @@ export module IOnlineClient {
         queryFullText(keywords: string): Promise<FullTextQueryResult[]>
         putItem(id: string, value: DeepPartial<T>): Promise<void>
         deleteItem(id: string): Promise<void>
+        autocompleteFullText(prefix: string, limit: number): Promise<string[]>
     }
 
     export interface Relation<Keys extends string, Payload> {

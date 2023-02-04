@@ -79,4 +79,10 @@ export class IdbStoreWrapper<T, Indices extends string> {
             return tx.db.getAllFromIndex(this.storeName, indexName, value)
         })
     }
+
+    queryKeys(db: idb.IDBPDatabase, query: IDBKeyRange, count: number): Promise<string[]> {
+        return this.transaction(db, "readonly", async tx => {
+            return tx.store.getAllKeys(query, count)
+        })
+    }
 }

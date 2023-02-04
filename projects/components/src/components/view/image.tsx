@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useDBClients, XBinding } from "../sync";
 import ReactCrop, { Crop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css";
-import { Dialog, StringField, useLocalDBinding } from "@pltk/components";
+import { Dialog } from "@pltk/components";
 
 
 export function AsyncAvatar({filename, icon, avatarProps}: {filename: string | undefined, icon?: React.ReactNode, avatarProps?: AvatarProps}) {
@@ -100,7 +100,6 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
             console.log(crop)
             ctx.drawImage(img, x, y, width, height, 0, 0, width, height)
         })
-        console.log("DONE!", out)
         await props.onComplete(out)
     }
 

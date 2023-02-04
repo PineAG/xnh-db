@@ -1,7 +1,7 @@
 import * as AntdIcons from "@ant-design/icons";
 import { Collapse, createNullableContext, Flex, FormItem, HStack, Loading } from "@pltk/components";
 import { DBDeclaration, DBDefinitions, FieldConfig, flattenDataDefinition, ICharacter } from "@xnh-db/protocol";
-import { Button, Card, Input as AntInput, Tag, TreeDataNode, TreeSelect, Select } from "antd";
+import { Button, Card, Input as AntInput, Tag, TreeDataNode, TreeSelect, Select, AutoComplete } from "antd";
 import { DefaultOptionType } from "antd/es/select";
 import { DataNode } from "antd/es/tree";
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
@@ -124,9 +124,11 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
     const [propertyPath, setPropertyPath] = useState<string>("")
     const [propertyTags, setPropertyTags] = useState<string[]>([])
     const [selectedTag, setSelectedTag] = useState("")
+    const [autoCompleteResults, setAutoCompleteResults] = useState<string[]>([])
     const [flatTitles, flatPath, flatConfig, propertyTree] = useMemo(() => {
         return getConfigInfo()
     }, [collection])
+
     const clients = useDBClients()
 
     return <Card>
@@ -149,9 +151,15 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
                 ))}
             </Flex>
             <HStack layout={["1fr", "1fr"]} spacing={24}>
-                <FormItem label="关键字">    
+                <FormItem label="关键字">
                     <HStack layout={["1fr", "auto"]} spacing={8}>
-                        <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/>
+                        <AutoComplete
+                            value={searchText}
+                            onChange={setSearchText}
+                            onSearch={triggerAutoComplete}
+                            options={autoCompleteResults.map(it => ({value: it}))}
+                        />
+                        {/* <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/> */}
                         <Button icon={<AntdIcons.PlusOutlined/>} onClick={searchFullText} type="primary">搜索关键字</Button>
                     </HStack>
                 </FormItem>
@@ -180,6 +188,12 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
             </HStack>
         </Flex>
     </Card>
+
+    async function triggerAutoComplete(keywords: string) {
+        const results = await clients.query.collections[collection].autocompleteFullText(keywords, 20)
+        console.log(results)
+        setAutoCompleteResults(results)
+    }
 
     async function deleteIthQuery(i: number) {
         const newList = Array.from(search.query.children)
