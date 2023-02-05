@@ -88,15 +88,17 @@ export module EditorViews {
         
         return <>
             <div style={{display: "grid", gridTemplateColumns: "repeat(3, 100px)"}}>
-            {imageBindings.map(img => {
-                return <div key={img.value} style={{maxWidth: "100px", maxHeight: "100px"}}>
-                    <AsyncImage fileName={img.value}>
-                        <IconButton icon={<Icons.Delete/>} onClick={() => img.remove()} style={{position: "absolute", top: 0, right: 0}}/>
-                    </AsyncImage>
+                {imageBindings.map(img => {
+                    return <div key={img.value} style={{maxWidth: "100px", maxHeight: "100px"}}>
+                        <AsyncImage fileName={img.value}>
+                            <IconButton icon={<Icons.Delete/>} onClick={() => img.remove()} style={{position: "absolute", top: 0, right: 0}}/>
+                        </AsyncImage>
+                    </div>
+                })}
+                <div style={{placeItems: "center", display: "grid", width: "100px", height: "100px"}} onClick={uploadFile}>
+                    <Icons.Add/>
                 </div>
-            })}
             </div>
-            <IconButton icon={<Icons.Add/>} onClick={uploadFile}/>
             {uploadPlaceholder}
             <ImageEditDialog
                 data={fileBlob}
