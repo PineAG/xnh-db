@@ -160,7 +160,13 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
     }
 }
 
-export function ImageListViewer({fileIdList}: {fileIdList: string[]}) {
+interface ImageListViewerProps {
+    fileIdList: string[]
+    width?: string | number
+    height?: string | number
+}
+
+export function ImageListViewer(props: ImageListViewerProps) {
     const [blobList, setBlobList] = useState<Blob[]>([])
     const urlList = useObjectURLList(blobList)
     const [showList, setShowList] = useState(false)
@@ -169,25 +175,25 @@ export function ImageListViewer({fileIdList}: {fileIdList: string[]}) {
 
     useEffect(() => {
         loadImages()
-    }, [fileIdList])
+    }, [props.fileIdList])
 
     if(urlList.length === 0) {
         return <AntEmpty/>
     }
 
-    return <>
-        <Carousel autoplay>
-            {urlList.map((url, idx) => (<AntImage src={url} key={idx}/>))}
-        </Carousel>
-        <div>
+    return <div>
+        <div style={{width: props.width, height: props.height}} onClick={() => setShowList(true)}>
+            <AntImage src={urlList[0]} preview={{visible: false}} width={props.width}/>
+        </div>
+        <div style={{display: "none"}}>
             <AntImage.PreviewGroup preview={{visible: showList, onVisibleChange: (vis) => setShowList(vis)}}>
-                {urlList.map((url, idx) => (<AntImage src={url} key={idx}/>))}
+                {urlList.map((url, idx) => (<AntImage src={url} key={url}/>))}
             </AntImage.PreviewGroup>
         </div>
-    </>
+    </div>
 
     async function loadImages() {
-        const blobList = await Promise.all(fileIdList.map(id => clients.query.files.read(id)))
+        const blobList = await Promise.all(props.fileIdList.map(id => clients.query.files.read(id)))
         setBlobList(blobList)
     }
 

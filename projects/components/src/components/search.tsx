@@ -194,7 +194,6 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
 
     async function triggerAutoComplete(keywords: string) {
         const results = await clients.query.collections[collection].autocompleteFullText(keywords, 20)
-        console.log(results)
         setAutoCompleteResults(results)
     }
 
