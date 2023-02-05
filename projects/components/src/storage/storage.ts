@@ -3,16 +3,21 @@ import { createOfflineClientsFromIdbInstance, createOnlineClientsFromIdbInstance
 
 const IndexedDBName = "xnh-db.cache"
 
-export async function createIdbClients() {
+async function dbFactory(): Promise<idb.IDBPDatabase> {
     const wrappers = createDBWrappers()
     const db = await idb.openDB(IndexedDBName, 1, {
         upgrade: (db, oldVersion, newVersion, tx) => {
             initializeWrappers(db, wrappers)
         }
     })
+    return db
+}
+
+export async function createIdbClients() {
+    const wrappers = createDBWrappers()
     return {
-        online: createOnlineClientsFromIdbInstance(db, wrappers),
-        offline: createOfflineClientsFromIdbInstance(db, wrappers),
+        online: createOnlineClientsFromIdbInstance(dbFactory, wrappers),
+        offline: createOfflineClientsFromIdbInstance(dbFactory, wrappers),
     }
 }
 

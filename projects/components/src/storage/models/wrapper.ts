@@ -69,15 +69,24 @@ export class IdbStoreWrapper<T, Indices extends string> {
     }
 
     getKeysByIndex<Idx extends Indices>(db: idb.IDBPDatabase, indexName: Idx, value: any): Promise<string[]> {
+        this.checkKey(indexName)
         return this.transaction(db, "readonly", async tx => {
             return tx.db.getAllKeysFromIndex(this.storeName, indexName, value)
         })
     }
 
     getAllByIndex<Idx extends Indices>(db: idb.IDBPDatabase, indexName: Idx, value: any): Promise<T[]> {
+        this.checkKey(indexName)
         return this.transaction(db, "readonly", async tx => {
-            return tx.db.getAllFromIndex(this.storeName, indexName, value)
+            const items = await tx.db.getAllFromIndex(this.storeName, indexName, value)
+            return items
         })
+    }
+
+    private checkKey(indexName: Indices) {
+        if(!(indexName in this.indices)) {
+            throw new Error(`Invalid index: ${indexName}`)
+        }
     }
 
     queryKeys(db: idb.IDBPDatabase, query: IDBKeyRange, count: number): Promise<string[]> {

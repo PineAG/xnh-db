@@ -5,7 +5,7 @@ import { CharacterSearchResultView } from "./character"
 export * from "./image"
 export * from "./character"
 
-export const entitySearchResultViews: Record<keyof DBDeclaration, React.FC<{id: string}>> = {
+export const entitySearchResultViews: Record<keyof DBDeclaration, React.FC<{id: string, onOpen?: () => void}>> = {
     character: CharacterSearchResultView,
     artwork: () => <div>TODO</div>,
     voiceActor: () => <div>TODO</div>,

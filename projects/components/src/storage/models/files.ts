@@ -66,53 +66,92 @@ export module IdbFileClientWrapper {
 }
 
 export class IdbFileOnlineClient implements IOnlineClient.Files {
-    constructor(private db: idb.IDBPDatabase) {}
+    constructor(private dbFactory: () => Promise<idb.IDBPDatabase>) {}
+
+    private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+        const db = await this.dbFactory()
+        const result = await cb(db)
+        db.close()
+        return result
+    }
+
     list(): Promise<string[]> {
-        return IdbFileClientWrapper.list(this.db)
+        return this.withDB(db => {
+            return IdbFileClientWrapper.list(db)
+        })
     }
     read(name: string): Promise<Blob> {
-        return IdbFileClientWrapper.read(this.db, name)
+        return this.withDB(db => {
+            return IdbFileClientWrapper.read(db, name)
+        })
     }
     
     available(name: string): Promise<boolean> {
-        return IdbFileClientWrapper.exists(this.db, name) 
+        return this.withDB(db => {
+            return IdbFileClientWrapper.exists(db, name) 
+        })
     }
     
     async write(name: string, value: Blob): Promise<void> {
-        await IdbFileClientWrapper.write(this.db, name, value)
-        await IdbFileClientWrapper.setIndex(this.db, name, new Date())
+        return this.withDB(async db => {
+            await IdbFileClientWrapper.write(db, name, value)
+            await IdbFileClientWrapper.setIndex(db, name, new Date())
+        })
     }
     delete(name: string): Promise<void> {
-        return IdbFileClientWrapper.remove(this.db, name)
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.remove(db, name)
+        })
     }
     
 }
 
 export class IdbFileOfflineClient implements IOfflineClient.Files {
-    constructor(private db: idb.IDBPDatabase) {}
+    constructor(private dbFactory: () => Promise<idb.IDBPDatabase>) {}
+
+    private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+        const db = await this.dbFactory()
+        const result = await cb(db)
+        db.close()
+        return result
+    }
     
     getStatus(): Promise<IOfflineClient.LatestStatus> {
-        return IdbFileClientWrapper.getCollectionStatus(this.db)
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.getCollectionStatus(db)
+        })
     }
     setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
-        return IdbFileClientWrapper.setCollectionStatus(this.db, status)
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.setCollectionStatus(db, status)
+        })
     }
     async getIndex(): Promise<IOfflineClient.CollectionIndex<string>> {
-        const indices = await IdbFileClientWrapper.getAllIndices(this.db)
-        return indices.map(([key, date]) => ({key, date}))
+        return this.withDB(async db => {
+            const indices = await IdbFileClientWrapper.getAllIndices(db)
+            return indices.map(([key, date]) => ({key, date}))
+        })
     }
     flushIndex(index: IOfflineClient.CollectionIndex<string>): Promise<void> {
-        const list = index.map(({key, date}) => [key, date] as [string, Date])
-        return IdbFileClientWrapper.flushAllIndices(this.db, list)
+        return this.withDB(async db => {
+            const list = index.map(({key, date}) => [key, date] as [string, Date])
+            return IdbFileClientWrapper.flushAllIndices(db, list)
+        })
     }
     read(name: string): Promise<Blob> {
-        return IdbFileClientWrapper.read(this.db, name)
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.read(db, name)
+        })
     }
     write(name: string, value: Blob): Promise<void> {
-        return IdbFileClientWrapper.write(this.db, name, value)
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.write(db, name, value)
+        })
     }
     delete(name: string): Promise<void> {
-        return IdbFileClientWrapper.remove(this.db, name)
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.remove(db, name)
+        })
     }
     
 }

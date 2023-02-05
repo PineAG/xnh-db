@@ -1,4 +1,4 @@
-import {FieldConfig as FC} from "./config"
+import {FieldConfig as FC, FieldConfig} from "./config"
 import {DeepPartial} from "utility-types"
 
 export function flattenDataDefinition<T>(definition: FC.ConfigFromDeclaration<T>): [string[], FC.FieldConfig][] {
@@ -61,18 +61,34 @@ export function keyPathToFlattenedKey(keyPath: string[]): string {
 }
 
 export function extractValuesAndConfigs<T>(data: DeepPartial<T>, definition: FC.ConfigFromDeclaration<T>): [any, FC.FieldConfig][] {
-    return Array.from(walk(data, definition))
+    return flattenByConfig({
+        data,
+        config: definition,
+        mapper: it => it,
+        child: (d, k, c) => d[k]
+    }).map(([path, v, c]) => [v, c])
+}
 
-    function* walk(node: any, def: any): Generator<[any, FC.FieldConfig]> {
-        if(node === undefined || def === undefined){
+interface FlatByConfigProps<T, D, R, C extends FieldConfig.ConfigFromDeclaration<T>> {
+    data: D
+    config: C
+    mapper: (item: any, config: FieldConfig.FieldConfig) => R
+    child: (item: any, key: string, config: FieldConfig.FieldConfig) => D
+}
+
+export function flattenByConfig<T, D, R, C extends FieldConfig.ConfigFromDeclaration<T>>(props: FlatByConfigProps<T, D, R, C>): [string[], R, FieldConfig.FieldConfig][] {
+    return Array.from(walk(props.data, props.config, []))
+    
+    function* walk(n: any, c: any, path: string[]): Generator<[string[], R, FieldConfig.FieldConfig]> {
+        if(n === undefined || c === undefined) {
             return
-        }else if(FC.isFieldConfig(def)) {
-            yield [node, def]
+        } else if (FieldConfig.isFieldConfig(c)) {
+            yield [path, props.mapper(n, c), c]
         } else {
-            for(const k in def) {
-                const v = def[k]
-                yield* walk(node[k], v)
+            for(const key in c) {
+                yield *walk(props.child(n, key, c), c[key], [...path, key])
             }
         }
+
     }
 }

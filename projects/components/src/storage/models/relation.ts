@@ -120,49 +120,84 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
 }
 
 export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<Extract<keyof C, string>, Payload> {
-    constructor(private db: idb.IDBPDatabase, private wrapper: IdbRelationWrapper<C, Payload>) {
+    constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbRelationWrapper<C, Payload>) {
     }
+    private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+        const db = await this.dbFactory()
+        const result = await cb(db)
+        db.close()
+        return result
+    }
+
     getRelationsByKey<K extends Extract<keyof C, string>>(key: K, id: string): Promise<Record<Extract<keyof C, string>, string>[]> {
-        return this.wrapper.getRelationsByKey(this.db, key, id)
+        return this.withDB(db => {
+            return this.wrapper.getRelationsByKey(db, key, id)
+        })
     }
     getPayload(keys: Record<keyof C, string>): Promise<Payload> {
-        return this.wrapper.getPayload(this.db, keys)
+        return this.withDB(db => {
+            return this.wrapper.getPayload(db, keys)
+        })
     }
     async putRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
-        const updatedAt = new Date()
-        await this.wrapper.putRelation(this.db, keys, payload)
-        await this.wrapper.putDate(this.db, keys, updatedAt)
-        await this.wrapper.setCollectionStatus(this.db, {updatedAt})
-        await this.wrapper.updateTags(this.db, payload as DeepPartial<Payload>)
+        return this.withDB(async db => {    
+            const updatedAt = new Date()
+            await this.wrapper.putRelation(db, keys, payload)
+            await this.wrapper.putDate(db, keys, updatedAt)
+            await this.wrapper.setCollectionStatus(db, {updatedAt})
+            await this.wrapper.updateTags(db, payload as DeepPartial<Payload>)
+        })
     }
     deleteRelation(keys: Record<keyof C, string>): Promise<void> {
-        return this.wrapper.deleteRelation(this.db, keys)
+        return this.withDB(async db => {
+            return this.wrapper.deleteRelation(db, keys)
+        })
     }
 }
 
 export class IdbRelationOfflineClient<C extends Record<string, any>, Payload> implements IOfflineClient.Relation<keyof C & string, Payload> {
-    constructor(private db: idb.IDBPDatabase, private wrapper: IdbRelationWrapper<C, Payload>) {
+    constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbRelationWrapper<C, Payload>) {
+    }
+    private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+        const db = await this.dbFactory()
+        const result = await cb(db)
+        db.close()
+        return result
     }
     getStatus(): Promise<IOfflineClient.LatestStatus> {
-        return this.wrapper.getCollectionStatus(this.db)
+        return this.withDB(async db => {
+            return this.wrapper.getCollectionStatus(db)
+        })
     }
     setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
-        return this.wrapper.setCollectionStatus(this.db, status)
+        return this.withDB(async db => {
+            return this.wrapper.setCollectionStatus(db, status)
+        })
     }
     getPayload(keys: Record<keyof C, string>): Promise<Payload> {
-        return this.wrapper.getPayload(this.db, keys)
+        return this.withDB(async db => {
+            return this.wrapper.getPayload(db, keys)
+        })
     }
     deleteRelation(keys: Record<keyof C, string>): Promise<void> {
-        return this.wrapper.deleteRelation(this.db, keys)
+        return this.withDB(async db => {
+            return this.wrapper.deleteRelation(db, keys)
+        })
     }
     getIndex(): Promise<IOfflineClient.CollectionIndex<Record<keyof C, string>>> {
-        return this.wrapper.getIndex(this.db)
+        return this.withDB(async db => {
+            return this.wrapper.getIndex(db)
+        })
     }
     flushIndex(index: IOfflineClient.CollectionIndex<Record<keyof C, string>>): Promise<void> {
-        return this.wrapper.flushIndex(this.db, index)
+        return this.withDB(async db => {
+            return this.wrapper.flushIndex(db, index)
+        })
     }
     async updateRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
-        await this.wrapper.putRelation(this.db, keys, payload)
-        await this.wrapper.updateTags(this.db, payload as DeepPartial<Payload>)
+        return this.withDB(async db => {
+            await this.wrapper.putRelation(db, keys, payload)
+            await this.wrapper.updateTags(db, payload as DeepPartial<Payload>)
+        })
     }
 }

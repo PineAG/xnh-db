@@ -53,19 +53,32 @@ export module IdbTagWrapper {
     }
 
     export class Client implements IOnlineClient.Tags {
-        constructor(private db: idb.IDBPDatabase) {}
+        constructor(private dbFactory: () => Promise<idb.IDBPDatabase>) {}
+
+        private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+            const db = await this.dbFactory()
+            const result = await cb(db)
+            db.close()
+            return result
+        }
 
         async getTagsByCollection(collection: string): Promise<string[]> {
-            const result = await wrapper.getAllByIndex(this.db, "collection", collection)
-            return result.map(it => it.tag)
+            return this.withDB(async db => {
+                const result = await wrapper.getAllByIndex(db, "collection", collection)
+                return result.map(it => it.tag)
+            })
         }
 
         async putTag(collection: string, tag: string): Promise<void> {
-            await putTag(this.db, collection, tag)
+            return this.withDB(async db => {
+                return await putTag(db, collection, tag)
+            })
         }
 
         async deleteTag(collection: string, tag: string): Promise<void> {
-            await wrapper.delete(this.db, `${collection}:${tag}`)
+            return this.withDB(async db => {
+                await wrapper.delete(db, `${collection}:${tag}`)
+            })
         }
     }
 

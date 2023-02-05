@@ -13,7 +13,7 @@ export interface ILocalSyncOfflineClients<T, Relations extends LocalSyncRelation
     collection: IOfflineClient.Collection<T>
     inheritance?: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
     relations: {
-        [K in keyof Relations]: IOfflineClient.Relation<Extract<K, string>, Relations[K]>
+        [K in keyof Relations]: IOfflineClient.Relation<Relations[K]["keys"], Relations[K]["payload"]>
     }
 }
 
@@ -48,7 +48,6 @@ export interface ILocalSyncRequest<T, Relations extends LocalSyncRelationsBase> 
     parentId?: string
     relations: {
         [K in keyof Relations]: {
-            selfKey: Record<Relations[K]["keys"], string>,
             keys: Record<Relations[K]["keys"], string>,
             payload: Relations[K]["payload"]
         }[]
@@ -215,15 +214,19 @@ async function updateData<T, R extends LocalSyncRelationsBase>(clients: ILocalSy
     await clients.collection.putItem(id, request.item)
     if(clients.inheritance) {
         const deletedKeys = await clients.inheritance.getRelationsByKey("child", id)
-        await Promise.all(deletedKeys.map(k => clients.inheritance.deleteRelation(k)))
+        for(const k of deletedKeys) {
+            await clients.inheritance.deleteRelation(k)
+        }
         if(request.parentId) {
             await clients.inheritance.putRelation({parent: request.parentId, child: id}, {})
         }
     }
     for(const relName in clients.relations) {
-        const {client} = clients.relations[relName]
-        const currentKeys = await client.getRelationsByKey(relName, id)
-        await Promise.all(currentKeys.map(k => client.deleteRelation(k)))
+        const {client, selfKey} = clients.relations[relName]
+        const currentKeys = await client.getRelationsByKey(selfKey, id)
+        for(const k of currentKeys) {
+            await client.deleteRelation(k)
+        }
         for(const relReq of request.relations[relName]) {
             await client.putRelation(relReq.keys, relReq.payload)
         }
@@ -249,4 +252,18 @@ export function LocalSyncWrapper<T, R extends LocalSyncRelationsBase>(props: Loc
 
 export function useLocalSyncResult<T, R extends LocalSyncRelationsBase>(): LocalSyncWrapperState<T, R> {
     return useNullableContext(LocalSyncWrapperStateContext)
+}
+
+
+interface LocalSyncConsumerProps<T, R extends LocalSyncRelationsBase> extends UseLocalSyncProps<T, R> {
+    children: (result: LocalSyncWrapperState<T, R>) => React.ReactNode
+}
+
+export function LocalSyncConsumer<T, R extends LocalSyncRelationsBase>(props: LocalSyncConsumerProps<T, R>): JSX.Element {
+    const localSync = useLocalSync(props)
+    if(localSync.pending === false) {
+        return <>{props.children(localSync.result)}</>
+    } else {
+        return <Loading/>
+    }
 }

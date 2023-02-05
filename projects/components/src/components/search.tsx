@@ -125,6 +125,9 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
     const [propertyTags, setPropertyTags] = useState<string[]>([])
     const [selectedTag, setSelectedTag] = useState("")
     const [autoCompleteResults, setAutoCompleteResults] = useState<string[]>([])
+    useEffect(() => {
+        triggerAutoComplete(searchText)
+    }, [collection])
     const [flatTitles, flatPath, flatConfig, propertyTree] = useMemo(() => {
         return getConfigInfo()
     }, [collection])
@@ -298,15 +301,20 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
     }
 }
 
-export function DBSearchResultList<C extends CollectionName>({collection}: CollectionProps<C>) {
+interface DBSearchResultListProps<C extends CollectionName> {
+    collection: C
+    onItemOpen(id: string): void
+}
+
+export function DBSearchResultList<C extends CollectionName>({onItemOpen, collection}: DBSearchResultListProps<C>) {
     const search = useDBSearch(collection)
-    const Item: React.FC<{id: string}> = entitySearchResultViews[collection]
+    const Item: React.FC<{id: string, onOpen: () => void}> = entitySearchResultViews[collection]
     if(search.result.state === "pending") {
         return <Loading/>
     } else {
         return <Flex>
             {search.result.items.map(id => (
-                <Item key={id} id={id}/>
+                <Item key={id} id={id} onOpen={() => onItemOpen(id)}/>
             ))}
         </Flex>
     }
@@ -339,17 +347,4 @@ export function DBSearchResultConsumer<C extends CollectionName>(props: DBSearch
         </>
     }
 
-}
-
-type SearchItemOnClickCallback = (collection: CollectionName, id: string) => void
-const SearchItemOpenerContext = createContext<null | SearchItemOnClickCallback>(null)
-
-export function SearchItemOpenerProvider(props: {onOpen: SearchItemOnClickCallback, children: React.ReactNode}) {
-    return <SearchItemOpenerContext.Provider value={props.onOpen}>
-        {props.children}
-    </SearchItemOpenerContext.Provider>
-} 
-
-export function useSearchItemOpener(): SearchItemOnClickCallback | null {
-    return useContext(SearchItemOpenerContext)
 }

@@ -59,10 +59,25 @@ export module XBinding {
             const newArray = Array.from(this.parent.value)
             newArray[this.index] = value
             this.parent.update(newArray)
-        } 
+        }
+
+        remove() {
+            const newArray = Array.from(this.parent.value)
+            newArray.splice(this.index, 1)
+            this.parent.update(newArray)
+        }
     }
 
-    export function fromArray<T>(binding: Binding<T[]>): Binding<T>[] {
+    export function fromArray<T>(binding: Binding<T[]>): ArrayItemBinding<T>[] {
         return binding.value.map((v, i) => new ArrayItemBinding(binding, i))
+    }
+
+    export function defaultValue<T>(binding: Binding<T | undefined | null>, defaultFactory: () => T): Binding<T> {
+        return {
+            get value() {
+                return binding.value === null || binding.value === undefined ? defaultFactory() : binding.value
+            },
+            update: value => binding.update(value)
+        }
     }
 }

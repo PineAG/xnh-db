@@ -50,48 +50,48 @@ export async function upgradeWrapperIndices(db: idb.IDBPDatabase, wrappers: Retu
     }
 }
 
-export function createOnlineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>): IOnlineClientSet<IdbCollectionQuery> {
+export function createOnlineClientsFromIdbInstance(dbFactory: () => Promise<idb.IDBPDatabase>, wrappers: ReturnType<typeof createDBWrappers>): IOnlineClientSet<IdbCollectionQuery> {
     return {
         collections: {
-            character: new IdbCollectionOnlineClient(db, wrappers.collections.character), 
-            artwork: new IdbCollectionOnlineClient(db, wrappers.collections.artwork),
-            creator: new IdbCollectionOnlineClient(db, wrappers.collections.creator), 
-            voiceActor: new IdbCollectionOnlineClient(db, wrappers.collections.voiceActor)
+            character: new IdbCollectionOnlineClient(dbFactory, wrappers.collections.character), 
+            artwork: new IdbCollectionOnlineClient(dbFactory, wrappers.collections.artwork),
+            creator: new IdbCollectionOnlineClient(dbFactory, wrappers.collections.creator), 
+            voiceActor: new IdbCollectionOnlineClient(dbFactory, wrappers.collections.voiceActor)
         },
         inheritance: {
-            character: new IdbRelationOnlineClient(db, wrappers.inheritance.character),
-            artwork: new IdbRelationOnlineClient(db, wrappers.inheritance.artwork)
+            character: new IdbRelationOnlineClient(dbFactory, wrappers.inheritance.character),
+            artwork: new IdbRelationOnlineClient(dbFactory, wrappers.inheritance.artwork)
         },
         relations: {
-            interpersonal: new IdbRelationOnlineClient(db, wrappers.relations.interpersonal),
-            character_artwork: new IdbRelationOnlineClient(db, wrappers.relations.character_artwork),
-            artwork_creator: new IdbRelationOnlineClient(db, wrappers.relations.artwork_creator),
-            character_voiceActor: new IdbRelationOnlineClient(db, wrappers.relations.character_voiceActor)
+            interpersonal: new IdbRelationOnlineClient(dbFactory, wrappers.relations.interpersonal),
+            character_artwork: new IdbRelationOnlineClient(dbFactory, wrappers.relations.character_artwork),
+            artwork_creator: new IdbRelationOnlineClient(dbFactory, wrappers.relations.artwork_creator),
+            character_voiceActor: new IdbRelationOnlineClient(dbFactory, wrappers.relations.character_voiceActor)
         },
-        files: new IdbFileOnlineClient(db),
-        tags: new IdbTagWrapper.Client(db)
+        files: new IdbFileOnlineClient(dbFactory),
+        tags: new IdbTagWrapper.Client(dbFactory)
     }
 }
 
-export function createOfflineClientsFromIdbInstance(db: idb.IDBPDatabase, wrappers: ReturnType<typeof createDBWrappers>): IOfflineClientSet {
+export function createOfflineClientsFromIdbInstance(dbFactory: () => Promise<idb.IDBPDatabase>, wrappers: ReturnType<typeof createDBWrappers>): IOfflineClientSet {
     return {
         collections: {
-            character: new IdbCollectionOfflineClient(db, wrappers.collections.character), 
-            artwork: new IdbCollectionOfflineClient(db, wrappers.collections.artwork),
-            creator: new IdbCollectionOfflineClient(db, wrappers.collections.creator), 
-            voiceActor: new IdbCollectionOfflineClient(db, wrappers.collections.voiceActor)
+            character: new IdbCollectionOfflineClient(dbFactory, wrappers.collections.character), 
+            artwork: new IdbCollectionOfflineClient(dbFactory, wrappers.collections.artwork),
+            creator: new IdbCollectionOfflineClient(dbFactory, wrappers.collections.creator), 
+            voiceActor: new IdbCollectionOfflineClient(dbFactory, wrappers.collections.voiceActor)
         },
         inheritance: {
-            character: new IdbRelationOfflineClient(db, wrappers.inheritance.character),
-            artwork: new IdbRelationOfflineClient(db, wrappers.inheritance.artwork)
+            character: new IdbRelationOfflineClient(dbFactory, wrappers.inheritance.character),
+            artwork: new IdbRelationOfflineClient(dbFactory, wrappers.inheritance.artwork)
         },
         relations: {
-            interpersonal: new IdbRelationOfflineClient(db, wrappers.relations.interpersonal),
-            character_artwork: new IdbRelationOfflineClient(db, wrappers.relations.character_artwork),
-            artwork_creator: new IdbRelationOfflineClient(db, wrappers.relations.artwork_creator),
-            character_voiceActor: new IdbRelationOfflineClient(db, wrappers.relations.character_voiceActor)
+            interpersonal: new IdbRelationOfflineClient(dbFactory, wrappers.relations.interpersonal),
+            character_artwork: new IdbRelationOfflineClient(dbFactory, wrappers.relations.character_artwork),
+            artwork_creator: new IdbRelationOfflineClient(dbFactory, wrappers.relations.artwork_creator),
+            character_voiceActor: new IdbRelationOfflineClient(dbFactory, wrappers.relations.character_voiceActor)
         },
-        files: new IdbFileOfflineClient(db)
+        files: new IdbFileOfflineClient(dbFactory)
     }
 }
 

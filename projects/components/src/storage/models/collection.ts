@@ -184,68 +184,108 @@ export class IdbCollectionWrapper<T> {
 }
 
 export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
-    constructor(private db: idb.IDBPDatabase, private wrapper: IdbCollectionWrapper<T>) {
-
+    constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbCollectionWrapper<T>) {
     }
+
+    private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+        const db = await this.dbFactory()
+        const result = await cb(db)
+        db.close()
+        return result
+    }
+
     getItemById(id: string): Promise<DeepPartial<T>> {
-        return this.wrapper.getItem(this.db, id)
+        return this.withDB(db => {
+            return this.wrapper.getItem(db, id)
+        })
     }
     queryItems(query: IdbCollectionQuery): Promise<string[]> {
-        return this.wrapper.queryByField(this.db, query.keyPath, query.value)
+        return this.withDB(db => {
+            return this.wrapper.queryByField(db, query.keyPath, query.value)
+        })
     }
 
     queryFullText(keyword: string): Promise<IOnlineClient.FullTextQueryResult[]> {
-        return this.wrapper.queryFullText(this.db, keyword)
+        return this.withDB(db => {
+            return this.wrapper.queryFullText(db, keyword)
+        })
     }
     async putItem(id: string, value: DeepPartial<T>): Promise<void> {
-        const updatedAt = new Date()
-        await this.wrapper.putItem(this.db, id, value)
-        await this.wrapper.putFullText(this.db, id, value)
-        await this.wrapper.setIndex(this.db, id, updatedAt)
-        await this.wrapper.setCollectionStatus(this.db, {updatedAt})
-        await this.wrapper.updateTags(this.db, value)
+        await this.withDB(async db => {
+            const updatedAt = new Date()
+            await this.wrapper.putItem(db, id, value)
+            await this.wrapper.putFullText(db, id, value)
+            await this.wrapper.setIndex(db, id, updatedAt)
+            await this.wrapper.setCollectionStatus(db, {updatedAt})
+            await this.wrapper.updateTags(db, value)
+        })
     }
     async deleteItem(id: string): Promise<void> {
-        await this.wrapper.emitDeletion(this.db, id)
-        await this.wrapper.deleteIndex(this.db, id)
-        await this.wrapper.deleteFullText(this.db, id)
-        await this.wrapper.setCollectionStatus(this.db, {updatedAt: new Date()})
+        await this.withDB(async db => {
+            await this.wrapper.emitDeletion(db, id)
+            await this.wrapper.deleteIndex(db, id)
+            await this.wrapper.deleteFullText(db, id)
+            await this.wrapper.setCollectionStatus(db, {updatedAt: new Date()})
+        })
     }
     
-    async autocompleteFullText(prefix: string, limit: number): Promise<string[]> {
-        return this.wrapper.getFullTextKeysByPrefix(this.db, prefix, limit)
+    autocompleteFullText(prefix: string, limit: number): Promise<string[]> {
+        return this.withDB(async db => {
+            return this.wrapper.getFullTextKeysByPrefix(db, prefix, limit)
+        })
     }
 }
 
 export class IdbCollectionOfflineClient<T> implements IOfflineClient.Collection<T> {
-    constructor(private db: idb.IDBPDatabase, private wrapper: IdbCollectionWrapper<T>) {
-
+    constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbCollectionWrapper<T>) {
     }
+
+    private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
+        const db = await this.dbFactory()
+        const result = await cb(db)
+        db.close()
+        return result
+    }
+
     getStatus(): Promise<IOfflineClient.LatestStatus> {
-        return this.wrapper.getCollectionStatus(this.db)
+        return this.withDB(async db => {
+            return this.wrapper.getCollectionStatus(db)
+        })
     }
     setStatus(status: IOfflineClient.LatestStatus): Promise<void> {
-        throw this.wrapper.setCollectionStatus(this.db, status)
+        return this.withDB(async db => {
+            return this.wrapper.setCollectionStatus(db, status)
+        })
     }
     async getIndex(): Promise<IOfflineClient.CollectionIndex<string>> {
-        const indices = await this.wrapper.getAllIndices(this.db)
-        return indices.map(([key, date]) => ({key, date}))
+        return this.withDB(async db => {
+            const indices = await this.wrapper.getAllIndices(db)
+            return indices.map(([key, date]) => ({key, date}))
+        })
     }
     flushIndex(index: IOfflineClient.CollectionIndex<string>): Promise<void> {
-        const list = index.map(({key, date}) => [key, date] as [string, Date])
-        return this.wrapper.flushAllIndices(this.db, list)
+        return this.withDB(async db => {
+            const list = index.map(({key, date}) => [key, date] as [string, Date])
+            return this.wrapper.flushAllIndices(db, list)
+        })
     }
     getItem(id: string): Promise<DeepPartial<T>> {
-        return this.wrapper.getItem(this.db, id)
+        return this.withDB(async db => {
+            return this.wrapper.getItem(db, id)
+        })
     }
     async updateItem(id: string, value: DeepPartial<T>): Promise<void> {
-        await this.wrapper.putItem(this.db, id, value)
-        await this.wrapper.putFullText(this.db, id, value)
-        await this.wrapper.updateTags(this.db, value)
+        return this.withDB(async db => {
+            await this.wrapper.putItem(db, id, value)
+            await this.wrapper.putFullText(db, id, value)
+            await this.wrapper.updateTags(db, value)
+        })
     }
     async deleteItem(id: string): Promise<void> {
-        await this.wrapper.emitDeletion(this.db, id)
-        await this.wrapper.deleteIndex(this.db, id)
-        await this.wrapper.deleteFullText(this.db, id)
+        return this.withDB(async db => {    
+            await this.wrapper.emitDeletion(db, id)
+            await this.wrapper.deleteIndex(db, id)
+            await this.wrapper.deleteFullText(db, id)
+        })
     }
 }

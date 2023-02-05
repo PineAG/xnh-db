@@ -1,14 +1,15 @@
 import {useRef} from "react"
 import { UserOutlined } from "@ant-design/icons";
-import { Avatar, AvatarProps } from "antd";
+import { Avatar, AvatarProps, Image as AntImage, Empty as AntEmpty, ImageProps, Carousel } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDBClients, XBinding } from "../sync";
 import ReactCrop, { Crop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css";
-import { Dialog } from "@pltk/components";
+import { Dialog, Loading } from "@pltk/components";
+import { AvatarSize } from "antd/es/avatar/SizeContext";
 
 
-export function AsyncAvatar({filename, icon, avatarProps}: {filename: string | undefined, icon?: React.ReactNode, avatarProps?: AvatarProps}) {
+export function AsyncAvatar({filename, icon, avatarProps, size}: {filename: string | undefined, icon?: React.ReactNode, avatarProps?: AvatarProps, size?: AvatarSize}) {
     const [url, setUrl] = useState<string | null>(null)
     const clients = useDBClients()
 
@@ -30,13 +31,13 @@ export function AsyncAvatar({filename, icon, avatarProps}: {filename: string | u
 
     if(url === null) {
         return <Avatar
-            size="large"
+            size={size}
             icon={icon ?? <UserOutlined/>}
             {...avatarProps}
         />
     } else {
         return <Avatar
-            size="large"
+            size={size}
             src={url}
             {...avatarProps}
         />
@@ -54,6 +55,20 @@ export function useObjectURL(blob: Blob | null): string | null {
         return () => {
             if(url) {
                 URL.revokeObjectURL(url)
+            }
+        }
+    }, [blob])
+    return url
+}
+
+export function useObjectURLList(blob: Blob[]): string[] {
+    const [url, setUrl] = useState<string[]>([])
+    useEffect(() => {
+        const url: string[] = blob.map(b => URL.createObjectURL(b))
+        setUrl(url)
+        return () => {
+            for(const u of url) {
+                URL.revokeObjectURL(u)
             }
         }
     }, [blob])
@@ -97,7 +112,6 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
             canvas.width = width
             canvas.height = height
             const ctx = canvas.getContext("2d")
-            console.log(crop)
             ctx.drawImage(img, x, y, width, height, 0, 0, width, height)
         })
         await props.onComplete(out)
@@ -117,6 +131,7 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
             canvas.height = Math.floor(img.height * scale)
             const ctx = canvas.getContext("2d")
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height)
+            setCrop({x: 0, y: 0, width: canvas.width, height: canvas.height, unit: "px"})
         })
         setDisplayBlob(out)
     }
@@ -142,5 +157,59 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
         })
         URL.revokeObjectURL(url)
         return out
+    }
+}
+
+export function ImageListViewer({fileIdList}: {fileIdList: string[]}) {
+    const [blobList, setBlobList] = useState<Blob[]>([])
+    const urlList = useObjectURLList(blobList)
+    const [showList, setShowList] = useState(false)
+
+    const clients = useDBClients()
+
+    useEffect(() => {
+        loadImages()
+    }, [fileIdList])
+
+    if(urlList.length === 0) {
+        return <AntEmpty/>
+    }
+
+    return <>
+        <Carousel autoplay>
+            {urlList.map((url, idx) => (<AntImage src={url} key={idx}/>))}
+        </Carousel>
+        <div>
+            <AntImage.PreviewGroup preview={{visible: showList, onVisibleChange: (vis) => setShowList(vis)}}>
+                {urlList.map((url, idx) => (<AntImage src={url} key={idx}/>))}
+            </AntImage.PreviewGroup>
+        </div>
+    </>
+
+    async function loadImages() {
+        const blobList = await Promise.all(fileIdList.map(id => clients.query.files.read(id)))
+        setBlobList(blobList)
+    }
+
+}
+
+export function AsyncImage({fileName, ...props}: Omit<ImageProps, "src"> & {fileName: string}) {
+    const clients = useDBClients()
+    const [blob, setBlob] = useState<Blob | null>(null)
+    const objectUrl = useObjectURL(blob)
+
+    useEffect(() => {
+        loadBlob()
+    }, [fileName])
+
+    if(!objectUrl) {
+        return <Loading/>
+    } else {
+        return <AntImage src={objectUrl} {...props}/>
+    }
+
+    async function loadBlob() {
+        const blob = await clients.query.files.read(fileName)
+        setBlob(blob)
     }
 }
