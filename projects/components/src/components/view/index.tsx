@@ -4,6 +4,8 @@ import { CharacterSearchResultView } from "./character"
 
 export * from "./image"
 export * from "./character"
+export * from "./editable"
+export * from "./view"
 
 export const entitySearchResultViews: Record<keyof DBDeclaration, React.FC<{id: string, onOpen?: () => void}>> = {
     character: CharacterSearchResultView,

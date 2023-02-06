@@ -1,48 +1,12 @@
 import {useRef} from "react"
 import { UserOutlined } from "@ant-design/icons";
-import { Avatar, AvatarProps, Image as AntImage, Empty as AntEmpty, ImageProps, Carousel } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDBClients, XBinding } from "../sync";
 import ReactCrop, { Crop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css";
 import { Dialog, Loading } from "@pltk/components";
 import { AvatarSize } from "antd/es/avatar/SizeContext";
-
-
-export function AsyncAvatar({filename, icon, avatarProps, size}: {filename: string | undefined, icon?: React.ReactNode, avatarProps?: AvatarProps, size?: AvatarSize}) {
-    const [url, setUrl] = useState<string | null>(null)
-    const clients = useDBClients()
-
-    useEffect(() => {
-        let url: string | undefined
-        if(filename) {    
-            clients.query.files.read(filename).then(blob => {
-                url = URL.createObjectURL(blob)
-                setUrl(url)
-            })
-        }
-        return () => {
-            if(url) {
-                URL.revokeObjectURL(url)
-                setUrl(null)
-            }
-        }
-    }, [filename])
-
-    if(url === null) {
-        return <Avatar
-            size={size}
-            icon={icon ?? <UserOutlined/>}
-            {...avatarProps}
-        />
-    } else {
-        return <Avatar
-            size={size}
-            src={url}
-            {...avatarProps}
-        />
-    }
-}
+import { Modal } from "antd";
 
 export function useObjectURL(blob: Blob | null): string | null {
     const [url, setUrl] = useState<string | null>(null)
@@ -73,6 +37,104 @@ export function useObjectURLList(blob: Blob[]): string[] {
         }
     }, [blob])
     return url
+}
+
+interface UseUploadFileProps {
+    accept?: string
+    multiple?: boolean
+    onUpload: (files: FileList) => void
+}
+
+export function useUploadFile(props: UseUploadFileProps): [() => void, JSX.Element] {
+    const ref = useRef<HTMLInputElement>(null)
+    const ele = <input ref={ref} type="file" style={{display: "none"}} accept={props.accept} multiple={props.multiple} onChange={evt => props.onUpload(evt.target.files)}/>
+    return [onUpload, ele]
+
+    function onUpload() {
+        if(ref.current) {
+            ref.current.click()
+        }
+    }
+}
+
+export async function getBlobFromFile(file: File): Promise<Blob> {
+    const reader = file.stream().getReader()
+    const parts: Uint8Array[] = []
+    let part = await reader.read()
+    while(!part.done) {
+        if(part.value) {
+            parts.push(part.value)
+        }
+        part = await reader.read()
+    }
+    if(part.value) {
+        parts.push(part.value)
+    }
+    const blob = new Blob(parts)
+    return blob
+} 
+
+export interface ImageUploadDialogProps {
+    open: boolean
+    onUpload(blob: Blob): void
+    onCancel(): void
+}
+export function ImageUploadDialog(props: ImageUploadDialogProps) {
+    const [startUpload, uploadFilePlaceholder] = useUploadFile({
+        accept: "image/*",
+        multiple: false,
+        onUpload: onUploadByFileList
+    })
+    return <Modal 
+        title="上传图片"
+        open={props.open}
+        onCancel={props.onCancel}
+        okButtonProps={{style: {display: "none"}}}
+        wrapProps={{
+            onPaste: evt => onPaste(evt.clipboardData.items)
+        }}
+        >
+            <div 
+                onPaste={evt => onPaste(evt.clipboardData.items)}
+                onClick={startUpload}
+                onDragOverCapture={evt => {
+                    evt.preventDefault()
+                }}
+                onDrop={evt => {
+                    evt.preventDefault()
+                    onUploadByFileList(evt.dataTransfer.files)
+                }}
+                style={{
+                    display: "grid",
+                    placeItems: "center",
+                    width: "300px",
+                    height: "200px",
+                    backgroundColor: "lightgray"
+                }}>
+                    <div>点击上传、拖拽或粘贴到此处</div>
+            </div>
+        {uploadFilePlaceholder}
+    </Modal>
+
+    async function onUploadByFileList(files: FileList) {
+        if(files.length === 0) {
+            return
+        }
+        const file = files[0]
+        const blob = await getBlobFromFile(file)
+        props.onUpload(blob)
+    }
+
+    async function onPaste(items: DataTransferItemList) {
+        const imageItems = Array.from(items).filter(it => it.type.includes("image"))
+        if(imageItems.length === 0) {
+            return 
+        }
+        const item = items[0]
+        const file = item.getAsFile()
+        const blob = await getBlobFromFile(file)
+        props.onUpload(blob)
+    }
 }
 
 
@@ -157,65 +219,5 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
         })
         URL.revokeObjectURL(url)
         return out
-    }
-}
-
-interface ImageListViewerProps {
-    fileIdList: string[]
-    width?: string | number
-    height?: string | number
-}
-
-export function ImageListViewer(props: ImageListViewerProps) {
-    const [blobList, setBlobList] = useState<Blob[]>([])
-    const urlList = useObjectURLList(blobList)
-    const [showList, setShowList] = useState(false)
-
-    const clients = useDBClients()
-
-    useEffect(() => {
-        loadImages()
-    }, [props.fileIdList])
-
-    if(urlList.length === 0) {
-        return <AntEmpty/>
-    }
-
-    return <div>
-        <div style={{width: props.width, height: props.height}} onClick={() => setShowList(true)}>
-            <AntImage src={urlList[0]} preview={{visible: false}} width={props.width}/>
-        </div>
-        <div style={{display: "none"}}>
-            <AntImage.PreviewGroup preview={{visible: showList, onVisibleChange: (vis) => setShowList(vis)}}>
-                {urlList.map((url, idx) => (<AntImage src={url} key={url}/>))}
-            </AntImage.PreviewGroup>
-        </div>
-    </div>
-
-    async function loadImages() {
-        const blobList = await Promise.all(props.fileIdList.map(id => clients.query.files.read(id)))
-        setBlobList(blobList)
-    }
-
-}
-
-export function AsyncImage({fileName, ...props}: Omit<ImageProps, "src"> & {fileName: string}) {
-    const clients = useDBClients()
-    const [blob, setBlob] = useState<Blob | null>(null)
-    const objectUrl = useObjectURL(blob)
-
-    useEffect(() => {
-        loadBlob()
-    }, [fileName])
-
-    if(!objectUrl) {
-        return <Loading/>
-    } else {
-        return <AntImage src={objectUrl} {...props}/>
-    }
-
-    async function loadBlob() {
-        const blob = await clients.query.files.read(fileName)
-        setBlob(blob)
     }
 }

@@ -8,7 +8,7 @@ import { loadEntityWithInheritance } from "../../sync"
 import { Titles } from "../../titles"
 import { ILocalSyncOfflineClients, ILocalSyncOnlineClients, LocalSyncConsumer, LocalSyncWrapper, useDBClients, useLocalSyncResult, XBinding } from "../sync"
 import { EditorViews } from "./editable"
-import { AsyncAvatar, ImageListViewer } from "./image"
+import { PreviewViews } from "./view"
 
 export function CharacterSearchResultView({id, onOpen}: {id: string, onOpen?: () => void}) {
     const [character, setCharacter] = useState<DeepPartial<ICharacter> | null>(null)
@@ -23,7 +23,7 @@ export function CharacterSearchResultView({id, onOpen}: {id: string, onOpen?: ()
     }
     return <Card style={{width: "500px"}} onClick={onOpen}>
         <Card.Meta
-            avatar={<AsyncAvatar filename={character.profile}/>}
+            avatar={<PreviewViews.AsyncAvatar filename={character.profile}/>}
             title={character.title}
             description={character.description}
         />
@@ -92,10 +92,10 @@ export function CharacterItemViewer({id}: {id: string}) {
             const item = result.data.item
             return <>
             <HStack layout={["1fr", "2fr"]} style={{placeItems: "start"}}>
-                <ImageListViewer fileIdList={item.photos ?? []}/>
+                <PreviewViews.ImageListViewer fileIdList={item.photos ?? []}/>
                 <Flex direction="vertical">
                     <HStack layout={["auto", "1fr"]}>
-                        <AsyncAvatar size={64} filename={item.profile ?? null}/>
+                        <PreviewViews.AsyncAvatar size={64} filename={item.profile ?? null}/>
                         <VStack layout={["1fr", "auto"]}>
                             <Typography.Title style={{margin: 0}}>{item.title}</Typography.Title>
                             <div>
