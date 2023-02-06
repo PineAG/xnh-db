@@ -13,12 +13,11 @@ export module EditorViews {
     }
 
     export function AvatarEditor(props: BindingProps<string, FC.FileConfig>) {
-        const ref = useRef<HTMLInputElement>(null)
         const [showUpload, setShowUpload] = useState(false)
         const [fileBlob, setFileBlob] = useState<null | Blob>(null)
         const clients = useDBClients()
 
-        return <>
+        return <div>
             <PreviewViews.AsyncAvatar
                 filename={props.binding.value}
                 avatarProps={{onClick}}
@@ -34,13 +33,12 @@ export module EditorViews {
             <ImageEditDialog
                 data={fileBlob}
                 onComplete={onComplete}
+                onCancel={() => setFileBlob(null)}
             />
-        </>
+        </div>
 
         function onClick() {
-            if(ref.current) {
-                ref.current.click()
-            }
+            setShowUpload(true)
         }
 
         async function onComplete(blob: Blob) {
@@ -68,7 +66,7 @@ export module EditorViews {
                         onClick={() => setUploadDialog(true)}
                     />
                 {imageBindings.map(img => {
-                    return <div key={img.value} style={{maxWidth: "100px", maxHeight: "100px"}}>
+                    return <div key={img.value} style={{width: "100px", height: "100px"}}>
                         <PreviewViews.AsyncImage fileName={img.value}>
                             <IconButton icon={<Icons.Delete/>} onClick={() => img.remove()} style={{position: "absolute", top: 0, right: 0}}/>
                         </PreviewViews.AsyncImage>
@@ -86,6 +84,7 @@ export module EditorViews {
             <ImageEditDialog
                 data={fileBlob}
                 onComplete={onComplete}
+                onCancel={() => setFileBlob(null)}
             />
         </>
 

@@ -144,16 +144,18 @@ function CharacterItemEditorInternal({onUpdate}: {onUpdate: () => void}) {
 }
 
 export function CharacterBindingEditor({binding}: {binding: XBinding.Binding<DeepPartial<ICharacter>>}) {
-    return <>
+    return <HStack layout={["auto", "1fr"]}>
         <EditorViews.ImageListEditor
             binding={XBinding.propertyOf(binding).join("photos")}
             config={CharacterDefinition.photos}
         />
-        <EditorViews.AvatarEditor
-            binding={XBinding.propertyOf(binding).join("profile")}
-            config={CharacterDefinition.profile}
-        />
-    </>
+        <Flex direction="vertical">    
+            <EditorViews.AvatarEditor
+                binding={XBinding.propertyOf(binding).join("profile")}
+                config={CharacterDefinition.profile}
+            />
+        </Flex>
+    </HStack>
 }
 
 interface CharacterEditorDialogProps {

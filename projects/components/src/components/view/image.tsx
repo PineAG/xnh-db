@@ -141,6 +141,7 @@ export function ImageUploadDialog(props: ImageUploadDialogProps) {
 export interface ImageEditDialogProps {
     data: Blob | null
     onComplete: (blob: Blob) => void
+    onCancel(): void
 }
 
 export function ImageEditDialog(props: ImageEditDialogProps) {
@@ -157,15 +158,11 @@ export function ImageEditDialog(props: ImageEditDialogProps) {
         }
     }, [props.data])
 
-    return <Dialog title="上传图片" open={displayBlob !== null && url !== null} onCancel={onCancel} onOk={onOk}>
+    return <Dialog title="上传图片" open={displayBlob !== null && url !== null} onCancel={props.onCancel} onOk={onOk}>
         <ReactCrop crop={crop} onChange={setCrop}>
             <img src={url}/>
         </ReactCrop>
     </Dialog>
-
-    async function onCancel() {
-        props.onComplete(props.data)
-    }
 
     async function onOk() {
         if(!displayBlob || crop.unit === "%") return;
