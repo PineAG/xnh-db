@@ -1,10 +1,11 @@
-import { IconButton, Icons } from "@pltk/components"
+import { IconButton, Icons, VStack } from "@pltk/components"
 import { FieldConfig as FC, FieldConfig } from "@xnh-db/protocol"
 import { useRef, useState } from "react"
 import { useDBClients, XBinding } from "../sync"
 import { getBlobFromFile, ImageEditDialog, ImageUploadDialog, useUploadFile } from "./image"
 import { PreviewViews } from "./view"
 import {Button} from "antd"
+import { UploadOutlined } from "@ant-design/icons"
 
 export module EditorViews {
     type BindingProps<T, Conf extends FC.EndpointConfig<T>> = {
@@ -21,6 +22,8 @@ export module EditorViews {
             <PreviewViews.AsyncAvatar
                 filename={props.binding.value}
                 avatarProps={{onClick}}
+                size={64}
+                icon={<UploadOutlined/>}
             />
             <ImageUploadDialog
                 open={showUpload}
@@ -66,11 +69,12 @@ export module EditorViews {
                         onClick={() => setUploadDialog(true)}
                     />
                 {imageBindings.map(img => {
-                    return <div key={img.value} style={{width: "100px", height: "100px"}}>
-                        <PreviewViews.AsyncImage fileName={img.value}>
+                    return <VStack layout={["1fr", "auto"]}>
+                        <PreviewViews.AsyncImage fileName={img.value} width="100px" height="100px">
                             <IconButton icon={<Icons.Delete/>} onClick={() => img.remove()} style={{position: "absolute", top: 0, right: 0}}/>
                         </PreviewViews.AsyncImage>
-                    </div>
+                        <Button icon={<Icons.Delete/>} onClick={() => img.remove()} danger>删除</Button>
+                    </VStack>
                 })}
             </div>
             <ImageUploadDialog

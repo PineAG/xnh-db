@@ -95,7 +95,9 @@ export class IdbFileOnlineClient implements IOnlineClient.Files {
     async write(name: string, value: Blob): Promise<void> {
         return this.withDB(async db => {
             await IdbFileClientWrapper.write(db, name, value)
-            await IdbFileClientWrapper.setIndex(db, name, new Date())
+            const updatedAt = new Date()
+            await IdbFileClientWrapper.setIndex(db, name, updatedAt)
+            await IdbFileClientWrapper.setCollectionStatus(db, {updatedAt})
         })
     }
     delete(name: string): Promise<void> {

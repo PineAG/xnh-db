@@ -262,7 +262,9 @@ interface LocalSyncConsumerProps<T, R extends LocalSyncRelationsBase> extends Us
 export function LocalSyncConsumer<T, R extends LocalSyncRelationsBase>(props: LocalSyncConsumerProps<T, R>): JSX.Element {
     const localSync = useLocalSync(props)
     if(localSync.pending === false) {
-        return <>{props.children(localSync.result)}</>
+        return <LocalSyncWrapperStateContext.Provider value={localSync.result}>
+            {props.children(localSync.result)}
+        </LocalSyncWrapperStateContext.Provider>
     } else {
         return <Loading/>
     }

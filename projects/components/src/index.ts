@@ -1,5 +1,1 @@
-export * from "./storage"
-export * from "./sync"
-export * from "@pltk/components"
-export * from "./components"
-export * from "./search"
+export * from "./legacy"

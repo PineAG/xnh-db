@@ -1,8 +1,8 @@
 import { DeepPartial } from "utility-types"
-import { IOfflineClientSet } from "../data"
-import {IOfflineClient} from "./offline/base"
+import { IOfflineClientSet } from "../../data"
+import { IOfflineClient } from "./base"
 
-export module PathSyncClient {
+export module OfflinePathClientUtils {
     module JsonUtils {
         export async function fromJson<T>(data: Blob): Promise<T> {
             const b = await data.arrayBuffer()

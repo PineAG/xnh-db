@@ -1,7 +1,7 @@
 import {useRef} from "react"
 import { UserOutlined } from "@ant-design/icons";
 import React, { useEffect, useState } from "react";
-import { useDBClients, XBinding } from "../sync";
+import { useDBClients, useLocalSyncResult, XBinding } from "../sync";
 import ReactCrop, { Crop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css";
 import { Dialog, Loading } from "@pltk/components";

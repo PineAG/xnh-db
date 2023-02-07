@@ -1,6 +1,6 @@
 import { UserOutlined } from "@ant-design/icons"
 import {useState, useEffect} from "react"
-import { useDBClients } from "../sync"
+import { useDBClients, useLocalSyncResult } from "../sync"
 import { useObjectURL, useObjectURLList } from "./image"
 import { Avatar, AvatarProps, Image as AntImage, Empty as AntEmpty, ImageProps, Carousel } from "antd";
 import { Loading } from "@pltk/components";
@@ -9,13 +9,15 @@ import { AvatarSize } from "antd/es/avatar/SizeContext";
 export module PreviewViews {
     
     export function AsyncAvatar({filename, icon, avatarProps, size}: {filename: string | undefined, icon?: React.ReactNode, avatarProps?: AvatarProps, size?: AvatarSize}) {
+        
+        const localSync = useLocalSyncResult()
         const [url, setUrl] = useState<string | null>(null)
         const clients = useDBClients()
 
         useEffect(() => {
             let url: string | undefined
             if(filename) {    
-                clients.query.files.read(filename).then(blob => {
+                localSync.fetchFile(filename).then(blob => {
                     url = URL.createObjectURL(blob)
                     setUrl(url)
                 })
@@ -50,6 +52,7 @@ export module PreviewViews {
     }
 
     export function ImageListViewer(props: ImageListViewerProps) {
+        const localSync = useLocalSyncResult()
         const [blobList, setBlobList] = useState<Blob[]>([])
         const urlList = useObjectURLList(blobList)
         const [showList, setShowList] = useState(false)
@@ -76,7 +79,7 @@ export module PreviewViews {
         </div>
 
         async function loadImages() {
-            const blobList = await Promise.all(props.fileIdList.map(id => clients.query.files.read(id)))
+            const blobList = await Promise.all(props.fileIdList.map(id => localSync.fetchFile(id)))
             setBlobList(blobList)
         }
 
