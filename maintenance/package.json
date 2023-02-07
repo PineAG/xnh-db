@@ -2,5 +2,9 @@
   "name": "maintenance",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "gulp": "^4.0.2"
+  }
 }

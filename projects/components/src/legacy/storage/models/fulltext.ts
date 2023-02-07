@@ -43,7 +43,7 @@ export function extractFullTextTokensByConfig<T>(data: DeepPartial<T>, config: F
     function* walk(node: any, conf: any): Generator<[string, number]> {
         if(node === undefined) {
             return
-        } else if(FC.isFieldConfig(conf)) {
+        } else if(FC.Fields.isFieldConfig(conf)) {
             if(conf.type === "string" && conf.options.type === "fullText") {
                 const values = (conf.isArray ? node : [node]) as string[]
                 for(const v of values){

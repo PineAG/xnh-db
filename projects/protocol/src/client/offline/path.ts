@@ -1,5 +1,4 @@
 import { DeepPartial } from "utility-types"
-import { IOfflineClientSet } from "../../data"
 import { IOfflineClient } from "./base"
 
 export module OfflinePathClientUtils {
@@ -248,28 +247,5 @@ export module OfflinePathClientUtils {
             await this.pathClient.delete(name)
         }
         
-    }
-
-    export type PathClientFactory = (root: string) => IPathClient
-    export function createPathOfflineClientSet(factory: PathClientFactory): IOfflineClientSet {
-        return {
-            collections: {
-                character: new Collection(factory("characters")),
-                artwork: new Collection(factory("artworks")),
-                creator: new Collection(factory("creators")),
-                voiceActor: new Collection(factory("voiceActors")),
-            },
-            inheritance: {
-                character: new Relation(factory("inherit_character")),
-                artwork: new Relation(factory("inherit_artwork")),
-            },
-            relations: {
-                interpersonal: new Relation(factory("rel_interpersonal")),
-                character_artwork: new Relation(factory("rel_character_artwork")),
-                character_voiceActor: new Relation(factory("rel_character_voiceActor")),
-                artwork_creator: new Relation(factory("rel_artwork_creator"))
-            },
-            files: new Files(factory("files"))
-        }
     }
 }

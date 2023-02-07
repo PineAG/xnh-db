@@ -1,4 +1,4 @@
-import { flattenDataDefinition, IOfflineClient, IOnlineClient, keyPathToFlattenedKey, extractFlatDataByConfig, flattenDataByConfig, extractValuesAndConfigs } from "@xnh-db/protocol"
+import { ConfigFlatten, IOfflineClient, IOnlineClient} from "@xnh-db/protocol"
 import { FieldConfig as FC } from "@xnh-db/protocol"
 import * as idb from "idb"
 import { sortBy } from "lodash"
@@ -30,10 +30,10 @@ export class IdbCollectionWrapper<T> {
 
     constructor(public readonly name: string, private config: FC.ConfigFromDeclaration<T>) {
         const dataIndices: Record<string, IdbIndexOption> = {}
-        const configList = flattenDataDefinition(config)
+        const configList = ConfigFlatten.flattenConfig(config)
         for(const [path, config] of configList) {
             const isArray = config.type !== "id" && config.isArray
-            const keyPath = keyPathToFlattenedKey(path)
+            const keyPath = ConfigFlatten.stringifyKeyPath(path)
             dataIndices[keyPath] = {keyPath, isArray, unique: false}
         }
         this.dataWrapper = new IdbStoreWrapper(`${name}:data`, dataIndices)
@@ -56,15 +56,15 @@ export class IdbCollectionWrapper<T> {
     }
 
     async getItem(db: idb.IDBPDatabase, id: string): Promise<DeepPartial<T>> {
-        const flat = await this.dataWrapper.get(db, id)
+        const flat = await this.dataWrapper.get(db, id) as ConfigFlatten.FlattenedData<T>
         if(!flat) {
             throw new Error(`Not exist: ${this.name}: ${id}`)
         }
-        return extractFlatDataByConfig(flat, this.config)
+        return ConfigFlatten.extractFlatDataByConfig<T>(flat, this.config)
     }
 
     async putItem(db: idb.IDBPDatabase, id: string, value: DeepPartial<T>): Promise<void> {
-        const flat = flattenDataByConfig<T>(value, this.config)
+        const flat = ConfigFlatten.flattenDataByConfig<T>(value, this.config)
         await this.dataWrapper.put(db, id, flat)
     }
 
@@ -142,7 +142,7 @@ export class IdbCollectionWrapper<T> {
     }
 
     async queryByField(db: idb.IDBPDatabase, keys: string[], value: any): Promise<string[]> {
-        const results = await this.dataWrapper.getKeysByIndex(db, keyPathToFlattenedKey(keys), value)
+        const results = await this.dataWrapper.getKeysByIndex(db, ConfigFlatten.stringifyKeyPath(keys), value)
         return results
     }
 

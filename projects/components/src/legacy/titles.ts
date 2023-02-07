@@ -1,14 +1,13 @@
-import { ICharacter, IArtwork, ICreator, IVoiceActor, FieldConfig, DBDeclaration } from "@xnh-db/protocol";
-import { DeepPartial } from "utility-types";
+import { XnhDBProtocol as P, FieldConfig } from "@xnh-db/protocol";
 
-export module Titles {
+export module XnhDBTitles {
     export type Title<T> = T extends number | string | (number | string)[] ?
         string :
         T extends Record<string, any> ?
         { [K in keyof T]: Title<T[K]> } & { $title: string } :
         never
 
-    export const Character: Title<ICharacter> = {
+    export const Character: Title<P.ICharacter> = {
         $title: "角色",
         id: "ID",
         title: "标题",
@@ -37,7 +36,7 @@ export module Titles {
         }
     }
 
-    export const Artwork: Title<IArtwork> = {
+    export const Artwork: Title<P.IArtwork> = {
         $title: "作品",
         id: "ID",
         title: "标题",
@@ -51,7 +50,7 @@ export module Titles {
         photos: "照片",
     }
 
-    export const VoiceActor: Title<IVoiceActor> = {
+    export const VoiceActor: Title<P.IVoiceActor> = {
         $title: "配音演员",
         id: "ID",
         title: "标题",
@@ -65,7 +64,7 @@ export module Titles {
         photos: "照片",
     }
 
-    export const Creator: Title<ICreator> = {
+    export const Creator: Title<P.ICreator> = {
         $title: "创作者",
         id: "ID",
         title: "标题",
@@ -79,7 +78,7 @@ export module Titles {
         photos: "照片",
     }
 
-    export const titles: {[K in keyof DBDeclaration]: Title<DBDeclaration[K]>} = {
+    export const titles: {[K in keyof P.DBDeclaration]: Title<P.DBDeclaration[K]>} = {
         character: Character,
         artwork: Artwork,
         voiceActor: VoiceActor,
@@ -98,7 +97,7 @@ export module Titles {
         function walk(path: string[], t: any, c: any) {
             if(t === undefined) {
                 return
-            }else if(FieldConfig.isFieldConfig(c)) {
+            }else if(FieldConfig.Fields.isFieldConfig(c)) {
                 result[stringifyPath(path)] = t
             } else {
                 result[stringifyPath(path)] = t["$title"]

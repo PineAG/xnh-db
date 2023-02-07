@@ -1,5 +1,5 @@
 import { IconButton, Icons, VStack } from "@pltk/components"
-import { FieldConfig as FC, FieldConfig } from "@xnh-db/protocol"
+import { FieldConfig } from "@xnh-db/protocol"
 import { useRef, useState } from "react"
 import { useDBClients, XBinding } from "../sync"
 import { getBlobFromFile, ImageEditDialog, ImageUploadDialog, useUploadFile } from "./image"
@@ -8,7 +8,9 @@ import {Button} from "antd"
 import { UploadOutlined } from "@ant-design/icons"
 
 export module EditorViews {
-    type BindingProps<T, Conf extends FC.EndpointConfig<T>> = {
+    import FC = FieldConfig.Fields
+
+    type BindingProps<T, Conf extends FieldConfig.EndpointConfig<T>> = {
         binding: XBinding.Binding<T | undefined>
         config: Conf
     }
@@ -53,7 +55,7 @@ export module EditorViews {
         }
     }
 
-    export function ImageListEditor(props: BindingProps<string[], FieldConfig.FileListConfig>) {
+    export function ImageListEditor(props: BindingProps<string[], FC.FileListConfig>) {
         const clients = useDBClients()
         const valueBinding = XBinding.defaultValue(props.binding, () => [])
         const imageBindings = XBinding.fromArray(valueBinding)

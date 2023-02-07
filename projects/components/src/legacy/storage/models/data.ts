@@ -1,4 +1,4 @@
-import { ArtworkDefinition, CharacterDefinition, CreatorDefinition, IArtwork, ICharacter, ICreator, IOfflineClient, IOfflineClientSet, IOnlineClientSet, IVoiceActor, ProgressResult, RelationPayloads, synchronizeCollection, synchronizeRelation, VoiceActorDefinition, FieldConfig } from "@xnh-db/protocol";
+import { IOfflineClient, FieldConfig, XnhDBProtocol as P, OfflineClientSynchronization } from "@xnh-db/protocol";
 import * as idb from "idb";
 import { IdbCollectionOfflineClient, IdbCollectionOnlineClient, IdbCollectionQuery, IdbCollectionWrapper } from "./collection";
 import { IdbFileClientWrapper, IdbFileOfflineClient, IdbFileOnlineClient } from "./files";
@@ -6,10 +6,10 @@ import { GlobalStatusWrapper, IdbTagWrapper } from "./global";
 import { IdbRelationOfflineClient, IdbRelationOnlineClient, IdbRelationWrapper } from "./relation";
 
 export function createDBWrappers() {
-    const character = new IdbCollectionWrapper<ICharacter>("characters", CharacterDefinition)
-    const artwork = new IdbCollectionWrapper<IArtwork>("artworks", ArtworkDefinition)
-    const creator = new IdbCollectionWrapper<ICreator>("creators", CreatorDefinition)
-    const voiceActor = new IdbCollectionWrapper<IVoiceActor>("voice_actors", VoiceActorDefinition)
+    const character = new IdbCollectionWrapper<P.ICharacter>("characters", P.CharacterDefinition)
+    const artwork = new IdbCollectionWrapper<P.IArtwork>("artworks", P.ArtworkDefinition)
+    const creator = new IdbCollectionWrapper<P.ICreator>("creators", P.CreatorDefinition)
+    const voiceActor = new IdbCollectionWrapper<P.IVoiceActor>("voice_actors", P.VoiceActorDefinition)
     
     return {
         collections: {
@@ -17,14 +17,14 @@ export function createDBWrappers() {
             creator, voiceActor
         },
         inheritance: {
-            character: new IdbRelationWrapper({parent: character, child: character}, RelationPayloads.Inheritance_Definition),
-            artwork: new IdbRelationWrapper({parent: artwork, child: artwork}, RelationPayloads.Inheritance_Definition)
+            character: new IdbRelationWrapper({parent: character, child: character}, P.RelationPayloads.Inheritance_Definition),
+            artwork: new IdbRelationWrapper({parent: artwork, child: artwork}, P.RelationPayloads.Inheritance_Definition)
         },
         relations: {
-            interpersonal: new IdbRelationWrapper<{left: ICharacter, right: ICharacter}, RelationPayloads.Interpersonal>({left: character, right: character}, RelationPayloads.Interpersonal_Definition),
-            character_artwork: new IdbRelationWrapper<{character: ICharacter, artwork: IArtwork}, RelationPayloads.Character_Artwork>({character, artwork}, RelationPayloads.Character_Artwork_Definition),
-            artwork_creator: new IdbRelationWrapper<{artwork: IArtwork, creator: ICreator}, RelationPayloads.Artwork_Creator>({artwork, creator}, RelationPayloads.Artwork_Creator_Definition),
-            character_voiceActor: new IdbRelationWrapper<{character: ICharacter, voiceActor: IVoiceActor}, RelationPayloads.Character_VoiceActor>({character, voiceActor}, RelationPayloads.Character_VoiceActor_Definition)
+            interpersonal: new IdbRelationWrapper<{left: P.ICharacter, right: P.ICharacter}, P.RelationPayloads.Interpersonal>({left: character, right: character}, P.RelationPayloads.Interpersonal_Definition),
+            character_artwork: new IdbRelationWrapper<{character: P.ICharacter, artwork: P.IArtwork}, P.RelationPayloads.Character_Artwork>({character, artwork}, P.RelationPayloads.Character_Artwork_Definition),
+            artwork_creator: new IdbRelationWrapper<{artwork: P.IArtwork, creator: P.ICreator}, P.RelationPayloads.Artwork_Creator>({artwork, creator}, P.RelationPayloads.Artwork_Creator_Definition),
+            character_voiceActor: new IdbRelationWrapper<{character: P.ICharacter, voiceActor: P.IVoiceActor}, P.RelationPayloads.Character_VoiceActor>({character, voiceActor}, P.RelationPayloads.Character_VoiceActor_Definition)
         }
     }
 }
@@ -50,7 +50,7 @@ export async function upgradeWrapperIndices(db: idb.IDBPDatabase, wrappers: Retu
     }
 }
 
-export function createOnlineClientsFromIdbInstance(dbFactory: () => Promise<idb.IDBPDatabase>, wrappers: ReturnType<typeof createDBWrappers>): IOnlineClientSet<IdbCollectionQuery> {
+export function createOnlineClientsFromIdbInstance(dbFactory: () => Promise<idb.IDBPDatabase>, wrappers: ReturnType<typeof createDBWrappers>): P.IOnlineClientSet<IdbCollectionQuery> {
     return {
         collections: {
             character: new IdbCollectionOnlineClient(dbFactory, wrappers.collections.character), 
@@ -73,7 +73,7 @@ export function createOnlineClientsFromIdbInstance(dbFactory: () => Promise<idb.
     }
 }
 
-export function createOfflineClientsFromIdbInstance(dbFactory: () => Promise<idb.IDBPDatabase>, wrappers: ReturnType<typeof createDBWrappers>): IOfflineClientSet {
+export function createOfflineClientsFromIdbInstance(dbFactory: () => Promise<idb.IDBPDatabase>, wrappers: ReturnType<typeof createDBWrappers>): P.IOfflineClientSet {
     return {
         collections: {
             character: new IdbCollectionOfflineClient(dbFactory, wrappers.collections.character), 
@@ -100,7 +100,7 @@ interface SyncOfflineClientSetProgress {
     name: string
 }
 
-export async function* synchronizeOfflineClientSet(srcSet: IOfflineClientSet, destSet: IOfflineClientSet): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
+export async function* synchronizeOfflineClientSet(srcSet: P.IOfflineClientSet, destSet: P.IOfflineClientSet): AsyncGenerator<[SyncOfflineClientSetProgress, OfflineClientSynchronization.ProgressResult.Progress]> {
     yield* onCollections(srcSet.collections, destSet.collections, {
         character: "角色信息",
         artwork: "作品信息",
@@ -120,21 +120,21 @@ export async function* synchronizeOfflineClientSet(srcSet: IOfflineClientSet, de
         character_voiceActor: "角色配音演员"
     })
 
-    async function* onCollections<K extends string>(src: Record<K, IOfflineClient.Collection<any>>, dst: Record<K, IOfflineClient.Collection<any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
+    async function* onCollections<K extends string>(src: Record<K, IOfflineClient.Collection<any>>, dst: Record<K, IOfflineClient.Collection<any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, OfflineClientSynchronization.ProgressResult.Progress]> {
         for(const k in names) {
             console.log(`Update collection ${k}`)
             const name = names[k]
-            for await(const p of synchronizeCollection(src[k], dst[k])) {
+            for await(const p of OfflineClientSynchronization.synchronizeCollection(src[k], dst[k])) {
                 yield [{type: "collection", name}, p]
             }
         }
     }
 
-    async function* onRelations<K extends string>(src: Record<K, IOfflineClient.Relation<any, any>>, dst: Record<K, IOfflineClient.Relation<any, any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, ProgressResult.Progress]> {
+    async function* onRelations<K extends string>(src: Record<K, IOfflineClient.Relation<any, any>>, dst: Record<K, IOfflineClient.Relation<any, any>>, names: Record<K, string>): AsyncGenerator<[SyncOfflineClientSetProgress, OfflineClientSynchronization.ProgressResult.Progress]> {
         for(const k in names) {
             console.log(`Update relation ${k}`)
             const name = names[k]
-            for await(const p of synchronizeRelation(src[k], dst[k])) {
+            for await(const p of OfflineClientSynchronization.synchronizeRelation(src[k], dst[k])) {
                 yield [{type: "relation", name}, p]
             }
         }
@@ -147,7 +147,7 @@ const ProgressResultActionNames = {
     delete: "删除"
 }
 
-export function stringifyProgressResult(progress: ProgressResult.Progress): string {
+export function stringifyProgressResult(progress: OfflineClientSynchronization.ProgressResult.Progress): string {
     if(progress.type === "item"){
         const actionName = ProgressResultActionNames[progress.action.type]
         return `正在 ${actionName} 条目: ${progress.action.id} (${progress.action.progress.current+1}/${progress.action.progress.total})`

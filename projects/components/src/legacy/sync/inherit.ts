@@ -1,8 +1,8 @@
-import { FieldConfig, IOnlineClient, RelationPayloads } from "@xnh-db/protocol";
+import { FieldConfig, IOnlineClient, XnhDBProtocol } from "@xnh-db/protocol";
 import { DeepPartial } from "utility-types";
 import { IdbCollectionQuery } from "../storage";
 
-export async function getEntityParents(initialId: string, inheritanceClient: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>): Promise<string[]> {
+export async function getEntityParents(initialId: string, inheritanceClient: IOnlineClient.Relation<"parent" | "child", XnhDBProtocol.RelationPayloads.Inheritance>): Promise<string[]> {
     const result: string[] = []
     let id: string | undefined = await getParent(initialId)
     while(id !== undefined) {
@@ -22,7 +22,7 @@ export async function getEntityParents(initialId: string, inheritanceClient: IOn
     } 
 }
 
-export async function loadEntityWithInheritance<T>(id: string, config: FieldConfig.ConfigFromDeclaration<T>, collectionClient: IOnlineClient.Collection<T, IdbCollectionQuery>, inheritanceClient?: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>): Promise<DeepPartial<T>> {
+export async function loadEntityWithInheritance<T>(id: string, config: FieldConfig.ConfigFromDeclaration<T>, collectionClient: IOnlineClient.Collection<T, IdbCollectionQuery>, inheritanceClient?: IOnlineClient.Relation<"parent" | "child", XnhDBProtocol.RelationPayloads.Inheritance>): Promise<DeepPartial<T>> {
     let parent: undefined | DeepPartial<T>
     if(inheritanceClient) {
         parent = {} as DeepPartial<T>
@@ -43,7 +43,7 @@ function patchEntity<T>(data: DeepPartial<T>, parent: DeepPartial<T>, config: Fi
     return walk(data, parent, config)
 
     function walk(d: any, p: any, c: any): any {
-        if(FieldConfig.isFieldConfig(c)) {
+        if(FieldConfig.Fields.isFieldConfig(c)) {
             return d ?? p
         } else {
             const result = {}

@@ -1,17 +1,16 @@
 import { ActionButton, Flex, FormItem, HStack, Loading, VStack } from "@pltk/components"
-import { CharacterDefinition, ICharacter, IOfflineClientSet, IOnlineClientSet, RelationKeys, RelationPayloads } from "@xnh-db/protocol"
+import { XnhDBProtocol as P } from "@xnh-db/protocol"
 import { Card, Empty, Modal, Tag, Typography } from "antd"
 import { useEffect, useState } from "react"
 import { DeepPartial } from "utility-types"
 import { IdbCollectionQuery } from "../../storage"
 import { loadEntityWithInheritance } from "../../sync"
-import { Titles } from "../../titles"
 import { ILocalSyncOfflineClients, ILocalSyncOnlineClients, LocalSyncConsumer, LocalSyncWrapper, useDBClients, useLocalSyncResult, XBinding } from "../sync"
 import { EditorViews } from "./editable"
 import { PreviewViews } from "./view"
 
 export function CharacterSearchResultView({id, onOpen}: {id: string, onOpen?: () => void}) {
-    const [character, setCharacter] = useState<DeepPartial<ICharacter> | null>(null)
+    const [character, setCharacter] = useState<DeepPartial<P.ICharacter> | null>(null)
     const clients = useDBClients()
 
     useEffect(() => {
@@ -30,19 +29,19 @@ export function CharacterSearchResultView({id, onOpen}: {id: string, onOpen?: ()
     </Card>
 
     async function loadCharacter() {
-        const data = await loadEntityWithInheritance<ICharacter>(id, CharacterDefinition, clients.query.collections.character, clients.query.inheritance.character)
+        const data = await loadEntityWithInheritance<P.ICharacter>(id, P.CharacterDefinition, clients.query.collections.character, clients.query.inheritance.character)
         setCharacter(data)
     }
 }
 
 type Relations = {
-    interpersonalLeft: {keys: RelationKeys.Interpersonal, payload: RelationPayloads.Interpersonal}
-    interpersonalRight: {keys: RelationKeys.Interpersonal, payload: RelationPayloads.Interpersonal}
-    artwork: {keys: RelationKeys.Character_Artwork, payload: RelationPayloads.Character_Artwork}
-    voiceActor: {keys: RelationKeys.Character_VoiceActor, payload: RelationPayloads.Character_VoiceActor}
+    interpersonalLeft: {keys: P.RelationKeys.Interpersonal, payload: P.RelationPayloads.Interpersonal}
+    interpersonalRight: {keys: P.RelationKeys.Interpersonal, payload: P.RelationPayloads.Interpersonal}
+    artwork: {keys: P.RelationKeys.Character_Artwork, payload: P.RelationPayloads.Character_Artwork}
+    voiceActor: {keys: P.RelationKeys.Character_VoiceActor, payload: P.RelationPayloads.Character_VoiceActor}
 }
 
-function offlineFactory(clients: IOfflineClientSet): ILocalSyncOfflineClients<ICharacter, Relations> {
+function offlineFactory(clients: P.IOfflineClientSet): ILocalSyncOfflineClients<P.ICharacter, Relations> {
     return {
         collection: clients.collections.character,
         inheritance: clients.inheritance.character,
@@ -55,7 +54,7 @@ function offlineFactory(clients: IOfflineClientSet): ILocalSyncOfflineClients<IC
     }
 }
 
-function onlineFactory(clients: IOnlineClientSet<IdbCollectionQuery>): ILocalSyncOnlineClients<ICharacter, Relations> {
+function onlineFactory(clients: P.IOnlineClientSet<IdbCollectionQuery>): ILocalSyncOnlineClients<P.ICharacter, Relations> {
     return {
         collection: clients.collections.character,
         inheritance: clients.inheritance.character,
@@ -85,7 +84,7 @@ function onlineFactory(clients: IOnlineClientSet<IdbCollectionQuery>): ILocalSyn
 }
 
 export function CharacterItemViewer({id}: {id: string}) {
-    return <LocalSyncConsumer<ICharacter, Relations> 
+    return <LocalSyncConsumer<P.ICharacter, Relations> 
         id={id} 
         onlineFactory={onlineFactory} 
         offlineFactory={offlineFactory}>{(result) => {
@@ -124,7 +123,7 @@ export function CharacterItemEditor({id, onUpdate}: {id: string, onUpdate: () =>
 }
 
 function CharacterItemEditorInternal({onUpdate}: {onUpdate: () => void}) {
-    const result = useLocalSyncResult<ICharacter, Relations>()
+    const result = useLocalSyncResult<P.ICharacter, Relations>()
     const binding = XBinding.useBinding(result.data)
 
     return <Flex direction="vertical">
@@ -143,16 +142,16 @@ function CharacterItemEditorInternal({onUpdate}: {onUpdate: () => void}) {
     }
 }
 
-export function CharacterBindingEditor({binding}: {binding: XBinding.Binding<DeepPartial<ICharacter>>}) {
+export function CharacterBindingEditor({binding}: {binding: XBinding.Binding<DeepPartial<P.ICharacter>>}) {
     return <HStack layout={["auto", "1fr"]}>
         <EditorViews.ImageListEditor
             binding={XBinding.propertyOf(binding).join("photos")}
-            config={CharacterDefinition.photos}
+            config={P.CharacterDefinition.photos}
         />
         <Flex direction="vertical">    
             <EditorViews.AvatarEditor
                 binding={XBinding.propertyOf(binding).join("profile")}
-                config={CharacterDefinition.profile}
+                config={P.CharacterDefinition.profile}
             />
         </Flex>
     </HStack>
@@ -172,7 +171,7 @@ export function CharacterEditorDialog(props: CharacterEditorDialogProps) {
 
 function CharacterEditorDialogInternal(props: CharacterEditorDialogProps) {
     const clients = useDBClients()
-    const binding = XBinding.useBinding<DeepPartial<ICharacter> | null>(null)
+    const binding = XBinding.useBinding<DeepPartial<P.ICharacter> | null>(null)
 
     const properties = XBinding.propertyOf(binding)
 
@@ -182,7 +181,7 @@ function CharacterEditorDialogInternal(props: CharacterEditorDialogProps) {
 
     const body = binding.value !== null ? (
         <EditorViews.AvatarEditor
-            config={CharacterDefinition.profile}
+            config={P.CharacterDefinition.profile}
             binding={properties.join("profile")}
         />
     ) : (<Loading/>)

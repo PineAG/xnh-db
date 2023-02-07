@@ -1,4 +1,4 @@
-import { IOfflineClient, FieldConfig as FC, extractValuesAndConfigs, IOnlineClient } from "@xnh-db/protocol"
+import { IOfflineClient, FieldConfig as FC, IOnlineClient, ConfigFlatten } from "@xnh-db/protocol"
 import * as idb from "idb"
 import { DeepPartial } from "utility-types"
 import {IdbStoreWrapper} from "./wrapper"
@@ -43,7 +43,7 @@ export module IdbTagWrapper {
     }
 
     export async function putTagsByConfig<T>(db: idb.IDBPDatabase, data: DeepPartial<T>, config: FC.ConfigFromDeclaration<T>): Promise<void> {
-        for(const [value, conf] of extractValuesAndConfigs<T>(data, config)) {
+        for(const [key, value, conf] of ConfigFlatten.extractValuesAndConfigs<T>(data, config)) {
             if(conf.type === "string" && conf.options.type === "tag") {
                 const collection = conf.options.collection
                 const values: string[] = conf.isArray ? value : [value]

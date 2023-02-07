@@ -1,6 +1,6 @@
-import { IOfflineClientSet, PathSyncClient } from "@xnh-db/protocol";
+import { XnhDBProtocol, OfflinePathClientUtils } from "@xnh-db/protocol";
 
-export class RestfulPathClient implements PathSyncClient.IPathClient {
+export class RestfulPathClient implements OfflinePathClientUtils.IPathClient {
     constructor(private rootPath: string) {}
 
     async read(path: string): Promise<Blob> {
@@ -43,8 +43,8 @@ export class RestfulPathClient implements PathSyncClient.IPathClient {
     }
 }
 
-export function createRestfulOfflineClientsSet(): IOfflineClientSet {
-    return PathSyncClient.createPathOfflineClientSet(path => {
+export function createRestfulOfflineClientsSet(): XnhDBProtocol.IOfflineClientSet {
+    return XnhDBProtocol.createPathOfflineClientSet(path => {
         return new RestfulPathClient(`data/${path}`)
     })
 }

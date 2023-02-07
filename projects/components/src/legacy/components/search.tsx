@@ -1,18 +1,20 @@
 import * as AntdIcons from "@ant-design/icons";
 import { Collapse, createNullableContext, Flex, FormItem, HStack, Loading } from "@pltk/components";
-import { DBDeclaration, DBDefinitions, FieldConfig, flattenDataDefinition, ICharacter } from "@xnh-db/protocol";
+import { ConfigFlatten, FieldConfig, XnhDBProtocol } from "@xnh-db/protocol";
 import { Button, Card, Input as AntInput, Tag, TreeDataNode, TreeSelect, Select, AutoComplete } from "antd";
 import { DefaultOptionType } from "antd/es/select";
 import { DataNode } from "antd/es/tree";
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { DeepPartial } from "utility-types";
 import { DBSearch } from "../search";
-import { Titles } from "../titles";
+import { XnhDBTitles } from "../titles";
 import { useDBClients, XBinding } from "./sync";
 import { entitySearchResultViews } from "./view";
 
-type CollectionName = keyof DBDeclaration
-type CollectionType<N extends CollectionName> = DBDeclaration[N]
+const F = FieldConfig.Fields
+
+type CollectionName = keyof XnhDBProtocol.DBDeclaration
+type CollectionType<N extends CollectionName> = XnhDBProtocol.DBDeclaration[N]
 
 type DBSearchState<C extends CollectionName> = {
     query: IQuery
@@ -149,7 +151,7 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
                     >{
                         q.type === "fullText" ? 
                             q.keyword :
-                            `${flatTitles[Titles.stringifyPath(q.property.keyPath)]}: ${q.property.value}`
+                            `${flatTitles[XnhDBTitles.stringifyPath(q.property.keyPath)]}: ${q.property.value}`
                     }</Tag>
                 ))}
             </Flex>
@@ -247,7 +249,7 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
         setPropertyTags([])
         setSelectedTag("")
         const conf = flatConfig[propertyPath]
-        if(!FieldConfig.isFieldConfig(conf) || conf.type !== "string") {
+        if(!F.isFieldConfig(conf) || conf.type !== "string") {
             return
         }
         if(conf.options.type !== "tag") {
@@ -257,20 +259,20 @@ export function DBSearchInput<C extends CollectionName>({collection}: Collection
         setPropertyTags(tags)
     }
 
-    function getConfigInfo(): [Record<string, string>, Record<string, string[]>, Record<string, FieldConfig.FieldConfig>, DefaultOptionType[]] {
-        const titles = Titles.titles[collection]
-        const config = DBDefinitions[collection]
-        const flatTitles = Titles.flattenTitlesByConfig<CollectionType<C>>(titles, config)
-        const flatConfList = flattenDataDefinition(config)
-        const flatPath = Object.fromEntries(flatConfList.map(([it, _]) => [Titles.stringifyPath(it), it]))
-        const flatConf = Object.fromEntries(flatConfList.map(([keyPath, conf]) => [Titles.stringifyPath(keyPath), conf]))
+    function getConfigInfo(): [Record<string, string>, Record<string, string[]>, Record<string, FieldConfig.Fields.FieldConfig>, DefaultOptionType[]] {
+        const titles = XnhDBTitles.titles[collection]
+        const config = XnhDBProtocol.DBDefinitions[collection]
+        const flatTitles = XnhDBTitles.flattenTitlesByConfig<CollectionType<C>>(titles, config)
+        const flatConfList = ConfigFlatten.flattenConfig(config)
+        const flatPath = Object.fromEntries(flatConfList.map(([it, _]) => [XnhDBTitles.stringifyPath(it), it]))
+        const flatConf = Object.fromEntries(flatConfList.map(([keyPath, conf]) => [XnhDBTitles.stringifyPath(keyPath), conf]))
         const propertyTree = walk([], config)
         const properties = (propertyTree?.children ?? []) as DefaultOptionType[]
         return [flatTitles, flatPath, flatConf, properties]
 
         function walk(path: string[], config: any): DefaultOptionType | undefined {
-            const pathStr = Titles.stringifyPath(path)
-            if(FieldConfig.isFieldConfig(config)) {
+            const pathStr = XnhDBTitles.stringifyPath(path)
+            if(F.isFieldConfig(config)) {
                 if(config.type === "string" && config.options.type === "tag") {
                     return {
                         label: flatTitles[pathStr],

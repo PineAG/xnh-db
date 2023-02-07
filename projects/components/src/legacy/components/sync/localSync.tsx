@@ -1,5 +1,5 @@
 import { createNullableContext, Loading, useNullableContext } from "@pltk/components";
-import { FilesSynchronization, IOfflineClient, IOfflineClientSet, IOnlineClient, IOnlineClientSet, RelationPayloads, retrieveRemoteFile, synchronizeCollection, synchronizeRelation } from "@xnh-db/protocol";
+import { IOfflineClient, IOnlineClient, OfflineClientSynchronization, RemoteFileUtils, XnhDBProtocol as P } from "@xnh-db/protocol";
 import { useEffect, useState } from "react";
 import { DeepPartial } from "utility-types";
 import { IdbCollectionQuery } from "../../storage";
@@ -11,7 +11,7 @@ export type CreateLocalSyncRelations<C extends LocalSyncRelationsBase> = C
 
 export interface ILocalSyncOfflineClients<T, Relations extends LocalSyncRelationsBase> {
     collection: IOfflineClient.Collection<T>
-    inheritance?: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
+    inheritance?: IOfflineClient.Relation<"parent" | "child", P.RelationPayloads.Inheritance>
     relations: {
         [K in keyof Relations]: IOfflineClient.Relation<Relations[K]["keys"], Relations[K]["payload"]>
     }
@@ -19,7 +19,7 @@ export interface ILocalSyncOfflineClients<T, Relations extends LocalSyncRelation
 
 export interface ILocalSyncOnlineClients<T, Relations extends LocalSyncRelationsBase> {
     collection: IOnlineClient.Collection<T, IdbCollectionQuery>
-    inheritance?: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
+    inheritance?: IOnlineClient.Relation<"parent" | "child", P.RelationPayloads.Inheritance>
     relations: {
         [K in keyof Relations]: {
             selfKey: Relations[K]["keys"]
@@ -55,19 +55,19 @@ export interface ILocalSyncRequest<T, Relations extends LocalSyncRelationsBase> 
 }
 
 async function syncOfflineClients<T, R extends LocalSyncRelationsBase>(syncDialog: ReturnType<typeof useSyncDialog>, src: ILocalSyncOfflineClients<T, R>, dst: ILocalSyncOfflineClients<T, R>): Promise<void> {
-    await syncDialog("数据集", synchronizeCollection(src.collection, dst.collection))
+    await syncDialog("数据集", OfflineClientSynchronization.synchronizeCollection(src.collection, dst.collection))
     if(src.inheritance && dst.inheritance) {
-        await syncDialog("继承关系", synchronizeRelation(src.inheritance, dst.inheritance))
+        await syncDialog("继承关系", OfflineClientSynchronization.synchronizeRelation(src.inheritance, dst.inheritance))
     }
     for(const k in src.relations) {
         const srcRel = src.relations[k]
         const dstRel = dst.relations[k]
-        await syncDialog("关联记录", synchronizeRelation(srcRel, dstRel))
+        await syncDialog("关联记录", OfflineClientSynchronization.synchronizeRelation(srcRel, dstRel))
     }
 }
 
-type LocalSyncOnlineClientsFactory<T, R extends LocalSyncRelationsBase> = (clients: IOnlineClientSet<IdbCollectionQuery>) => ILocalSyncOnlineClients<T, R>
-type LocalSyncOfflineClientsFactory<T, R extends LocalSyncRelationsBase> = (clients: IOfflineClientSet) => ILocalSyncOfflineClients<T, R>
+type LocalSyncOnlineClientsFactory<T, R extends LocalSyncRelationsBase> = (clients: P.IOnlineClientSet<IdbCollectionQuery>) => ILocalSyncOnlineClients<T, R>
+type LocalSyncOfflineClientsFactory<T, R extends LocalSyncRelationsBase> = (clients: P.IOfflineClientSet) => ILocalSyncOfflineClients<T, R>
 
 interface UseLocalSyncProps<T, R extends LocalSyncRelationsBase> {
     id: string
@@ -165,15 +165,15 @@ function useLocalSync<T, R extends LocalSyncRelationsBase>(props: UseLocalSyncPr
     }
 
     async function _downloadFiles() {
-        await syncDialog("下载文件索引", FilesSynchronization.download(clients.local.files, clients.remote.files))
+        await syncDialog("下载文件索引", OfflineClientSynchronization.Files.download(clients.local.files, clients.remote.files))
     }
 
     async function _uploadFiles() {
-        await syncDialog("上传文件", FilesSynchronization.upload(clients.local.files, clients.remote.files))
+        await syncDialog("上传文件", OfflineClientSynchronization.Files.upload(clients.local.files, clients.remote.files))
     }
 
     function fetchFile(name: string): Promise<Blob> {
-        return retrieveRemoteFile(name, clients.query.files, clients.local.files, clients.remote.files)
+        return RemoteFileUtils.retrieveRemoteFile(name, clients.query.files, clients.local.files, clients.remote.files)
     }
 }
 

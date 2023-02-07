@@ -1,4 +1,4 @@
-import { FilesSynchronization, IOfflineClient, IOfflineClientSet, IOnlineClientSet, PathSyncClient, ProgressResult, XNH_DB_DATA_VERSION } from "@xnh-db/protocol";
+import { OfflineClientSynchronization, IOfflineClient, XnhDBProtocol as P } from "@xnh-db/protocol";
 import React, { createContext, useContext, useEffect, useState, version } from "react";
 import { createRestfulOfflineClientsSet } from "../../restful";
 import { createIdbClients, destroyIdbStorage, IdbCollectionQuery } from "../../storage";
@@ -10,7 +10,7 @@ import { GithubAuthDialog } from "./auth";
 
 type ForceProceedingAction = {proceed: () => Promise<void>}
 type CancelableAction = {proceed: () => Promise<void>, cancel: () => Promise<void>}
-type InitializedClients = {query: IOnlineClientSet<IdbCollectionQuery>, local: IOfflineClientSet, remote: IOfflineClientSet}
+type InitializedClients = {query: P.IOnlineClientSet<IdbCollectionQuery>, local: P.IOfflineClientSet, remote: P.IOfflineClientSet}
 
 type DataSynchronizationGlobalState = {
     "pending": {message: string[]},
@@ -111,7 +111,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                     if(commit) {
                         state = "broken_remote"
                     } else {
-                        if(version && version !== XNH_DB_DATA_VERSION) {
+                        if(version && version !== P.XNH_DB_DATA_VERSION) {
                             state = "low_version"
                         }else{
                             const idbClients = await _getDB()
@@ -127,13 +127,13 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                 }
             } else { // offline
                 let idbClients: Awaited<ReturnType<typeof _getDB>>
-                if(version && version !== XNH_DB_DATA_VERSION) {
+                if(version && version !== P.XNH_DB_DATA_VERSION) {
                     setMessage(["版本不一致, 正在重新同步..."])
                     await destroyIdbStorage()
                 } 
                 idbClients = await _getDB()
                 await _syncRestful(["正在同步数据", "首次同步可能花费较长时间"], idbClients.offline)
-                OctokitCertificationStore.version.set(XNH_DB_DATA_VERSION)
+                OctokitCertificationStore.version.set(P.XNH_DB_DATA_VERSION)
                 setMessage(["同步完成"])
                 state = "offline"
                 setClients({
@@ -166,17 +166,17 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         }
     }
 
-    async function _syncOctokit(prefixMessages: string[], cert: OctokitCertificationStore.IGithubCert, localClients: IOfflineClientSet) {
+    async function _syncOctokit(prefixMessages: string[], cert: OctokitCertificationStore.IGithubCert, localClients: P.IOfflineClientSet) {
         const octokitClient = createOctokitOfflineClientSet(cert)
         await _sync(prefixMessages, octokitClient, localClients)
     }
 
-    async function _syncRestful(prefixMessages: string[], localClients: IOfflineClientSet) {
+    async function _syncRestful(prefixMessages: string[], localClients: P.IOfflineClientSet) {
         const restfulClient = createRestfulOfflineClientsSet()
         await _sync(prefixMessages, restfulClient, localClients)
     }
 
-    async function _sync(prefixMessages: string[], remoteClients: IOfflineClientSet, localClients: IOfflineClientSet) {
+    async function _sync(prefixMessages: string[], remoteClients: P.IOfflineClientSet, localClients: P.IOfflineClientSet) {
         for await(const [itemType, progress] of synchronizeOfflineClientSet(remoteClients, localClients)) {
             setMessage([
                 ...prefixMessages,
@@ -184,7 +184,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                 stringifyProgressResult(progress)
             ])
         }
-        for await(const progress of FilesSynchronization.download(localClients.files, remoteClients.files)) {
+        for await(const progress of OfflineClientSynchronization.Files.download(localClients.files, remoteClients.files)) {
             setMessage([
                 ...prefixMessages,
                 stringifyProgressResult(progress)
@@ -207,7 +207,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
                 stringifyProgressResult(progress)
             ])
         }
-        for await(const progress of FilesSynchronization.upload(localClients.files, remoteClients.files)) {
+        for await(const progress of OfflineClientSynchronization.Files.upload(localClients.files, remoteClients.files)) {
             setMessage([
                 ...prefixMessages,
                 stringifyProgressResult(progress)
@@ -273,7 +273,7 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
         setState("pending")
         try {
             await destroyIdbStorage()
-            OctokitCertificationStore.version.set(XNH_DB_DATA_VERSION)
+            OctokitCertificationStore.version.set(P.XNH_DB_DATA_VERSION)
             await initialize()
         }catch(e) {
             setFetalMessage(e.toString())
@@ -300,9 +300,9 @@ function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
 
 export interface IGlobalClients {
     mode: "online" | "offline"
-    query: IOnlineClientSet<IdbCollectionQuery>
-    local: IOfflineClientSet
-    remote: IOfflineClientSet
+    query: P.IOnlineClientSet<IdbCollectionQuery>
+    local: P.IOfflineClientSet
+    remote: P.IOfflineClientSet
 }
 
 const GlobalClientsContext = createNullableContext<IGlobalClients>("Clients not initialized")
@@ -386,7 +386,7 @@ const SyncMessageContext = createNullableContext<Binding<SyncMessage>>("Sync con
 
 export function useSyncDialog() {
     const binding = useNullableContext(SyncMessageContext)
-    async function startSync(name: string, progress: AsyncGenerator<ProgressResult.Progress>) {
+    async function startSync(name: string, progress: AsyncGenerator<OfflineClientSynchronization.ProgressResult.Progress>) {
         binding.update({sync: true, messages: [`开始同步: ${name}`]})
         for await(const p of progress) {
             binding.update({sync: true, messages: [`正在同步: ${name}`, stringifyProgressResult(p)]})

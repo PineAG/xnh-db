@@ -1,4 +1,4 @@
-import {PathSyncClient} from "@xnh-db/protocol"
+import {OfflinePathClientUtils} from "@xnh-db/protocol"
 import {Octokit} from "@octokit/rest"
 import * as base64 from "js-base64"
 
@@ -51,7 +51,7 @@ export class OctokitClient {
     
 }
 
-export class OctokitRepoClient implements PathSyncClient.IPathClient {
+export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
     constructor(private octokit: Octokit, private branch: OctokitResults.Branch, private pathPrefix?: string) {}
 
     private patchPath(path: string): string {
