@@ -1,7 +1,7 @@
 import { FieldConfig, IOfflineClient, IOnlineClient } from "@xnh-db/protocol"
 import { IdbCollectionQuery } from "../legacy"
 
-export module XnhDbUiConfiguration {
+export module DbUiConfiguration {
     export module PropsUtil {
         type DBQuery = IdbCollectionQuery
 
@@ -110,8 +110,4 @@ export module XnhDbUiConfiguration {
     export function makeConfig<Props extends PropsUtil.PropsBase<any, any, any>>(props: Props): Props {
         return props
     }
-}
-
-export module XnhDbUiConfiguration {
-
 }

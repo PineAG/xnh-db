@@ -157,46 +157,46 @@ export module XnhDBProtocol {
         export type Character_VoiceActor = "character" | "voiceActor"
     }
 
-    export type IOnlineClientSet<CollectionQuery> = {
-        collections: {
-            character: IOnlineClient.Collection<ICharacter, CollectionQuery>,
-            artwork: IOnlineClient.Collection<IArtwork, CollectionQuery>,
-            voiceActor: IOnlineClient.Collection<IVoiceActor, CollectionQuery>,
-            creator: IOnlineClient.Collection<ICreator, CollectionQuery>
-        },
-        inheritance: {
-            character: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
-            artwork: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
-        },
-        relations: {
-            interpersonal: IOnlineClient.Relation<"left" | "right", RelationPayloads.Interpersonal>
-            character_artwork: IOnlineClient.Relation<"character" | "artwork", RelationPayloads.Character_Artwork>
-            artwork_creator: IOnlineClient.Relation<"artwork" | "creator", RelationPayloads.Artwork_Creator>
-            character_voiceActor: IOnlineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
-        },
-        files: IOnlineClient.Files
-        tags: IOnlineClient.Tags
-    }
+    // export type IOnlineClientSet<CollectionQuery> = {
+    //     collections: {
+    //         character: IOnlineClient.Collection<ICharacter, CollectionQuery>,
+    //         artwork: IOnlineClient.Collection<IArtwork, CollectionQuery>,
+    //         voiceActor: IOnlineClient.Collection<IVoiceActor, CollectionQuery>,
+    //         creator: IOnlineClient.Collection<ICreator, CollectionQuery>
+    //     },
+    //     inheritance: {
+    //         character: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
+    //         artwork: IOnlineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
+    //     },
+    //     relations: {
+    //         interpersonal: IOnlineClient.Relation<"left" | "right", RelationPayloads.Interpersonal>
+    //         character_artwork: IOnlineClient.Relation<"character" | "artwork", RelationPayloads.Character_Artwork>
+    //         artwork_creator: IOnlineClient.Relation<"artwork" | "creator", RelationPayloads.Artwork_Creator>
+    //         character_voiceActor: IOnlineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
+    //     },
+    //     files: IOnlineClient.Files
+    //     tags: IOnlineClient.Tags
+    // }
 
-    export type IOfflineClientSet = {
-        collections: {
-            character: IOfflineClient.Collection<ICharacter>,
-            artwork: IOfflineClient.Collection<IArtwork>,
-            voiceActor: IOfflineClient.Collection<IVoiceActor>,
-            creator: IOfflineClient.Collection<ICreator>
-        },
-        inheritance: {
-            character: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
-            artwork: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
-        },
-        relations: {
-            interpersonal: IOfflineClient.Relation<"left" | "right", RelationPayloads.Interpersonal>
-            character_artwork: IOfflineClient.Relation<"character" | "artwork", RelationPayloads.Character_Artwork>
-            artwork_creator: IOfflineClient.Relation<"artwork" | "creator", RelationPayloads.Artwork_Creator>
-            character_voiceActor: IOfflineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
-        },
-        files: IOfflineClient.Files
-    }
+    // export type IOfflineClientSet = {
+    //     collections: {
+    //         character: IOfflineClient.Collection<ICharacter>,
+    //         artwork: IOfflineClient.Collection<IArtwork>,
+    //         voiceActor: IOfflineClient.Collection<IVoiceActor>,
+    //         creator: IOfflineClient.Collection<ICreator>
+    //     },
+    //     inheritance: {
+    //         character: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
+    //         artwork: IOfflineClient.Relation<"parent" | "child", RelationPayloads.Inheritance>
+    //     },
+    //     relations: {
+    //         interpersonal: IOfflineClient.Relation<"left" | "right", RelationPayloads.Interpersonal>
+    //         character_artwork: IOfflineClient.Relation<"character" | "artwork", RelationPayloads.Character_Artwork>
+    //         artwork_creator: IOfflineClient.Relation<"artwork" | "creator", RelationPayloads.Artwork_Creator>
+    //         character_voiceActor: IOfflineClient.Relation<"character" | "voiceActor", RelationPayloads.Character_VoiceActor>
+    //     },
+    //     files: IOfflineClient.Files
+    // }
 
     export type DBDeclaration = {
         character: ICharacter
@@ -210,30 +210,5 @@ export module XnhDBProtocol {
         artwork: ArtworkDefinition,
         creator: CreatorDefinition,
         voiceActor: VoiceActorDefinition
-    }
-
-
-    export type PathClientFactory = (root: string) => OfflinePathClientUtils.IPathClient
-    export function createPathOfflineClientSet(factory: PathClientFactory): IOfflineClientSet {
-        const {Collection, Relation, Files} = OfflinePathClientUtils
-        return {
-            collections: {
-                character: new Collection(factory("characters")),
-                artwork: new Collection(factory("artworks")),
-                creator: new Collection(factory("creators")),
-                voiceActor: new Collection(factory("voiceActors")),
-            },
-            inheritance: {
-                character: new Relation(factory("inherit_character")),
-                artwork: new Relation(factory("inherit_artwork")),
-            },
-            relations: {
-                interpersonal: new Relation(factory("rel_interpersonal")),
-                character_artwork: new Relation(factory("rel_character_artwork")),
-                character_voiceActor: new Relation(factory("rel_character_voiceActor")),
-                artwork_creator: new Relation(factory("rel_artwork_creator"))
-            },
-            files: new Files(factory("files"))
-        }
     }
 }
