@@ -1,4 +1,3 @@
-import { IOfflineClient, IOnlineClient, OfflinePathClientUtils } from "./client"
 import {FieldConfig} from "./client/config"
 export module XnhDBProtocol {
     const F = FieldConfig.Fields
@@ -10,13 +9,13 @@ export module XnhDBProtocol {
 
     function createInternationalNameDefinition(): FieldConfig.ConfigFromDeclaration<InternationalName> {
         return {
-            zhs: F.fullTextField(1),
-            ja: F.fullTextField(1),
-            en: F.fullTextField(1),
+            zhs: F.fullText(1),
+            ja: F.fullText(1),
+            en: F.fullText(1),
         }
     }
 
-    export interface ICharacter {
+    export type ICharacter = FieldConfig.AsEntity<{
         id: string
         title: string
         name: InternationalName
@@ -34,15 +33,15 @@ export module XnhDBProtocol {
                 features: string[]
             }
         }
-    }
+    }> 
 
     export const CharacterDefinition = FieldConfig.makeConfig.for<ICharacter>().as({
         id: F.id(),
-        title: F.fullTextField(1.5),
+        title: F.fullText(1.5),
         name: createInternationalNameDefinition(),
-        profile: F.file(),
-        photos: F.fileList(),
-        description: F.fullTextField(0.1),
+        profile: F.avatar(),
+        photos: F.gallery(),
+        description: F.fullText(0.1),
         appearance: {
             eyes: {
                 color: F.tagList("color"),
@@ -56,52 +55,52 @@ export module XnhDBProtocol {
         },
     })
 
-    export interface IArtwork {
+    export type IArtwork = FieldConfig.AsEntity<{
         id: string
         title: string,
         name: InternationalName
         photos: string[]
         description: string
-    }
+    }>
 
     export const ArtworkDefinition = FieldConfig.makeConfig.for<IArtwork>().as({
         id: F.id(),
-        title: F.fullTextField(1.5),
+        title: F.fullText(1.5),
         name: createInternationalNameDefinition(),
-        photos: F.fileList(),
-        description: F.fullTextField(0.1)
+        photos: F.gallery(),
+        description: F.fullText(0.1)
     })
 
-    export interface ICreator {
+    export type ICreator = FieldConfig.AsEntity<{
         id: string
         title: string,
         name: InternationalName
         photos: string[]
         description: string
-    }
+    }>
 
     export const CreatorDefinition = FieldConfig.makeConfig.for<ICreator>().as({
         id: F.id(),
-        title: F.fullTextField(1.5),
+        title: F.fullText(1.5),
         name: createInternationalNameDefinition(),
-        photos: F.fileList(),
-        description: F.fullTextField(0.1)
+        photos: F.gallery(),
+        description: F.fullText(0.1)
     })
 
-    export interface IVoiceActor {
+    export type IVoiceActor = FieldConfig.AsEntity<{
         id: string
         title: string,
         name: InternationalName
         photos: string[]
         description: string
-    }
+    }> 
 
     export const VoiceActorDefinition = FieldConfig.makeConfig.for<IVoiceActor>().as({
         id: F.id(),
-        title: F.fullTextField(1.5),
+        title: F.fullText(1.5),
         name: createInternationalNameDefinition(),
-        photos: F.fileList(),
-        description: F.fullTextField(0.1)
+        photos: F.gallery(),
+        description: F.fullText(0.1)
     })
 
     /**
@@ -112,37 +111,37 @@ export module XnhDBProtocol {
      */
 
     export namespace RelationPayloads {
-        export interface Inheritance {}
+        export type Inheritance = FieldConfig.AsEntity<{}>
 
         export const Inheritance_Definition = FieldConfig.makeConfig.for<Inheritance>().as({})
 
-        export interface Character_Artwork {
+        export type Character_Artwork = FieldConfig.AsEntity<{
             characterType: string[]
-        }
+        }>
 
         export const Character_Artwork_Definition = FieldConfig.makeConfig.for<Character_Artwork>().as({
             characterType: F.tagList("character_artwork.characterType")
         })
 
-        export interface Artwork_Creator {
+        export type Artwork_Creator = FieldConfig.AsEntity<{
             creatorType: string[]
-        }
+        }> 
 
         export const Artwork_Creator_Definition = FieldConfig.makeConfig.for<Artwork_Creator>().as({
             creatorType: F.tagList("artwork_creator.creatorType")
         })
 
-        export interface Character_VoiceActor {
+        export type Character_VoiceActor = FieldConfig.AsEntity<{
             voiceType: string[]
-        }
+        }>
 
         export const Character_VoiceActor_Definition = FieldConfig.makeConfig.for<Character_VoiceActor>().as({
             voiceType: F.tagList("character_voiceActor.voiceType")
         })
 
-        export interface Interpersonal {
+        export type Interpersonal = FieldConfig.AsEntity<{
             relation: [string, string]
-        }
+        }>
 
         export const Interpersonal_Definition = FieldConfig.makeConfig.for<Interpersonal>().as({
             relation: F.tagList("interpersonal.relation")

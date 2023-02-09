@@ -1,27 +1,25 @@
-const ConfigIdentifier = Symbol()
+const ConfigEndpointIdentifier = Symbol()
 
 export module FieldConfig {
 
-    export type ConfigFromDeclaration<T> = {
-        [K in keyof T]: (
-            T[K] extends string | number | any[] ? EndpointConfig<T[K]>: ConfigFromDeclaration<T[K]>
-        )
+    export interface EntityBase {
+        [key: string]: Fields.EndpointValueTypes | EntityBase
     }
 
-    export type EndpointConfig<T> = (
-        T extends string ?
-            Fields.StringFieldConfig | Fields.IdFieldConfig :
-        T extends number ?
-            Fields.NumberConfig :
-        T extends (infer U)[] ? (
-            U extends string ?
-            Fields.StringListConfig:
-            never):
+    export type AsEntity<T extends EntityBase> = T 
+
+    export type EndpointConfig<T> = Fields.EndpointsOfValue<T>
+
+    export type ConfigFromDeclaration<T> = (
+        T extends Fields.EndpointValueTypes ? EndpointConfig<T> :
+        T extends EntityBase ? {
+            [K in keyof T]: ConfigFromDeclaration<T[K]>
+        } :
         never
     )
 
     export const makeConfig = {
-        for<T>() {
+        for<T extends EntityBase>() {
             return {
                 as<C extends ConfigFromDeclaration<T>>(conf: C): C {
                     return conf
@@ -31,103 +29,140 @@ export module FieldConfig {
     }
 
     export module Fields {
+        export module Options {
+            export interface FullText {
+                weight: number
+            }
+            export interface Tag {
+                collection: string
+            }
+            export interface Number {
+                min?: number
+                max?: number
+                step?: number
+                default?: number
+            }
+            export interface File {}
+        }
 
-        export type StringListConfig = FullTextListConfig | TagListConfig | FileListConfig
-        export type StringFieldConfig = FullTextFieldConfig | FileConfig
-    
-        export type FieldConfig = IdFieldConfig | StringFieldConfig | NumberConfig | StringListConfig
+        type FieldTypesInternal = {
+            id: {
+                data: string,
+                options: undefined
+            }
+            fullText: {
+                data: string
+                options: Options.FullText
+            }
+            fullTextList: {
+                data: string[]
+                options: Options.FullText
+            }
+            tag: {
+                data: string
+                options: Options.Tag
+            }
+            tagList: {
+                data: string[]
+                options: Options.Tag
+            }
+            number: {
+                data: number
+                options: Options.Number
+            }
+            avatar: {
+                data: string
+                options: Options.File
+            }
+            gallery: {
+                data: string[]
+                options: Options.File
+            }
+        }
 
-        type ItemConfig<T, TypeStr extends string, Options> = {
-            [ConfigIdentifier]: true,
-            isArray: false,
-            type: TypeStr,
-            options: Options
-        }
-    
-        type ArrayConfig<T, TypeStr extends string, Options> = {
-            [ConfigIdentifier]: true,
-            isArray: true,
-            type: TypeStr,
-            options: Options
-        }
-    
-        export function isFieldConfig(obj: object): obj is FieldConfig {
-            return obj && ConfigIdentifier in obj
-        }
-    
-        export type IdFieldConfig = {
-            [ConfigIdentifier]: true,
-            type: "id"
-        }
-        export function id(): IdFieldConfig {
-            return {
-                [ConfigIdentifier]: true,
-                type: "id"
+        export type FieldTypes = {
+            [K in keyof FieldTypesInternal]: {
+                $isField: Symbol
+                type: K
+                options: FieldTypesInternal[K]["options"]
             }
         }
-    
-        type FullTextOptions = {type: "fullText", weight: number}
-        type TagOptions = {type: "tag", collection: string}
-    
-        export type FullTextFieldConfig = ItemConfig<string, "string", FullTextOptions>
-        export function fullTextField(weight: number): FullTextFieldConfig {
+
+        export type EndpointTypes = FieldTypes[keyof FieldTypes]
+        export type EndpointValueTypes = FieldTypesInternal[keyof FieldTypesInternal]["data"]
+        export type EndpointsOfValue<V> = V extends EndpointValueTypes ? (
+            Extract<EndpointTypes, {
+                type: keyof Extract<FieldTypesInternal, {data: V}>
+            }>
+        ) : never
+
+        export type ValueType<Name extends keyof FieldTypesInternal> = FieldTypesInternal[Name]["data"]
+
+        export function isEndpointType(obj: any): obj is EndpointTypes {
+            return obj !== undefined && obj["$isField"] === ConfigEndpointIdentifier
+        }
+
+        export function id(): FieldTypes["id"] {
             return {
-                [ConfigIdentifier]: true,
-                type: "string",
-                isArray: false,
-                options: {type: "fullText", weight}
+                $isField: ConfigEndpointIdentifier,
+                type: "id",
+                options: undefined
             }
         }
-    
-        export type FullTextListConfig = ArrayConfig<string, "string", FullTextOptions>
-        export function fullTextList(weight: number): FullTextListConfig {
+
+        export function fullText(weight: number): FieldTypes["fullText"] {
             return {
-                [ConfigIdentifier]: true,
-                type: "string",
-                isArray: true,
-                options: {type: "fullText", weight}
+                $isField: ConfigEndpointIdentifier,
+                type: "fullText",
+                options: {weight}
             }
         }
-    
-        export type TagListConfig = ArrayConfig<string, "string", TagOptions>
-        export function tagList(tagsCollection: string): TagListConfig {
+
+        export function fullTextList(weight: number): FieldTypes["fullTextList"] {
             return {
-                [ConfigIdentifier]: true,
-                type: "string",
-                isArray: true,
-                options: {type: "tag", collection: tagsCollection}
+                $isField: ConfigEndpointIdentifier,
+                type: "fullTextList",
+                options: {weight}
             }
         }
-    
-        export type FileConfig = ItemConfig<string, "string", {type: "file"}>
-        export function file(): FileConfig {
+
+        export function tag(collection: string): FieldTypes["tag"] {
             return {
-                [ConfigIdentifier]: true,
-                type: "string",
-                isArray: false,
-                options: {type: "file"}
+                $isField: ConfigEndpointIdentifier,
+                type: "tag",
+                options: {collection}
             }
         }
-    
-        export type FileListConfig = ArrayConfig<string, "string", {type: "file"}>
-        export function fileList(): FileListConfig {
+
+        export function tagList(collection: string): FieldTypes["tagList"] {
             return {
-                [ConfigIdentifier]: true,
-                type: "string",
-                isArray: true,
-                options: {type: "file"}
+                $isField: ConfigEndpointIdentifier,
+                type: "tagList",
+                options: {collection}
             }
         }
-    
-    
-        type NumberOptions = {min: number, max: number, step: number, default: number}
-        export type NumberConfig = ItemConfig<number, "number", NumberOptions>
-        export function number(options: NumberOptions): NumberConfig {
+
+        export function number(options: Options.Number): FieldTypes["number"] {
             return {
-                [ConfigIdentifier]: true,
+                $isField: ConfigEndpointIdentifier,
                 type: "number",
-                isArray: false,
                 options
+            }
+        }
+
+        export function avatar(): FieldTypes["avatar"] {
+            return {
+                $isField: ConfigEndpointIdentifier,
+                type: "avatar",
+                options: {}
+            }
+        }
+
+        export function gallery(): FieldTypes["gallery"] {
+            return {
+                $isField: ConfigEndpointIdentifier,
+                type: "gallery",
+                options: {}
             }
         }
     }

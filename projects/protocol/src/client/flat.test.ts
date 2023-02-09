@@ -30,7 +30,6 @@ const TestConf = FieldConfig.makeConfig.for<ITest>().as({
 describe("flat tests", () => {
     it("flatten config", async () => {
         const result = ConfigFlatten.flattenConfig(TestConf)
-        console.log(result)
         const [[key, value]] = result
         expect(key).toEqual(["a", "b", "c", "d"])
         expect(value.type).toBe("number")

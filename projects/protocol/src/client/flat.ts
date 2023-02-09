@@ -1,8 +1,10 @@
 import {FieldConfig as FC, FieldConfig} from "./config"
-import {DeepPartial} from "utility-types"
+import {DeepPartial, UnionToIntersection} from "utility-types"
+
+import EntityBase = FC.EntityBase
 
 export module ConfigFlatten {
-    export function flattenConfig<T, C extends FC.ConfigFromDeclaration<T>>(config: C): [string[], FieldConfig.Fields.FieldConfig][] {
+    export function flattenConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T>>(config: C): [string[], FieldConfig.Fields.EndpointTypes][] {
         return flattenByConfig<T, true, true, C>({
             data: true,
             config: config,
@@ -11,10 +13,28 @@ export module ConfigFlatten {
         }).map(([key, _, conf]) => [key, conf])
     }
 
-    const FlattenDataMark = Symbol()
-    export type FlattenedData<Conf> = Record<string, any> & {[FlattenDataMark]: Conf}
+    export module Flattened {
+        type ConcatPrefix<L extends string | null, R extends string> = L extends null ? R : `${L}_${R}`
+
+        type FlattenedInternal<T, Endpoint, Prefix extends string | null> = (
+            T extends Endpoint ?
+                {[K in Prefix]: T}:
+                {
+                    [K in Extract<keyof T, string>]: FlattenedInternal<T[K], Endpoint, ConcatPrefix<Prefix, K>>
+                }[Extract<keyof T, string>]
+        )
+
+        type ExtractStringKeys<T> = {
+            [K in Extract<keyof T, string>]: T[K]
+        }
+
+        export type Flattened<T, Endpoint> = ExtractStringKeys<UnionToIntersection<FlattenedInternal<T, Endpoint, null>>>
+    }
+
+    export type FlattenedEntity<T extends EntityBase> = Flattened.Flattened<T, FieldConfig.Fields.EndpointValueTypes>
+    export type FlattenedConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T>> = Flattened.Flattened<C, FieldConfig.Fields.EndpointTypes>
     
-    export function flattenDataByConfig<T, C extends FC.ConfigFromDeclaration<T> = FC.ConfigFromDeclaration<T>>(data: DeepPartial<T>, definition: C): FlattenedData<C> {
+    export function flattenDataByConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T> = FC.ConfigFromDeclaration<T>>(data: DeepPartial<T>, definition: C): FlattenedEntity<DeepPartial<T>> {
         const results = flattenByConfig({
             data: data,
             config: definition,
@@ -26,14 +46,11 @@ export module ConfigFlatten {
                 stringifyKeyPath(keyPath),
                 value
             ]
-        }))
-        return {
-            [FlattenDataMark]: definition,
-            ...result
-        }
+        })) as FlattenedEntity<DeepPartial<T>>
+        return result
     }
     
-    export function extractFlatDataByConfig<T, C extends FC.ConfigFromDeclaration<T> = FC.ConfigFromDeclaration<T>>(data: FlattenedData<T>, definition: C): DeepPartial<T> {
+    export function extractFlatDataByConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T> = FC.ConfigFromDeclaration<T>>(data: FlattenedEntity<T>, definition: C): DeepPartial<T> {
         const result: any = {}
         for(const [keyPath, conf] of flattenConfig(definition)) {
             const flatPath = stringifyKeyPath(keyPath)
@@ -58,7 +75,7 @@ export module ConfigFlatten {
         return keyPath.join("_")
     }
     
-    export function extractValuesAndConfigs<T>(data: DeepPartial<T>, definition: FC.ConfigFromDeclaration<T>): [string[], any, FieldConfig.Fields.FieldConfig][] {
+    export function extractValuesAndConfigs<T extends EntityBase>(data: DeepPartial<T>, definition: FC.ConfigFromDeclaration<T>): [string[], any, FieldConfig.Fields.EndpointTypes][] {
         return flattenByConfig({
             data,
             config: definition,
@@ -67,20 +84,20 @@ export module ConfigFlatten {
         })
     }
     
-    interface FlatByConfigProps<T, D, R, C extends FieldConfig.ConfigFromDeclaration<T>> {
+    interface FlatByConfigProps<T extends FieldConfig.EntityBase, D, R, C extends FieldConfig.ConfigFromDeclaration<T>> {
         data: D
         config: C
-        mapper: (item: any, config: FieldConfig.Fields.FieldConfig) => R
-        child: (item: any, key: string, config: FieldConfig.Fields.FieldConfig) => D
+        mapper: (item: any, config: FieldConfig.Fields.EndpointTypes) => R
+        child: (item: any, key: string, config: FieldConfig.Fields.EndpointTypes) => D
     }
     
-    export function flattenByConfig<T, D, R, C extends FieldConfig.ConfigFromDeclaration<T>>(props: FlatByConfigProps<T, D, R, C>): [string[], R, FieldConfig.Fields.FieldConfig][] {
+    export function flattenByConfig<T extends EntityBase, D, R, C extends FieldConfig.ConfigFromDeclaration<T>>(props: FlatByConfigProps<T, D, R, C>): [string[], R, FieldConfig.Fields.EndpointTypes][] {
         return Array.from(walk(props.data, props.config, []))
         
-        function* walk(n: any, c: any, path: string[]): Generator<[string[], R, FieldConfig.Fields.FieldConfig]> {
+        function* walk(n: any, c: any, path: string[]): Generator<[string[], R, FieldConfig.Fields.EndpointTypes]> {
             if(n === undefined || c === undefined) {
                 return
-            } else if (FieldConfig.Fields.isFieldConfig(c)) {
+            } else if (FieldConfig.Fields.isEndpointType(c)) {
                 yield [path, props.mapper(n, c), c]
             } else {
                 for(const key in c) {
