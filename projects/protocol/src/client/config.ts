@@ -6,6 +6,10 @@ export module FieldConfig {
         [key: string]: Fields.EndpointValueTypes | EntityBase
     }
 
+    export interface ConfigBase {
+        [key: string]: Fields.EndpointTypes | ConfigBase
+    }
+
     export type AsEntity<T extends EntityBase> = T 
 
     export type EndpointConfig<T> = Fields.EndpointsOfValue<T>
@@ -16,6 +20,14 @@ export module FieldConfig {
             [K in keyof T]: ConfigFromDeclaration<T[K]>
         } :
         never
+    )
+
+    export type EntityFromConfig<C> = (
+        C extends Fields.EndpointTypes ?
+            Fields.ValueOfEndpoint[C["type"]] :
+        C extends ConfigBase ?
+            {[K in keyof C]: EntityFromConfig<C[K]>} :
+            never
     )
 
     export const makeConfig = {
@@ -95,6 +107,9 @@ export module FieldConfig {
                 type: keyof Extract<FieldTypesInternal, {data: V}>
             }>
         ) : never
+        export type ValueOfEndpoint = {
+            [K in keyof FieldTypesInternal]: ValueType<K>
+        }
 
         export type ValueType<Name extends keyof FieldTypesInternal> = FieldTypesInternal[Name]["data"]
 
