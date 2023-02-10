@@ -94,8 +94,6 @@ describe("UI Config Test", () => {
             }
         })
 
-        type x = (typeof config)["collectionsToRelations"]["character"]["children"]
-
         const CharacterFullPage = DbUiConfiguration.wrapLayout.fullPage(config, "character", props => {
             return <div>
                 <h1>{props.item.$title}</h1>
