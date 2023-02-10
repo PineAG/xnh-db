@@ -57,12 +57,17 @@ describe("UI Config Test", () => {
             }).withPayload<{}>().withPayloadConfig({}).withPayloadTitles({$title: "WTF"})
         })).collectionsToRelations({
             character: b => ({
-                xxx: b.toRelation("inheritance", {selfKey: "child", targetKey: "child"})
+                parents: b.toRelation("inheritance", {selfKey: "child", targetKey: "parent"}),
+                children: b.toRelation("inheritance", {selfKey: "parent", targetKey: "child"})
             }),
             artwork: b => ({
                 characters: b.toRelation("artwork_character", {selfKey: "artwork", targetKey: "character"})
             })
-        }).withLayouts({
+        }).done()
+
+        type Props = typeof config
+
+        const layouts = DbUiConfiguration.makeLayouts(config, {
             character: {
                 fullPage: (props) => (<div>
                     <h1>{props.item.$title}</h1>
@@ -87,6 +92,18 @@ describe("UI Config Test", () => {
                 },
                 searchResult: (props) => <span>{props.item.name.$element}</span>
             }
-        }).done()
+        })
+
+        type x = (typeof config)["collectionsToRelations"]["character"]["children"]
+
+        const CharacterFullPage = DbUiConfiguration.wrapLayout.fullPage(config, "character", props => {
+            return <div>
+                <h1>{props.item.$title}</h1>
+                <p>{props.item.name.$element}</p>
+                <p>{props.relations.children.$richListElement}</p>
+            </div>
+        })
+
+
     })
 })

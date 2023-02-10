@@ -40,7 +40,10 @@ export module DbUiConfiguration {
         }
 
         export module LayoutProps {
-            export type FullPage<T extends EntityBase, ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {item: ItemLayoutProps<T>, relations: LayoutPropsForRelations<ColToRel>}
+            export type FullPage<T extends EntityBase, ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {
+                item: ItemLayoutProps<T>, 
+                relations: LayoutPropsForRelations<ColToRel>
+            }
             export type SimplePage<T extends EntityBase> = {item: ItemLayoutProps<T>}
         }
 
@@ -102,7 +105,7 @@ export module DbUiConfiguration {
                 never
         )
 
-        export type LayoutProps<
+        export type LayoutPropsFromProps<
             Collections extends CollectionSetBase,
             ColToRel extends CollectionToRelationsBase<Extract<keyof Collections, string>, any>> = {
                 [C in Extract<keyof Collections, string>]: 
@@ -112,16 +115,20 @@ export module DbUiConfiguration {
                     >
         }
 
-        export type Props<
+        export type DataProps<
             Collections extends CollectionSetBase, 
             Relations extends RelationSetBase<Extract<keyof Collections, string>>, 
             ColToRel extends CollectionToRelationsBase<Extract<keyof Collections, string>, Relations>
         > = {
             collections: Collections,
             relations: Relations,
-            collectionsToRelations: ColToRel,
-            layouts: LayoutProps<Collections, ColToRel>
+            collectionsToRelations: ColToRel
         }
+        export type DataPropsBase = DataProps<CollectionSetBase, RelationSetBase<any>, CollectionToRelationsBase<any, any>>
+
+        export type LayoutProps<DProps extends DataProps<CollectionSetBase, any, any>> = LayoutPropsFromProps<DProps["collections"], DProps["collectionsToRelations"]>
+
+        export type LayoutPropsBase = LayoutPropsFromProps<CollectionSetBase, any>
     }
 
     module Builders {
@@ -199,13 +206,10 @@ export module DbUiConfiguration {
                                 })) as ColToRel
                                 
                                 return {
-                                    withLayouts: (layouts: Configuration.LayoutProps<Collections, ColToRel>) => ({
-                                        done: (): Configuration.Props<Collections, Relations, ColToRel> => ({
-                                            collections,
-                                            relations,
-                                            collectionsToRelations: colToRel,
-                                            layouts
-                                        })
+                                    done: (): Configuration.DataProps<Collections, Relations, ColToRel> => ({
+                                        collections,
+                                        relations,
+                                        collectionsToRelations: colToRel
                                     })
                                 }
                             }
@@ -215,24 +219,54 @@ export module DbUiConfiguration {
             }
         }
 
+        export function makeLayouts<Props extends Configuration.DataPropsBase>(config: Props, layouts: Configuration.LayoutPropsFromProps<Props["collections"], Props["collectionsToRelations"]>) {
+            return layouts
+        }
+
     }
 
+    export type DataPropsBase = Configuration.DataPropsBase
+    export type LayoutPropsBase = Configuration.LayoutPropsBase
+
     export const makeConfig = Builders.makeConfig
+    export const makeLayouts = Builders.makeLayouts
 
     export type TitlesFor<T extends EntityBase> = Titles.TitleFor<T>
 
-    export module LayoutProps {
-        type PropsBase = Configuration.Props<Configuration.CollectionSetBase, any, any>
-
-        type GetEntityFromProps<
-            Props extends PropsBase,
+    export module wrapLayout {
+        export function fullPage<
+            Props extends Configuration.DataPropsBase, 
             CollectionName extends keyof Props["collections"]
-        > = FieldConfig.EntityFromConfig<Props["collections"][CollectionName]["config"]>
+            >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.FullPage<Props, CollectionName>>) {
+                return component
+        }
+
+        
+        export function searchResult<
+            Props extends Configuration.DataPropsBase, 
+            CollectionName extends keyof Props["collections"]
+            >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.SearchResult<Props, CollectionName>>) {
+                return component
+        }
+
+        export function relation<
+            Props extends Configuration.DataPropsBase, 
+            CollectionName extends keyof Props["collections"]
+            >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.Relation<Props, CollectionName>>) {
+                return component
+        }
+    }
+
+    export module LayoutProps {
+        type PropsBase = Configuration.DataPropsBase
+        type GetEntityFromProps<Props extends PropsBase, CollectionName extends keyof Props["collections"]> = FieldConfig.EntityFromConfig<Props["collections"][CollectionName]["config"]>
 
         export type FullPage<
-                Props extends PropsBase,
-                CollectionName extends keyof Props["collections"]
-            > = Layouts.LayoutProps.FullPage<GetEntityFromProps<Props, CollectionName>, Props["collectionsToRelations"]>
+            Props extends PropsBase, 
+            CollectionName extends keyof Props["collections"]
+        > = Layouts.LayoutProps.FullPage<
+            GetEntityFromProps<Props, CollectionName>, 
+            Props["collectionsToRelations"][CollectionName]>
         
         type SimplePage<
             Props extends PropsBase,
