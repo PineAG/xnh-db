@@ -11,7 +11,6 @@ export interface FullTextItem {
     keywords: string[]
     weights: Record<string, number>
 }
-
 export interface IdbCollectionQuery {
     keyPath: string[]
     value: any

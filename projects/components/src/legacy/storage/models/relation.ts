@@ -155,7 +155,7 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> imp
     }
 }
 
-export class IdbRelationOfflineClient<C extends Record<string, any>, Payload> implements IOfflineClient.Relation<keyof C & string, Payload> {
+export class IdbRelationOfflineClient<C extends Record<string, any>, Payload extends FC.EntityBase> implements IOfflineClient.Relation<keyof C & string, Payload> {
     constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbRelationWrapper<C, Payload>) {
     }
     private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
