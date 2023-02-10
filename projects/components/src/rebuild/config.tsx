@@ -74,14 +74,15 @@ export module DbUiConfiguration {
             [K in keyof T]: T[K] extends Value ? K : never
         }[keyof T]
 
+        // type KeysWithValue<T extends Record<string, string>, Value extends string> = keyof T
+
         export type CollectionToRelationPropsItem<CollNames extends string, ColName extends string, Relations extends RelationSetBase<CollNames>, Rel extends keyof Relations> = {
             relation: Rel
-        } & CollectionToRelationPropsItemOptions<CollNames, ColName, Relations, Rel>
+        } & CollectionToRelationPropsItemOptions<ColName, Relations[Rel]>
 
-        export type CollectionToRelationPropsItemOptions<CollNames extends string, ColName extends string, Relations extends RelationSetBase<CollNames>, Rel extends keyof Relations> = {
-            title: string
-            selfKey: KeysWithValue<Relations[Rel]["collections"], ColName>
-            targetKey: keyof Relations[Rel]["collections"]
+        export type CollectionToRelationPropsItemOptions<ColName extends string, Relation extends Configuration.RelationProps<any, any, any, any>> = {
+            selfKey: KeysWithValue<Relation["collections"], ColName>
+            targetKey: keyof Relation["collections"]
         }
 
         export type CollectionToRelationProps<CollNames extends string, ColName extends string, Relations extends RelationSetBase<CollNames>> = Record<string, CollectionToRelationPropsItem<CollNames, ColName, Relations, keyof Relations>>
@@ -120,10 +121,10 @@ export module DbUiConfiguration {
     export module Builders {
         
         export const makeCollection = {
-            createCollectionOfEntity: <T extends EntityBase>() => ({
+            createCollectionOfEntity: <T extends EntityBase>(inheritable?: boolean) => ({
             withConfig: <Conf extends ConfigFromDeclaration<T>>(config: Conf) => ({
             withTitles: (entityTitles: Titles.TitleFor<T>): Configuration.CollectionProps<T, Conf> => ({
-                entityTitles, config
+                entityTitles, config, inheritable
             }) }) })
         }
 
@@ -148,17 +149,15 @@ export module DbUiConfiguration {
             }
         }
 
-        export function createCollectionToRelationBuilder<CollNames extends string, Relations extends Configuration.RelationSetBase<CollNames>>() {
+        export function createCollectionToRelationBuilder<CollNames extends string, CollName extends CollNames, Relations extends Configuration.RelationSetBase<CollNames>>() {
             type RelNames = keyof Relations
             return {
-                forCollection: <ColName extends CollNames>(collection: ColName) => ({
-                    forRelation: <Rel extends RelNames>(relation: Rel) => ({
-                        withOptions: (options: Configuration.CollectionToRelationPropsItemOptions<CollNames, ColName, Relations, Rel>): Configuration.CollectionToRelationPropsItem<CollNames, ColName, Relations, Rel> => ({
-                            relation,
-                            ...options
-                        })
-                    })
-                })
+                toRelation: <Rel extends RelNames>(relation: Rel, options: Configuration.CollectionToRelationPropsItemOptions<CollName, Relations[Rel]>): Configuration.CollectionToRelationPropsItem<CollNames, CollName, Relations, Rel> => {
+                    return {
+                        relation,
+                        ...options
+                    }   
+                }
             }
         }
 
@@ -171,16 +170,39 @@ export module DbUiConfiguration {
                     withRelations: <Relations extends Configuration.RelationSetBase<CollectionNames>>(relationsMaker: (b: typeof relationBuilder) => Relations) => {
                         const relations = relationsMaker(relationBuilder)
                         type RelationNames = Extract<keyof Relations, string>
-                        type ColToRelBase = Configuration.CollectionToRelationsBase<CollectionNames, Relations>
+                        type ColToRelOptions<K extends CollectionNames, R extends RelationNames> = Configuration.CollectionToRelationPropsItemOptions<K, Relations[R]>
+                        type ColToRelItem<K extends CollectionNames, R extends RelationNames> = Configuration.CollectionToRelationPropsItem<CollectionNames, K, Relations, R>
+                        type CreateCollectionToRelationBuilder<K extends CollectionNames> = {
+                            toRelation: <Rel extends RelationNames>(relation: Rel, options: ColToRelOptions<K, Rel>) => ColToRelItem<K, Rel>
+                        }
+                        type ColToRelBuilderPropsBase = {
+                            [K in CollectionNames]: (b: CreateCollectionToRelationBuilder<K>) => Record<string, Configuration.CollectionToRelationPropsItem<CollectionNames, K, Relations, any>>
+                        }
                         return {
-                            collectionsToRelations: <ColToRel extends ColToRelBase>(colToRel: ColToRel) => ({
-                                withLayouts: (layouts: Configuration.LayoutProps<Collections, ColToRel>): Configuration.Props<Collections, Relations, ColToRel> => ({
-                                    collections,
-                                    relations,
-                                    collectionsToRelations: colToRel,
-                                    layouts
-                                })
-                            })
+                            collectionsToRelations: <ColToRelProps extends ColToRelBuilderPropsBase>(buildColToRel: ColToRelProps) => {
+                                type ColToRel = {
+                                    [C in CollectionNames]: {
+                                        [R in keyof ReturnType<ColToRelProps[C]>]: ReturnType<ColToRelProps[C]>[R]
+                                    }
+                                } & Configuration.CollectionToRelationsBase<CollectionNames, Relations>
+                                const colToRel = Object.fromEntries(Object.entries(buildColToRel).map(([coll, func]) => {
+                                    const result = func({
+                                        toRelation: (rel, options) => ({relation: rel, ...options})
+                                    })
+                                    return [coll, result]
+                                })) as ColToRel
+                                
+                                return {
+                                    withLayouts: (layouts: Configuration.LayoutProps<Collections, ColToRel>) => ({
+                                        done: (): Configuration.Props<Collections, Relations, ColToRel> => ({
+                                            collections,
+                                            relations,
+                                            collectionsToRelations: colToRel,
+                                            layouts
+                                        })
+                                    })
+                                }
+                            }
                         }
                     }
                 }
