@@ -1,4 +1,5 @@
 import { IOfflineClient } from "./base";
+import { FieldConfig as FC } from "../config";
 
 export module OfflineClientSynchronization {
     export module ProgressResult {
@@ -62,7 +63,7 @@ export module OfflineClientSynchronization {
         return new Date(index.map(it => it.date.getTime()).reduce((a, b) => Math.max(a, b)))
     }
     
-    export async function* synchronizeCollection<T>(sourceClient: IOfflineClient.Collection<T>, destinationClient: IOfflineClient.Collection<T>): AsyncGenerator<ProgressResult.Progress> {
+    export async function* synchronizeCollection<T extends FC.EntityBase>(sourceClient: IOfflineClient.Collection<T>, destinationClient: IOfflineClient.Collection<T>): AsyncGenerator<ProgressResult.Progress> {
         yield {type: "index", action: "pull"}
         const [sourceStatus, destinationStatus] = await Promise.all([sourceClient.getStatus(), destinationClient.getStatus()])
         if(sourceStatus.updatedAt.getTime() <= destinationStatus.updatedAt.getTime()) {
@@ -102,7 +103,7 @@ export module OfflineClientSynchronization {
         })
     }
     
-    export async function* synchronizeRelation<Keys extends string, Payload>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<ProgressResult.Progress> {
+    export async function* synchronizeRelation<Keys extends string, Payload extends FC.EntityBase>(sourceClient: IOfflineClient.Relation<Keys, Payload>, destinationClient: IOfflineClient.Relation<Keys, Payload>): AsyncGenerator<ProgressResult.Progress> {
         yield {type: "index", action: "pull"}
         const [sourceStatus, destinationStatus] = await Promise.all([sourceClient.getStatus(), destinationClient.getStatus()])
         if(sourceStatus.updatedAt.getTime() <= destinationStatus.updatedAt.getTime()) {

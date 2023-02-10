@@ -14,6 +14,15 @@ export module FieldConfig {
 
     export type EndpointConfig<T> = Fields.EndpointsOfValue<T>
 
+    export function isValidEndpointValue<C extends Fields.EndpointTypes>(config: C, value: any): value is Fields.ValueOfEndpoint[C["type"]] {
+        return (
+            ((config.type === "gallery" || config.type === "tagList" || config.type === "fullTextList") && Array.isArray(value)) ||
+            ((config.type === "avatar" || config.type === "tag" || config.type === "fullText") && typeof value === "string") || 
+            ((config.type === "number") && typeof value === "number")
+            // Ignore type == "id"
+        )
+    }
+
     export type ConfigFromDeclaration<T> = (
         T extends Fields.EndpointValueTypes ? EndpointConfig<T> :
         T extends EntityBase ? {
@@ -115,6 +124,10 @@ export module FieldConfig {
 
         export function isEndpointType(obj: any): obj is EndpointTypes {
             return obj !== undefined && obj["$isField"] === ConfigEndpointIdentifier
+        }
+
+        export function isArrayEndpoint<C extends EndpointTypes>(conf: C): boolean {
+            return conf.type === "fullTextList" || conf.type === "gallery" || conf.type === "tagList"
         }
 
         export function id(): FieldTypes["id"] {

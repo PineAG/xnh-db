@@ -1,5 +1,6 @@
 import { DeepPartial } from "utility-types"
 import { IOfflineClient } from "./base"
+import {FieldConfig as FC} from "../config"
 
 export module OfflinePathClientUtils {
     module JsonUtils {
@@ -62,7 +63,7 @@ export module OfflinePathClientUtils {
         updatedAt: number
     }
 
-    export class Collection<T> implements IOfflineClient.Collection<T> {
+    export class Collection<T extends FC.EntityBase> implements IOfflineClient.Collection<T> {
         private paths = new CollectionPathHelper()
         private idxCvt = new MapIndexHelper<string>(it => it)
         constructor(protected pathClient: IPathClient) {}
@@ -134,7 +135,7 @@ export module OfflinePathClientUtils {
         }
     }
 
-    export class Relation<Keys extends string, Payload> implements IOfflineClient.Relation<Keys, Payload> {
+    export class Relation<Keys extends string, Payload extends FC.EntityBase> implements IOfflineClient.Relation<Keys, Payload> {
         private paths = new RelationPathHelper<Keys>
         private idxCvt = new MapIndexHelper<Record<Keys, string>>(IOfflineClient.stringifyRelationKey)
         constructor(protected pathClient: IPathClient) {}

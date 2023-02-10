@@ -19,7 +19,7 @@ export interface IdbCollectionQuery {
 
 type IdbCollectionWrapperDeletionListener = (db: idb.IDBPDatabase, id: string) => Promise<void>
 
-export class IdbCollectionWrapper<T> {
+export class IdbCollectionWrapper<T extends FC.EntityBase> {
     deletionListeners: IdbCollectionWrapperDeletionListener[] = []
 
     private dataWrapper: IdbStoreWrapper<Record<string, any>, string>
@@ -31,7 +31,7 @@ export class IdbCollectionWrapper<T> {
         const dataIndices: Record<string, IdbIndexOption> = {}
         const configList = ConfigFlatten.flattenConfig(config)
         for(const [path, config] of configList) {
-            const isArray = config.type !== "id" && config.isArray
+            const isArray = FC.Fields.isArrayEndpoint(config)
             const keyPath = ConfigFlatten.stringifyKeyPath(path)
             dataIndices[keyPath] = {keyPath, isArray, unique: false}
         }
@@ -55,7 +55,7 @@ export class IdbCollectionWrapper<T> {
     }
 
     async getItem(db: idb.IDBPDatabase, id: string): Promise<DeepPartial<T>> {
-        const flat = await this.dataWrapper.get(db, id) as ConfigFlatten.FlattenedData<T>
+        const flat = await this.dataWrapper.get(db, id) as Partial<ConfigFlatten.FlattenedEntity<T>>
         if(!flat) {
             throw new Error(`Not exist: ${this.name}: ${id}`)
         }
@@ -182,7 +182,7 @@ export class IdbCollectionWrapper<T> {
 
 }
 
-export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
+export class IdbCollectionOnlineClient<T extends FC.EntityBase> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
     constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbCollectionWrapper<T>) {
     }
 
@@ -235,7 +235,7 @@ export class IdbCollectionOnlineClient<T> implements IOnlineClient.Collection<T,
     }
 }
 
-export class IdbCollectionOfflineClient<T> implements IOfflineClient.Collection<T> {
+export class IdbCollectionOfflineClient<T extends FC.EntityBase> implements IOfflineClient.Collection<T> {
     constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbCollectionWrapper<T>) {
     }
 

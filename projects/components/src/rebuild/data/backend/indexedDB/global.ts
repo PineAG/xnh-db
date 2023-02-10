@@ -42,12 +42,16 @@ export module IdbTagWrapper {
         await wrapper.put(db, `${collection}:${tag}`, {tag, collection})
     }
 
-    export async function putTagsByConfig<T>(db: idb.IDBPDatabase, data: DeepPartial<T>, config: FC.ConfigFromDeclaration<T>): Promise<void> {
+    export async function putTagsByConfig<T extends FC.EntityBase>(db: idb.IDBPDatabase, data: DeepPartial<T>, config: FC.ConfigFromDeclaration<T>): Promise<void> {
         for(const [key, value, conf] of ConfigFlatten.extractValuesAndConfigs<T>(data, config)) {
-            if(conf.type === "string" && conf.options.type === "tag") {
+            if(conf.type === "tag" && FC.isValidEndpointValue(conf, value)) {
                 const collection = conf.options.collection
-                const values: string[] = conf.isArray ? value : [value]
-                await Promise.all(values.map(v => IdbTagWrapper.putTag(db, collection, v)))
+                await IdbTagWrapper.putTag(db, collection, value)
+            } else if (conf.type === "tagList" && FC.isValidEndpointValue(conf, value)) {
+                const collection = conf.options.collection
+                for(const v of value) {
+                    await IdbTagWrapper.putTag(db, collection, v)
+                }
             }
         }
     }

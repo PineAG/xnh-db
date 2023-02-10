@@ -120,9 +120,5 @@ describe("UI Config Test", () => {
                 }
             }
         })
-
-        
-
-
     })
 })

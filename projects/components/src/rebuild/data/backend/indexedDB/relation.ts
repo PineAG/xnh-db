@@ -5,7 +5,7 @@ import { IdbCollectionWrapper } from "./collection"
 import { GlobalStatusWrapper, IdbTagWrapper } from "./global"
 import { IdbIndexOption, IdbStoreWrapper } from "./wrapper"
 
-export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
+export class IdbRelationWrapper<C extends Record<string, any>, Payload extends FC.EntityBase> {
     readonly storeName: string
     readonly sortedKeys: string[]
 
@@ -119,7 +119,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload> {
     }
 }
 
-export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> implements IOnlineClient.Relation<Extract<keyof C, string>, Payload> {
+export class IdbRelationOnlineClient<C extends Record<string, any>, Payload extends FC.EntityBase> implements IOnlineClient.Relation<Extract<keyof C, string>, Payload> {
     constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbRelationWrapper<C, Payload>) {
     }
     private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {
@@ -155,7 +155,7 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload> imp
     }
 }
 
-export class IdbRelationOfflineClient<C extends Record<string, any>, Payload> implements IOfflineClient.Relation<keyof C & string, Payload> {
+export class IdbRelationOfflineClient<C extends Record<string, any>, Payload extends FC.EntityBase> implements IOfflineClient.Relation<keyof C & string, Payload> {
     constructor(private dbFactory: () => Promise<idb.IDBPDatabase>, private wrapper: IdbRelationWrapper<C, Payload>) {
     }
     private async withDB<R>(cb: (db: idb.IDBPDatabase) => Promise<R>): Promise<R> {

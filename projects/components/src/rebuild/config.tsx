@@ -32,11 +32,13 @@ export module DbUiConfiguration {
             never
         )
 
+        export type RelationPropsEndpoint = {
+            $richListElement: React.ReactElement
+            $simpleListElement: React.ReactElement
+        }
+
         export type LayoutPropsForRelations<ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {
-            [R in keyof ColToRel]: {
-                $richListElement: React.ReactElement
-                $simpleListElement: React.ReactElement
-            }
+            [R in keyof ColToRel]: RelationPropsEndpoint
         }
 
         export module LayoutProps {
@@ -145,6 +147,13 @@ export module DbUiConfiguration {
                 titles: TitleDisplayProps<Props["collections"], Props["relations"]>
                 layouts: LayoutProps<Props["collections"], Props["collectionsToRelations"]>
             }
+        
+        export type GlobalProps<Props extends DataPropsBase> = {
+            props: Props
+            layout: DisplayProps<Props>
+        }
+
+        export type GlobalPropsBase = GlobalProps<DataPropsBase>
     }
 
     module Builders {
@@ -240,6 +249,7 @@ export module DbUiConfiguration {
 
     export type DataPropsBase = Configuration.DataPropsBase
     export type LayoutPropsBase = Configuration.LayoutPropsBase
+    export type GlobalPropsBase = Configuration.GlobalPropsBase
 
     export const makeConfig = Builders.makeConfig
     export const makeDisplayProps = Builders.makeDisplayProps
@@ -294,5 +304,36 @@ export module DbUiConfiguration {
             Props extends PropsBase,
             CollectionName extends keyof Props["collections"]> = SimplePage<Props, CollectionName>
             
+    }
+
+    export module InternalUtils {
+        export module Injection {
+            export type InjectedEntity<T extends EntityBase> = Layouts.ItemLayoutProps<T>
+            export type ItemInjectionEndpoint = Layouts.LayoutPropsEndpoint
+            export type RelationInjectionEndpoint = Layouts.RelationPropsEndpoint
+            export type ItemDisplayInjection<
+                GP extends Configuration.GlobalPropsBase,
+                CollectionName extends keyof GP["props"]["collections"]
+                > = Layouts.ItemLayoutProps<FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>>
+
+            export type RelationsDisplayInjection<
+                GP extends Configuration.GlobalPropsBase,
+                CollectionName extends keyof GP["props"]["collections"]
+                > = Layouts.LayoutPropsForRelations<GP["props"]["collectionsToRelations"][CollectionName]>
+            
+            export type FullPageInjectionProps<
+                GP extends Configuration.GlobalPropsBase,
+                CollectionName extends keyof GP["props"]["collections"]
+                > = Layouts.LayoutProps.FullPage<
+                    FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>,
+                    GP["props"]["collectionsToRelations"][CollectionName]
+                >
+            export type SimplePageInjectionProps<
+                GP extends Configuration.GlobalPropsBase,
+                CollectionName extends keyof GP["props"]["collections"]
+                > = Layouts.LayoutProps.SimplePage<FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>>
+            }
+            
+            export type CollNames<GP extends Configuration.GlobalPropsBase> = Extract<keyof GP["props"]["collections"], string>
     }
 }

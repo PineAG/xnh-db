@@ -1,4 +1,5 @@
 import {DeepPartial} from "utility-types"
+import {FieldConfig as FC} from "../config"
 
 export module IOfflineClient {
     export type CollectionIndex<K> = {key: K, date: Date}[]
@@ -7,7 +8,7 @@ export module IOfflineClient {
         updatedAt: Date
     }
 
-    export interface Collection<T> {
+    export interface Collection<T extends FC.EntityBase> {
         getIndex(): Promise<CollectionIndex<string>>
         getStatus(): Promise<LatestStatus>
         setStatus(status: LatestStatus): Promise<void>
@@ -17,7 +18,7 @@ export module IOfflineClient {
         deleteItem(id: string): Promise<void>
     }
     
-    export interface Relation<Keys extends string, Payload> {
+    export interface Relation<Keys extends string, Payload extends FC.EntityBase> {
         getIndex(): Promise<CollectionIndex<Record<Keys, string>>>
         getStatus(): Promise<LatestStatus>
         setStatus(status: LatestStatus): Promise<void>
