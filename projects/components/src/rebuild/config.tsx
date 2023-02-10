@@ -4,7 +4,7 @@ export module DbUiConfiguration {
     import EntityBase = FieldConfig.EntityBase
     import ConfigFromDeclaration = FieldConfig.ConfigFromDeclaration
     
-    export module Titles {
+    module Titles {
         export type TitleFor<T> = (
             T extends FieldConfig.Fields.EndpointValueTypes ?
                 string :
@@ -16,11 +16,12 @@ export module DbUiConfiguration {
         )
     }
 
-    export module Layouts {
+    module Layouts {
         export type LayoutPropsEndpoint = {
             $title: string
             $element: React.ReactNode
         }
+
         export type ItemLayoutProps<T> = (
             T extends FieldConfig.Fields.EndpointValueTypes ?
                 LayoutPropsEndpoint :
@@ -38,20 +39,25 @@ export module DbUiConfiguration {
             }
         }
 
+        export module LayoutProps {
+            export type FullPage<T extends EntityBase, ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {item: ItemLayoutProps<T>, relations: LayoutPropsForRelations<ColToRel>}
+            export type SimplePage<T extends EntityBase> = {item: ItemLayoutProps<T>}
+        }
+
         export type Layout<
             T extends EntityBase,
             ColToRel extends Configuration.CollectionToRelationProps<any, any, any>
         > = {
-            fullPage: React.FC<{item: ItemLayoutProps<T>, relations: LayoutPropsForRelations<ColToRel>}>
-            searchResult: React.FC<{item: ItemLayoutProps<T>}>
+            fullPage: React.FC<LayoutProps.FullPage<T, ColToRel>>
+            searchResult: React.FC<LayoutProps.SimplePage<T>>
             relationPreview: {
-                rich: React.FC<{item: ItemLayoutProps<T>}>
-                simple: React.FC<{item: ItemLayoutProps<T>}>
+                rich: React.FC<LayoutProps.SimplePage<T>>
+                simple: React.FC<LayoutProps.SimplePage<T>>
             }
         }
     }
 
-    export module Configuration {
+    module Configuration {
         export type CollectionProps<T extends EntityBase, Conf extends ConfigFromDeclaration<T>> = {
             config: Conf
             inheritable?: boolean
@@ -118,7 +124,7 @@ export module DbUiConfiguration {
         }
     }
 
-    export module Builders {
+    module Builders {
         
         export const makeCollection = {
             createCollectionOfEntity: <T extends EntityBase>(inheritable?: boolean) => ({
@@ -212,4 +218,34 @@ export module DbUiConfiguration {
     }
 
     export const makeConfig = Builders.makeConfig
+
+    export type TitlesFor<T extends EntityBase> = Titles.TitleFor<T>
+
+    export module LayoutProps {
+        type PropsBase = Configuration.Props<Configuration.CollectionSetBase, any, any>
+
+        type GetEntityFromProps<
+            Props extends PropsBase,
+            CollectionName extends keyof Props["collections"]
+        > = FieldConfig.EntityFromConfig<Props["collections"][CollectionName]["config"]>
+
+        export type FullPage<
+                Props extends PropsBase,
+                CollectionName extends keyof Props["collections"]
+            > = Layouts.LayoutProps.FullPage<GetEntityFromProps<Props, CollectionName>, Props["collectionsToRelations"]>
+        
+        type SimplePage<
+            Props extends PropsBase,
+            CollectionName extends keyof Props["collections"]
+            > = Layouts.LayoutProps.SimplePage<GetEntityFromProps<Props, CollectionName>>
+        
+        export type SearchResult<
+            Props extends PropsBase,
+            CollectionName extends keyof Props["collections"]> = SimplePage<Props, CollectionName>
+        
+        export type Relation<
+            Props extends PropsBase,
+            CollectionName extends keyof Props["collections"]> = SimplePage<Props, CollectionName>
+            
+    }
 }
