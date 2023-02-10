@@ -16,6 +16,21 @@ type Artwork = FieldConfig.AsEntity<{
     name: string
 }>
 
+const CharacterTitles: DbUiConfiguration.TitlesFor<Character> = {
+    $title: "Character",
+    name: "Name",
+    hair: {
+        $title: "Hair",
+        color: "Color",
+        shape: "Shape"
+    }
+}
+
+const ArtworkTitles: DbUiConfiguration.TitlesFor<Artwork> = {
+    $title: "Artwork",
+    name: "Name",
+}
+
 const CharacterConfig = FieldConfig.makeConfig.for<Character>().as({
     name: F.fullText(1),
     hair: {
@@ -31,30 +46,17 @@ const ArtworkConfig = FieldConfig.makeConfig.for<Artwork>().as({
 describe("UI Config Test", () => {
     it("happy case", () => {
         const config = DbUiConfiguration.makeConfig.withCollections(b => ({
-            character: b.createCollectionOfEntity<Character>(true).withConfig(CharacterConfig).withTitles({
-                $title: "Character",
-                name: "Name",
-                hair: {
-                    $title: "Hair",
-                    color: "Color",
-                    shape: "Shape"
-                }
-            }),
-            artwork: b.createCollectionOfEntity<Artwork>().withConfig(ArtworkConfig).withTitles({
-                $title: "Artwork",
-                name: "Name",
-            })
+            character: b.createCollectionOfEntity<Character>(true).withConfig(CharacterConfig),
+            artwork: b.createCollectionOfEntity<Artwork>().withConfig(ArtworkConfig)
         })).withRelations(b => ({
             inheritance: b.createRelation().ofCollections({
                     parent: "character",
                     child: "character"
-                }).withPayload<{}>().withPayloadConfig({}).withPayloadTitles({
-                    $title: "Inheritance"
-                }),
+                }).withPayload<{}>().withPayloadConfig({}),
             artwork_character: b.createRelation().ofCollections({
                 artwork: "artwork",
                 character: "character"
-            }).withPayload<{}>().withPayloadConfig({}).withPayloadTitles({$title: "WTF"})
+            }).withPayload<{}>().withPayloadConfig({})
         })).collectionsToRelations({
             character: b => ({
                 parents: b.toRelation("inheritance", {selfKey: "child", targetKey: "parent"}),
@@ -67,33 +69,6 @@ describe("UI Config Test", () => {
 
         type Props = typeof config
 
-        const layouts = DbUiConfiguration.makeLayouts(config, {
-            character: {
-                fullPage: (props) => (<div>
-                    <h1>{props.item.$title}</h1>
-                    <p>{props.item.name.$element}</p>
-                    <p>{props.relations.parents.$richListElement}</p>
-                </div>),
-                relationPreview: {
-                    rich: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
-                    simple: (props) => <span>{props.item.name.$element}</span>
-                },
-                searchResult: (props) => <span>{props.item.name.$element}</span>
-            },
-            artwork: {
-                fullPage: (props) => (<div>
-                    <h1>{props.item.$title}</h1>
-                    <p>{props.item.name.$element}</p>
-                    <p>{props.relations.parents.$richListElement}</p>
-                </div>),
-                relationPreview: {
-                    rich: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
-                    simple: (props) => <span>{props.item.name.$element}</span>
-                },
-                searchResult: (props) => <span>{props.item.name.$element}</span>
-            }
-        })
-
         const CharacterFullPage = DbUiConfiguration.wrapLayout.fullPage(config, "character", props => {
             return <div>
                 <h1>{props.item.$title}</h1>
@@ -101,6 +76,52 @@ describe("UI Config Test", () => {
                 <p>{props.relations.children.$richListElement}</p>
             </div>
         })
+
+        const CharacterSimple = DbUiConfiguration.wrapLayout.relation(config, "character", props => {
+            return <div>
+                <h1>{props.item.$title}</h1>
+                <p>{props.item.name.$element}</p>
+            </div>
+        })
+
+        const layouts = DbUiConfiguration.makeDisplayProps(config, {
+            titles: {
+                entityTitles: {
+                    character: CharacterTitles,
+                    artwork: ArtworkTitles
+                },
+                payloadTitles: {
+                    inheritance: {$title: "Inheritance"},
+                    artwork_character: {
+                        $title: "Artwork-Character"
+                    }
+                }
+            },
+            layouts: {
+                character: {
+                    fullPage: CharacterFullPage,
+                    relationPreview: {
+                        rich: CharacterSimple,
+                        simple: CharacterSimple
+                    },
+                    searchResult: CharacterSimple
+                },
+                artwork: {
+                    fullPage: (props) => (<div>
+                        <h1>{props.item.$title}</h1>
+                        <p>{props.item.name.$element}</p>
+                        <p>{props.relations.parents.$richListElement}</p>
+                    </div>),
+                    relationPreview: {
+                        rich: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
+                        simple: (props) => <span>{props.item.name.$element}</span>
+                    },
+                    searchResult: (props) => <span>{props.item.name.$element}</span>
+                }
+            }
+        })
+
+        
 
 
     })

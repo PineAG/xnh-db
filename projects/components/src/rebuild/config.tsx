@@ -64,7 +64,6 @@ export module DbUiConfiguration {
         export type CollectionProps<T extends EntityBase, Conf extends ConfigFromDeclaration<T>> = {
             config: Conf
             inheritable?: boolean
-            entityTitles: Titles.TitleFor<T>
         }
 
         export type CollectionSetBase = Record<string, CollectionProps<any, any>>
@@ -74,7 +73,6 @@ export module DbUiConfiguration {
         export type RelationProps<GlobalCollectionNames extends string, Collections extends RelationMappingBase<GlobalCollectionNames>, Payload extends EntityBase, PayloadConf extends ConfigFromDeclaration<Payload>> = {
             collections: Collections
             payloadConfig: PayloadConf
-            payloadTitles: Titles.TitleFor<Payload>
         }
 
         export type RelationSetBase<GlobalCollectionNames extends string> = Record<string, RelationProps<GlobalCollectionNames, any, any, any>>
@@ -105,7 +103,7 @@ export module DbUiConfiguration {
                 never
         )
 
-        export type LayoutPropsFromProps<
+        export type LayoutProps<
             Collections extends CollectionSetBase,
             ColToRel extends CollectionToRelationsBase<Extract<keyof Collections, string>, any>> = {
                 [C in Extract<keyof Collections, string>]: 
@@ -126,9 +124,27 @@ export module DbUiConfiguration {
         }
         export type DataPropsBase = DataProps<CollectionSetBase, RelationSetBase<any>, CollectionToRelationsBase<any, any>>
 
-        export type LayoutProps<DProps extends DataProps<CollectionSetBase, any, any>> = LayoutPropsFromProps<DProps["collections"], DProps["collectionsToRelations"]>
+        // export type LayoutProps<DProps extends DataProps<CollectionSetBase, any, any>> = LayoutPropsFromProps<DProps["collections"], DProps["collectionsToRelations"]>
 
-        export type LayoutPropsBase = LayoutPropsFromProps<CollectionSetBase, any>
+        export type LayoutPropsBase = LayoutProps<CollectionSetBase, any>
+
+        type TitleDisplayProps<
+            Collections extends CollectionSetBase, 
+            Relations extends RelationSetBase<Extract<keyof Collections, string>>
+            > = {
+                entityTitles: {
+                    [C in keyof Collections]: Titles.TitleFor<FieldConfig.EntityFromConfig<Collections[C]["config"]>>
+                },
+                payloadTitles: {
+                    [R in keyof Relations]: Titles.TitleFor<FieldConfig.EntityFromConfig<Relations[R]["payloadConfig"]>>
+                }
+            }
+        export type DisplayProps<
+            Props extends DataPropsBase
+            > = {
+                titles: TitleDisplayProps<Props["collections"], Props["relations"]>
+                layouts: LayoutProps<Props["collections"], Props["collectionsToRelations"]>
+            }
     }
 
     module Builders {
@@ -136,9 +152,8 @@ export module DbUiConfiguration {
         export const makeCollection = {
             createCollectionOfEntity: <T extends EntityBase>(inheritable?: boolean) => ({
             withConfig: <Conf extends ConfigFromDeclaration<T>>(config: Conf) => ({
-            withTitles: (entityTitles: Titles.TitleFor<T>): Configuration.CollectionProps<T, Conf> => ({
-                entityTitles, config, inheritable
-            }) }) })
+                config, inheritable
+            }) })
         }
 
         type CollectionBuilder = typeof makeCollection
@@ -148,17 +163,15 @@ export module DbUiConfiguration {
                 createRelation: () => ({
                 ofCollections: <RelCollections extends Configuration.RelationMappingBase<GlobalCollectionNames>>(collections: RelCollections) => ({
                 withPayload: <Payload extends EntityBase>() => ({
-                withPayloadConfig: <PayloadConfig extends ConfigFromDeclaration<Payload>>(payloadConfig: PayloadConfig) => ({
-                withPayloadTitles: (payloadTitles: Titles.TitleFor<Payload>): Configuration.RelationProps<
+                withPayloadConfig: <PayloadConfig extends ConfigFromDeclaration<Payload>>(payloadConfig: PayloadConfig): Configuration.RelationProps<
                     GlobalCollectionNames, 
                     RelCollections, 
                     Payload, 
                     PayloadConfig
                 > => ({
                     collections,
-                    payloadTitles,
                     payloadConfig
-                }) }) }) }) })
+                }) }) }) })
             }
         }
 
@@ -219,7 +232,7 @@ export module DbUiConfiguration {
             }
         }
 
-        export function makeLayouts<Props extends Configuration.DataPropsBase>(config: Props, layouts: Configuration.LayoutPropsFromProps<Props["collections"], Props["collectionsToRelations"]>) {
+        export function makeDisplayProps<Props extends Configuration.DataPropsBase>(config: Props, layouts: Configuration.DisplayProps<Props>): Configuration.DisplayProps<Props> {
             return layouts
         }
 
@@ -229,7 +242,7 @@ export module DbUiConfiguration {
     export type LayoutPropsBase = Configuration.LayoutPropsBase
 
     export const makeConfig = Builders.makeConfig
-    export const makeLayouts = Builders.makeLayouts
+    export const makeDisplayProps = Builders.makeDisplayProps
 
     export type TitlesFor<T extends EntityBase> = Titles.TitleFor<T>
 
