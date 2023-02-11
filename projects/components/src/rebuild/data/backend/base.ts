@@ -8,6 +8,8 @@ export module BackendBase {
         value: any
     }
 
+    export type InheritanceClient = IOnlineClient.Relation<"parent" | "child", {}>
+
     export type OfflineClientSet<Props extends DPBase> = {
         collections: {
             [C in keyof Props["collections"]]: IOfflineClient.Collection<FC.EntityFromConfig<Props["collections"][C]["config"]>>
@@ -23,7 +25,7 @@ export module BackendBase {
             [C in keyof Props["collections"]]: IOnlineClient.Collection<FC.EntityFromConfig<Props["collections"][C]["config"]>, Query>
         },
         inheritance: {
-            [C in keyof Props["collections"]]?: IOnlineClient.Relation<"parent" | "child", {}>
+            [C in keyof Props["collections"]]?: InheritanceClient
         },
         relations: {
             [R in keyof Props["relations"]]: IOnlineClient.Relation<Extract<keyof Props["relations"][R]["collections"], string>, FC.EntityFromConfig<Props["relations"][R]["payloadConfig"]>>

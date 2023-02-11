@@ -42,6 +42,9 @@ function getWrappersFromConfig<Props extends DPBase>(config: Props): WrapperSet<
 
     const inheritance: Record<string, IdbRelationWrapper<Record<"parent" | "child", any>, any>> = {}
     for(const name in config.collections) {
+        if(!config.collections[name].inheritable) {
+            return
+        }
         const wrapper = new IdbRelationWrapper({
             parent: collections[name],
             child: collections[name]
@@ -76,6 +79,9 @@ function initializeWrappers<Props extends DPBase>(db: idb.IDBPDatabase, wrappers
     for(const name in wrappers.collections) {
         wrappers.collections[name].onUpgrade(db)
     }
+    for(const name in wrappers.inheritance) {
+        wrappers.inheritance[name].onUpgrade(db)
+    }
     for(const name in wrappers.relations) {
         wrappers.relations[name].onUpgrade(db)
     }
@@ -103,7 +109,7 @@ export function createOnlineClientSet<Props extends DPBase>(config: Props, dbNam
     }
 
     const inheritance: Record<string, IdbRelationOnlineClient<Record<"parent" | "child", any>, {}>> = {}
-    for(const name in wrappers.collections) {
+    for(const name in wrappers.inheritance) {
         inheritance[name] = new IdbRelationOnlineClient(dbFactory, wrappers.inheritance[name])
     }
 
