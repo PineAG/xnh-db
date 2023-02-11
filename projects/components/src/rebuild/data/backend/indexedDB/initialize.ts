@@ -156,3 +156,8 @@ export function createOfflineClientSet<Props extends DPBase>(config: Props, dbNa
         files
     }
 }
+
+
+export async function destroyDB(dbName: string) {
+    await idb.deleteDB(dbName)
+}

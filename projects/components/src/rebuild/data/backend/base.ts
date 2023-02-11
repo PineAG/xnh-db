@@ -10,9 +10,14 @@ export module BackendBase {
 
     export type InheritanceClient = IOnlineClient.Relation<"parent" | "child", {}>
 
+    type OfflineInheritClient = IOfflineClient.Relation<"parent" | "child", {}>
+
     export type OfflineClientSet<Props extends DPBase> = {
         collections: {
             [C in keyof Props["collections"]]: IOfflineClient.Collection<FC.EntityFromConfig<Props["collections"][C]["config"]>>
+        },
+        inheritance: {
+            [C in keyof Props["collections"]]?: OfflineInheritClient
         },
         relations: {
             [R in keyof Props["relations"]]: IOfflineClient.Relation<Extract<keyof Props["relations"][R]["collections"], string>, FC.EntityFromConfig<Props["relations"][R]["payloadConfig"]>>
@@ -47,11 +52,19 @@ export module BackendBase {
                 relations[name] = new OfflinePathClientUtils.Relation(clientFactory(`relations/${name}`))
             }
 
+            const inheritance: Record<string, OfflineInheritClient> = {}
+            for(const name in config.collections) {
+                if(config.collections[name].inheritable) {
+                    inheritance[name] = new OfflinePathClientUtils.Relation(clientFactory(`inheritance/${name}`))
+                }
+            }
+
             const files = new OfflinePathClientUtils.Files(clientFactory(`files`))
 
             type Result = OfflineClientSet<Props>
             return {
                 collections: collections as Result["collections"],
+                inheritance: inheritance as Result["inheritance"],
                 relations: relations as Result["relations"],
                 files
             }

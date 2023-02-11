@@ -256,6 +256,8 @@ export module DbUiConfiguration {
 
     export type DataPropsBase = Configuration.DataPropsBase
     export type LayoutPropsBase = Configuration.LayoutPropsBase
+    // export type LayoutProps<Props extends DataPropsBase> = Configuration.LayoutProps<Props["collections"], Props["collectionsToRelations"]>
+    export type DisplayProps<Props extends DataPropsBase> = Configuration.DisplayProps<Props>
     export type GlobalPropsBase = Configuration.GlobalPropsBase
 
     export const makeConfig = Builders.makeConfig
