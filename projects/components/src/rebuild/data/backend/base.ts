@@ -1,4 +1,4 @@
-import { IOfflineClient, IOnlineClient, FieldConfig as FC } from "@xnh-db/protocol"
+import { IOfflineClient, IOnlineClient, FieldConfig as FC, OfflinePathClientUtils } from "@xnh-db/protocol"
 import { DbUiConfiguration } from "../../config"
 
 type DPBase = DbUiConfiguration.DataPropsBase
@@ -28,4 +28,29 @@ export module BackendBase {
         files: IOnlineClient.Files
         tags: IOnlineClient.Tags
     }
+
+    export module Path {
+        type OfflinePathClientFactory = (path: string) => OfflinePathClientUtils.IPathClient
+        export function createOfflineClientSetFromPathFactory<Props extends DPBase>(config: Props, clientFactory: OfflinePathClientFactory): OfflineClientSet<Props> {
+            const collections: Record<string, IOfflineClient.Collection<any>> = {}
+            for(const name in config.collections) {
+                collections[name] = new OfflinePathClientUtils.Collection(clientFactory(`collections/${name}`))
+            }
+
+            const relations: Record<string, IOfflineClient.Relation<any, any>> = {}
+            for(const name in config.relations) {
+                relations[name] = new OfflinePathClientUtils.Relation(clientFactory(`relations/${name}`))
+            }
+
+            const files = new OfflinePathClientUtils.Files(clientFactory(`files`))
+
+            type Result = OfflineClientSet<Props>
+            return {
+                collections: collections as Result["collections"],
+                relations: relations as Result["relations"],
+                files
+            }
+        }
+    }
+
 }

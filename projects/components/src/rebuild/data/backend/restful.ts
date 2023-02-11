@@ -1,6 +1,6 @@
 import { XnhDBProtocol, OfflinePathClientUtils } from "@xnh-db/protocol";
-
-export module DbBackends {
+import { DbUiConfiguration } from "../../config";
+import { BackendBase } from "./base";
 
     export class RestfulPathClient implements OfflinePathClientUtils.IPathClient {
         constructor(private rootPath: string) {}
@@ -45,4 +45,9 @@ export module DbBackends {
         }
     }
 
+export function createOfflineClientSet<Props extends DbUiConfiguration.DataPropsBase>(config: Props): BackendBase.OfflineClientSet<Props> {
+    function clientFactory(path: string) {
+        return new RestfulPathClient(`data/${path}`)
+    }
+    return BackendBase.Path.createOfflineClientSetFromPathFactory(config, clientFactory)
 }

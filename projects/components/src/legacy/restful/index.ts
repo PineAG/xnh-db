@@ -43,8 +43,3 @@ export class RestfulPathClient implements OfflinePathClientUtils.IPathClient {
     }
 }
 
-export function createRestfulOfflineClientsSet(): XnhDBProtocol.IOfflineClientSet {
-    return XnhDBProtocol.createPathOfflineClientSet(path => {
-        return new RestfulPathClient(`data/${path}`)
-    })
-}

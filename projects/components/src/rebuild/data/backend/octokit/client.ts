@@ -12,6 +12,12 @@ export module OctokitResults {
         repo: string,
         branch: string
     }
+    export interface Directory {
+        owner: string,
+        repo: string,
+        branch: string,
+        dir: string
+    }
 }
 
 export class OctokitClient {
