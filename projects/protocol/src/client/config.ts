@@ -109,6 +109,8 @@ export module FieldConfig {
             }
         }
 
+        export type EndpointNames = Extract<keyof FieldTypesInternal, string>
+
         export type EndpointTypes = FieldTypes[keyof FieldTypes]
         export type EndpointValueTypes = FieldTypesInternal[keyof FieldTypesInternal]["data"]
         export type EndpointsOfValue<V> = V extends EndpointValueTypes ? (
