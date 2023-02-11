@@ -166,7 +166,7 @@ export module DbUiConfiguration {
     module Builders {
         
         export const makeCollection = {
-            createCollectionOfEntity: <T extends EntityBase>(inheritable?: boolean) => ({
+            createCollectionOfEntity: <T extends EntityBase = never>(inheritable?: boolean) => ({
             withConfig: <Conf extends ConfigFromDeclaration<T>>(config: Conf) => ({
                 config, inheritable
             }) })
@@ -177,8 +177,8 @@ export module DbUiConfiguration {
         export function createRelationsBuilder<GlobalCollectionNames extends string>() {
             return {
                 createRelation: () => ({
-                ofCollections: <RelCollections extends Configuration.RelationMappingBase<GlobalCollectionNames>>(collections: RelCollections) => ({
-                withPayload: <Payload extends EntityBase>() => ({
+                ofCollections: <RelCollections extends Configuration.RelationMappingBase<GlobalCollectionNames> = never>(collections: RelCollections) => ({
+                withPayload: <Payload extends EntityBase = never>() => ({
                 withPayloadConfig: <PayloadConfig extends ConfigFromDeclaration<Payload>>(payloadConfig: PayloadConfig): Configuration.RelationProps<
                     GlobalCollectionNames, 
                     RelCollections, 
