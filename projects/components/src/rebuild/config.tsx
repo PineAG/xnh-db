@@ -33,8 +33,8 @@ export module DbUiConfiguration {
         )
 
         export type RelationPropsEndpoint = {
-            $richListElement: React.ReactElement
-            $simpleListElement: React.ReactElement
+            $richListElement: () => React.ReactElement
+            $simpleListElement: () => React.ReactElement
         }
 
         export type LayoutPropsForRelations<ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {
@@ -86,12 +86,12 @@ export module DbUiConfiguration {
         // type KeysWithValue<T extends Record<string, string>, Value extends string> = keyof T
 
         export type CollectionToRelationPropsItem<CollNames extends string, ColName extends string, Relations extends RelationSetBase<CollNames>, Rel extends keyof Relations> = {
-            relation: Rel
+            relation: Extract<Rel, string>
         } & CollectionToRelationPropsItemOptions<ColName, Relations[Rel]>
 
         export type CollectionToRelationPropsItemOptions<ColName extends string, Relation extends Configuration.RelationProps<any, any, any, any>> = {
-            selfKey: KeysWithValue<Relation["collections"], ColName>
-            targetKey: keyof Relation["collections"]
+            selfKey: Extract<KeysWithValue<Relation["collections"], ColName>, string>
+            targetKey: Extract<keyof Relation["collections"], string>
         }
 
         export type CollectionToRelationProps<CollNames extends string, ColName extends string, Relations extends RelationSetBase<CollNames>> = Record<string, CollectionToRelationPropsItem<CollNames, ColName, Relations, keyof Relations>>
@@ -124,7 +124,14 @@ export module DbUiConfiguration {
             relations: Relations,
             collectionsToRelations: ColToRel
         }
-        export type DataPropsBase = DataProps<CollectionSetBase, RelationSetBase<any>, CollectionToRelationsBase<any, any>>
+        export type DataPropsBase = DataProps<CollectionSetBase, RelationSetBase<string>, CollectionToRelationsBase<any, any>>
+        // export type DataPropsBase = ReturnType<<
+        //     Collections extends CollectionSetBase,
+        //     CollectionNames extends Extract<keyof Collections, string>,
+        //     Relations extends RelationSetBase<CollectionNames>,
+        //     ColToRel extends CollectionToRelationsBase<CollectionNames, Relations>,
+        //     Ret extends DataProps<Collections, Relations, ColToRel>
+        // >() => Ret>
 
         // export type LayoutProps<DProps extends DataProps<CollectionSetBase, any, any>> = LayoutPropsFromProps<DProps["collections"], DProps["collectionsToRelations"]>
 
@@ -187,9 +194,9 @@ export module DbUiConfiguration {
         export function createCollectionToRelationBuilder<CollNames extends string, CollName extends CollNames, Relations extends Configuration.RelationSetBase<CollNames>>() {
             type RelNames = keyof Relations
             return {
-                toRelation: <Rel extends RelNames>(relation: Rel, options: Configuration.CollectionToRelationPropsItemOptions<CollName, Relations[Rel]>): Configuration.CollectionToRelationPropsItem<CollNames, CollName, Relations, Rel> => {
+                toRelation: <Rel extends Extract<RelNames, string>>(relation: Rel, options: Configuration.CollectionToRelationPropsItemOptions<CollName, Relations[Rel]>): Configuration.CollectionToRelationPropsItem<CollNames, CollName, Relations, Rel> => {
                     return {
-                        relation,
+                        relation: relation as any,
                         ...options
                     }   
                 }
@@ -335,5 +342,6 @@ export module DbUiConfiguration {
             }
             
             export type CollNames<GP extends Configuration.GlobalPropsBase> = Extract<keyof GP["props"]["collections"], string>
+            export type RelName<GP extends Configuration.GlobalPropsBase> = Extract<keyof GP["props"]["relations"], string>
     }
 }

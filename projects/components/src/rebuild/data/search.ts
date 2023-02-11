@@ -1,6 +1,5 @@
 import { IOnlineClient } from "@xnh-db/protocol"
 import { sortBy } from "lodash"
-import { DbUiConfiguration } from "../config"
 import { BackendBase } from "./backend"
 import {InheritanceUtils} from "./inherit"
 
@@ -95,7 +94,7 @@ export module DBSearch {
                     for(const {id, weight} of await ctx.collection.queryFullText(operator.keyword)) {
                         results[id] = weight
                         if(ctx.inheritance) {
-                            for await (const childId of InheritanceUtils.getAllChildren(id, ctx.inheritance)) {
+                            for await (const childId of InheritanceUtils.walkAllChildren(id, ctx.inheritance)) {
                                 if(childId in results) {
                                     results[childId] = Math.max(results[childId], weight)    
                                 } else {
@@ -111,7 +110,7 @@ export module DBSearch {
                     for(const id of await ctx.collection.queryItems(operator.property)) {
                         results[id] = 0
                         if(ctx.inheritance) {
-                            for await (const childId of InheritanceUtils.getAllChildren(id, ctx.inheritance)) {
+                            for await (const childId of InheritanceUtils.walkAllChildren(id, ctx.inheritance)) {
                                 results[childId] = 0
                             }
                         }

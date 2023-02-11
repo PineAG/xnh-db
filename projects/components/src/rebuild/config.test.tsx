@@ -73,7 +73,7 @@ describe("UI Config Test", () => {
             return <div>
                 <h1>{props.item.$title}</h1>
                 <p>{props.item.name.$element}</p>
-                <p>{props.relations.children.$richListElement}</p>
+                <p>{props.relations.children.$richListElement()}</p>
             </div>
         })
 
@@ -110,7 +110,7 @@ describe("UI Config Test", () => {
                     fullPage: (props) => (<div>
                         <h1>{props.item.$title}</h1>
                         <p>{props.item.name.$element}</p>
-                        <p>{props.relations.parents.$richListElement}</p>
+                        <p>{props.relations.parents.$richListElement()}</p>
                     </div>),
                     relationPreview: {
                         rich: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
