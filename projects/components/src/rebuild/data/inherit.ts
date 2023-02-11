@@ -1,5 +1,6 @@
 import { FieldConfig, IOnlineClient, XnhDBProtocol } from "@xnh-db/protocol";
 import { DeepPartial } from "utility-types";
+import { BackendBase } from "./backend";
 
 export async function getEntityParents(initialId: string, inheritanceClient: IOnlineClient.Relation<"parent" | "child", XnhDBProtocol.RelationPayloads.Inheritance>): Promise<string[]> {
     const result: string[] = []
@@ -21,7 +22,7 @@ export async function getEntityParents(initialId: string, inheritanceClient: IOn
     } 
 }
 
-export async function loadEntityWithInheritance<T>(id: string, config: FieldConfig.ConfigFromDeclaration<T>, collectionClient: IOnlineClient.Collection<T, IdbCollectionQuery>, inheritanceClient?: IOnlineClient.Relation<"parent" | "child", XnhDBProtocol.RelationPayloads.Inheritance>): Promise<DeepPartial<T>> {
+export async function loadEntityWithInheritance<T>(id: string, config: FieldConfig.ConfigFromDeclaration<T>, collectionClient: IOnlineClient.Collection<T, BackendBase.Query>, inheritanceClient?: IOnlineClient.Relation<"parent" | "child", XnhDBProtocol.RelationPayloads.Inheritance>): Promise<DeepPartial<T>> {
     let parent: undefined | DeepPartial<T>
     if(inheritanceClient) {
         parent = {} as DeepPartial<T>

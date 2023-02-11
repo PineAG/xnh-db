@@ -22,6 +22,9 @@ export module BackendBase {
         collections: {
             [C in keyof Props["collections"]]: IOnlineClient.Collection<FC.EntityFromConfig<Props["collections"][C]["config"]>, Query>
         },
+        inheritance: {
+            [C in keyof Props["collections"]]?: IOnlineClient.Relation<"parent" | "child", {}>
+        },
         relations: {
             [R in keyof Props["relations"]]: IOnlineClient.Relation<Extract<keyof Props["relations"][R]["collections"], string>, FC.EntityFromConfig<Props["relations"][R]["payloadConfig"]>>
         },

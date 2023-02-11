@@ -13,6 +13,12 @@ type WrapperSet<Props extends DPBase> = {
     collections: {
         [C in keyof Props["collections"]]: IdbCollectionWrapper<FieldConfig.EntityFromConfig<Props["collections"][C]["config"]>>
     },
+    inheritance: {
+        [C in keyof Props["collections"]]?: IdbRelationWrapper<{
+            parent: FieldConfig.EntityFromConfig<Props["collections"][C]["config"]>,
+            child: FieldConfig.EntityFromConfig<Props["collections"][C]["config"]>
+        }, {}>
+    }
     relations: {
         [R in keyof Props["relations"]]: IdbRelationWrapper<{
             [C in keyof Props["relations"][R]["collections"]]: 
@@ -33,6 +39,15 @@ function getWrappersFromConfig<Props extends DPBase>(config: Props): WrapperSet<
         const wrapper = new IdbCollectionWrapper(name, entityConf)
         collections[name] = wrapper
     }
+
+    const inheritance: Record<string, IdbRelationWrapper<Record<"parent" | "child", any>, any>> = {}
+    for(const name in config.collections) {
+        const wrapper = new IdbRelationWrapper({
+            parent: collections[name],
+            child: collections[name]
+        }, {})
+        inheritance[name] = wrapper
+    }
     
     const relations: Record<string, IdbRelationWrapper<any, any>> = {}
     for(const relName in config.relations) {
@@ -49,6 +64,7 @@ function getWrappersFromConfig<Props extends DPBase>(config: Props): WrapperSet<
 
     return {
         collections: collections as Result["collections"],
+        inheritance,
         relations: relations as Result["relations"]
     }
 }
@@ -86,6 +102,11 @@ export function createOnlineClientSet<Props extends DPBase>(config: Props, dbNam
         collections[name] = new IdbCollectionOnlineClient(dbFactory, wrappers.collections[name])
     }
 
+    const inheritance: Record<string, IdbRelationOnlineClient<Record<"parent" | "child", any>, {}>> = {}
+    for(const name in wrappers.collections) {
+        inheritance[name] = new IdbRelationOnlineClient(dbFactory, wrappers.inheritance[name])
+    }
+
     const relations: Record<string, IdbRelationOnlineClient<any, any>> = {}
     for(const name in wrappers.relations) {
         relations[name] = new IdbRelationOnlineClient(dbFactory, wrappers.relations[name])
@@ -97,6 +118,7 @@ export function createOnlineClientSet<Props extends DPBase>(config: Props, dbNam
     type Result = BackendBase.OnlineClientSet<Props>
     return {
         collections: collections as Result["collections"],
+        inheritance: inheritance as Result["inheritance"],
         relations: relations as Result["relations"],
         tags,
         files
