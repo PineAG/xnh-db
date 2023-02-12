@@ -3,6 +3,7 @@ import "fake-indexeddb/auto"
 import { FieldConfig } from "@xnh-db/protocol"
 import {DbUiConfiguration} from "./config"
 import {DBStorage} from "./data"
+import crypto from "crypto"
 
 import F = FieldConfig.Fields
 
@@ -46,7 +47,7 @@ const ArtworkConfig = FieldConfig.makeConfig.for<Artwork>().as({
 })
 
 describe("UI Config Test", () => {
-    it("happy case", () => {
+    it("happy case", async () => {
         const config = DbUiConfiguration.makeConfig.withCollections(b => ({
             character: b.createCollectionOfEntity<Character>(true).withConfig(CharacterConfig),
             artwork: b.createCollectionOfEntity<Artwork>().withConfig(ArtworkConfig)
@@ -123,6 +124,10 @@ describe("UI Config Test", () => {
             }
         })
 
-        DBStorage.createRestfulStorage(config, "test")
+        const clients = DBStorage.createMemoryStorage(config, "test")
+        const id = crypto.randomUUID()
+        await clients.local.collections.artwork.updateItem(id, {name: "Megaman EXE"})
+        const itemOut = await clients.local.collections.artwork.getItem(id)
+        expect(itemOut.name).toBe("Megaman EXE")
     })
 })

@@ -13,7 +13,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
     private timeWrapper: IdbStoreWrapper<number, never>
     private payloadWrapper: IdbStoreWrapper<DeepPartial<Payload>, never>
 
-    constructor(wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}, private config: FC.ConfigFromDeclaration<Payload>) {
+    constructor(name: string, wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}, private config: FC.ConfigFromDeclaration<Payload>) {
         for(const key in wrappers) {
             const wrapper = wrappers[key]
             wrapper.onDelete((db, id) => {
@@ -25,7 +25,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
         sortedKeys.sort()
         this.sortedKeys = sortedKeys
 
-        this.storeName = `relation_${sortedKeys.map(k => `${k}=${wrappers[k].name}`).join("_")}`
+        this.storeName = `relation_${name}`
 
         const relationIndices: Partial<Record<keyof C, IdbIndexOption>> = {}
         for(const key in wrappers) {

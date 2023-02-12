@@ -1,5 +1,5 @@
 import { DbUiConfiguration } from "../config"
-import { BackendBase, IndexedDBBackend, OctokitBackend, RestfulBackend } from "./backend"
+import { BackendBase, IndexedDBBackend, MemoryBackend, OctokitBackend, RestfulBackend } from "./backend"
 
 export module DBStorage {
     type DPBase = DbUiConfiguration.DataPropsBase
@@ -20,6 +20,13 @@ export module DBStorage {
         const query = IndexedDBBackend.createOnlineClientSet(config, dbName)
         const local = IndexedDBBackend.createOfflineClientSet(config, dbName)
         const remote = OctokitBackend.createOfflineClientSet(config, cert, branch)
+        return {query, local, remote}
+    }
+
+    export function createMemoryStorage<Props extends DPBase>(config: Props, dbName: string): DBBackendSet<Props> {
+        const query = IndexedDBBackend.createOnlineClientSet(config, dbName)
+        const local = IndexedDBBackend.createOfflineClientSet(config, dbName)
+        const remote = MemoryBackend.createOfflineClientSet(config)
         return {query, local, remote}
     }
 }

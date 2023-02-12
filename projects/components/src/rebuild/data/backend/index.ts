@@ -1,5 +1,6 @@
 export * as IndexedDBBackend from "./indexedDB"
 export * as RestfulBackend from "./restful"
 export * as OctokitBackend from "./octokit"
+export * as MemoryBackend from "./memory"
 export * from "./base"
 export {IdbCollectionQuery} from "./indexedDB"

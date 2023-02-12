@@ -35,11 +35,11 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
             const keyPath = ConfigFlatten.stringifyKeyPath(path)
             dataIndices[keyPath] = {keyPath, isArray, unique: false}
         }
-        this.dataWrapper = new IdbStoreWrapper(`${name}:data`, dataIndices)
+        this.dataWrapper = new IdbStoreWrapper(`entity_${name}:data`, dataIndices)
 
-        this.timeWrapper = new IdbStoreWrapper(`${name}:updatedAt`, {})
-        this.fullTextWrapper = new IdbStoreWrapper(`${name}:fullText:documents`, {keywords: {keyPath: "keywords", isArray: true, unique: false}})
-        this.fullTextTermsWrapper = new IdbStoreWrapper(`${name}:fullText:terms`, {})
+        this.timeWrapper = new IdbStoreWrapper(`entity_${name}:updatedAt`, {})
+        this.fullTextWrapper = new IdbStoreWrapper(`entity_${name}:fullText:documents`, {keywords: {keyPath: "keywords", isArray: true, unique: false}})
+        this.fullTextTermsWrapper = new IdbStoreWrapper(`entity_${name}:fullText:terms`, {})
 
     }
 

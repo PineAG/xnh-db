@@ -45,7 +45,7 @@ function getWrappersFromConfig<Props extends DPBase>(config: Props): WrapperSet<
         if(!config.collections[name].inheritable) {
             continue
         }
-        const wrapper = new IdbRelationWrapper({
+        const wrapper = new IdbRelationWrapper(`inherit_${name}`, {
             parent: collections[name],
             child: collections[name]
         }, {})
@@ -61,7 +61,7 @@ function getWrappersFromConfig<Props extends DPBase>(config: Props): WrapperSet<
             const collectionWrapper = collections[realCollectionName]
             internalCollections[collectionName] = collectionWrapper
         }
-        const wrapper = new IdbRelationWrapper(internalCollections, payloadConfig)
+        const wrapper = new IdbRelationWrapper(relName, internalCollections, payloadConfig)
         relations[relName] = wrapper
     }
 
@@ -133,7 +133,8 @@ export function createOnlineClientSet<Props extends DPBase>(config: Props, dbNam
 
 export function createOfflineClientSet<Props extends DPBase>(config: Props, dbName: string): BackendBase.OfflineClientSet<Props> {
     const wrappers = getWrappersFromConfig(config)
-    function dbFactory() {
+
+    async function dbFactory() {
         return createDB(wrappers, dbName)
     }
     
