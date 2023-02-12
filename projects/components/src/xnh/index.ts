@@ -2,7 +2,7 @@ import { XnhDBProtocol as P } from "@xnh-db/protocol"
 import { DbUiConfiguration } from "../rebuild"
 
 export module XnhUiConfiguration {
-    const config = DbUiConfiguration.makeConfig.withCollections(b => ({
+    export const config = DbUiConfiguration.makeConfig.withCollections(b => ({
         character: b.createCollectionOfEntity<P.ICharacter>(true).withConfig(P.CharacterDefinition),
         artwork: b.createCollectionOfEntity<P.IArtwork>(true).withConfig(P.ArtworkDefinition),
         voiceActor: b.createCollectionOfEntity<P.IVoiceActor>().withConfig(P.VoiceActorDefinition),
@@ -46,6 +46,4 @@ export module XnhUiConfiguration {
             artwork: b.toRelation("artwork_creator", {selfKey: "creator", targetKey: "artwork"})
         }),
     })
-
-    
 }
