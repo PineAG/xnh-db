@@ -17,7 +17,12 @@ export module DBSearch {
         "fullText": {
             type: "fullText"
             keyword: string
-        }
+        },
+        "inheritance": {
+            type: "inheritance",
+            targets: "parents" | "children"
+            fromId: string
+        },
         "merge": {
             type: "merge"
             operator: "and" | "or",
@@ -71,6 +76,22 @@ export module DBSearch {
                 keyword
             }
         }
+
+        export function parents(itemId: string): IQuery {
+            return {
+                type: "inheritance",
+                targets: "parents",
+                fromId: itemId
+            }
+        }
+
+        export function children(itemId: string): IQuery {
+            return {
+                type: "inheritance",
+                targets: "children",
+                fromId: itemId
+            }
+        }
         
         export async function evaluate<Clients extends BackendBase.OnlineClientSet<any>>(clients: Clients, collectionName: keyof Clients["collections"], operator: IQuery): Promise<IOnlineClient.FullTextQueryResult[]> {
             const collection = clients.collections[collectionName]
@@ -113,6 +134,22 @@ export module DBSearch {
                             for await (const childId of InheritanceUtils.walkAllChildren(id, ctx.inheritance)) {
                                 results[childId] = 0
                             }
+                        }
+                    }
+                    return results
+                }
+                case "inheritance": {
+                    const results: Record<string, number> = {}
+                    if(!ctx.inheritance) {
+                        return results
+                    }
+                    if(operator.targets === "parents") {
+                        for await (const parentId of InheritanceUtils.walkParents(operator.fromId, ctx.inheritance)) {
+                            results[parentId] = 0
+                        }
+                    } else { // children
+                        for await (const childId of InheritanceUtils.walkAllChildren(operator.fromId, ctx.inheritance)) {
+                            results[childId] = 0
                         }
                     }
                     return results
