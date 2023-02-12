@@ -66,7 +66,7 @@ export module LayoutInjector {
         }
     }
 
-    export async function getFullPagePropsFromBinding<
+    export function getFullPagePropsFromBinding<
         GP extends GPBase, 
         CollectionName extends CollNames<GP>,
         T extends FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>
@@ -89,7 +89,7 @@ export module LayoutInjector {
                 collectionName={collectionName}
                 binding={parentBinding}
             />,
-            relations: RelationInjectionComponents.createRelationsEditableInjection(config, clients, collectionName, relationBindings)
+            relations: RelationInjectionComponents.createRelationsEditableInjection(config, clients, collectionName, itemId, relationBindings)
         }
     }
 

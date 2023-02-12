@@ -156,7 +156,7 @@ export module OfflinePathClientUtils {
             await this.pathClient.write(this.paths.index(), json)
         }
         
-        async getPayload(keys: Record<Keys, string>): Promise<Payload> {
+        async getPayload(keys: Record<Keys, string>): Promise<DeepPartial<Payload>> {
             const data = await this.pathClient.read(this.paths.payload(keys))
             if(data === null) {
                 throw new Error(`Relation not exist: ${JSON.stringify(keys)}`)
@@ -164,7 +164,7 @@ export module OfflinePathClientUtils {
                 return await JsonUtils.fromJson(data)
             }
         }
-        async updateRelation(keys: Record<Keys, string>, payload: Payload): Promise<void> {
+        async updateRelation(keys: Record<Keys, string>, payload: DeepPartial<Payload>): Promise<void> {
             const b = await JsonUtils.toJson(payload)
             await this.pathClient.write(this.paths.payload(keys), b)
         }

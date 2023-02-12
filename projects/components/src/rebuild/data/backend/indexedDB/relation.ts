@@ -11,7 +11,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
 
     private relationWrapper: IdbStoreWrapper<Record<keyof C, string>, keyof C & string>
     private timeWrapper: IdbStoreWrapper<number, never>
-    private payloadWrapper: IdbStoreWrapper<Payload, never>
+    private payloadWrapper: IdbStoreWrapper<DeepPartial<Payload>, never>
 
     constructor(wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}, private config: FC.ConfigFromDeclaration<Payload>) {
         for(const key in wrappers) {
@@ -56,7 +56,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
         }))
     }
 
-    async getPayload(db: idb.IDBPDatabase, keys: Record<keyof C, string>): Promise<Payload> {
+    async getPayload(db: idb.IDBPDatabase, keys: Record<keyof C, string>): Promise<DeepPartial<Payload>> {
         const id = this.extractId(keys)
         const payload  = await this.payloadWrapper.get(db, id)
         if(!payload) {
@@ -65,7 +65,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
         return payload
     }
 
-    async putRelation(db: idb.IDBPDatabase, keys: Record<keyof C, string>, payload: Payload) {
+    async putRelation(db: idb.IDBPDatabase, keys: Record<keyof C, string>, payload: DeepPartial<Payload>) {
         const id = this.extractId(keys)
         await this.payloadWrapper.put(db, id, payload)
         await this.relationWrapper.put(db, id, keys)
@@ -134,12 +134,12 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload exte
             return this.wrapper.getRelationsByKey(db, key, id)
         })
     }
-    getPayload(keys: Record<keyof C, string>): Promise<Payload> {
+    getPayload(keys: Record<keyof C, string>): Promise<DeepPartial<Payload>> {
         return this.withDB(db => {
             return this.wrapper.getPayload(db, keys)
         })
     }
-    async putRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
+    async putRelation(keys: Record<keyof C, string>, payload: DeepPartial<Payload>): Promise<void> {
         return this.withDB(async db => {    
             const updatedAt = new Date()
             await this.wrapper.putRelation(db, keys, payload)
@@ -174,7 +174,7 @@ export class IdbRelationOfflineClient<C extends Record<string, any>, Payload ext
             return this.wrapper.setCollectionStatus(db, status)
         })
     }
-    getPayload(keys: Record<keyof C, string>): Promise<Payload> {
+    getPayload(keys: Record<keyof C, string>): Promise<DeepPartial<Payload>> {
         return this.withDB(async db => {
             return this.wrapper.getPayload(db, keys)
         })
@@ -194,7 +194,7 @@ export class IdbRelationOfflineClient<C extends Record<string, any>, Payload ext
             return this.wrapper.flushIndex(db, index)
         })
     }
-    async updateRelation(keys: Record<keyof C, string>, payload: Payload): Promise<void> {
+    async updateRelation(keys: Record<keyof C, string>, payload: DeepPartial<Payload>): Promise<void> {
         return this.withDB(async db => {
             await this.wrapper.putRelation(db, keys, payload)
             await this.wrapper.updateTags(db, payload as DeepPartial<Payload>)

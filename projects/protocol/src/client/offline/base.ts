@@ -23,8 +23,8 @@ export module IOfflineClient {
         getStatus(): Promise<LatestStatus>
         setStatus(status: LatestStatus): Promise<void>
         flushIndex(index: CollectionIndex<Record<Keys, string>>): Promise<void>
-        getPayload(keys: Record<Keys, string>): Promise<Payload>
-        updateRelation(keys: Record<Keys, string>, payload: Payload): Promise<void>
+        getPayload(keys: Record<Keys, string>): Promise<DeepPartial<Payload>>
+        updateRelation(keys: Record<Keys, string>, payload: DeepPartial<Payload>): Promise<void>
         deleteRelation(keys: Record<Keys, string>): Promise<void>
     }
 
