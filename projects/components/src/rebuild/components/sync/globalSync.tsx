@@ -49,8 +49,8 @@ export module GlobalSyncComponents {
 
         const [clients, setClients] = useState<null | InitializedClients>(null)
 
-        const onlineClientsBuilder = DbContexts.useOnlineClientsBuilder()
-        const offlineClientsBuilder = DbContexts.useOfflineClientsBuilder()
+        const createOnlineClients = DbContexts.useOnlineClientsBuilder()
+        const createOfflineClients = DbContexts.useOfflineClientsBuilder()
         const destroyLocalStorage = DbContexts.useDestroyLocalStorage()
 
         useEffect(() => {
@@ -128,10 +128,10 @@ export module GlobalSyncComponents {
                             if(version && version !== P.XNH_DB_DATA_VERSION) {
                                 state = "low_version"
                             }else{
-                                const onlineClients = onlineClientsBuilder(cert.token, cert.repo)
+                                const onlineClients = createOnlineClients(cert.token, cert.repo)
                                 await _syncClients(["正在同步数据...", "首次同步可能花费较长时间"], onlineClients)
                                 state = "online"
-                                setClients(onlineClientsBuilder(cert.token, cert.repo))
+                                setClients(createOnlineClients(cert.token, cert.repo))
                             }
                         }
                     }
@@ -140,7 +140,7 @@ export module GlobalSyncComponents {
                         setMessage(["版本不一致, 正在重新同步..."])
                         await destroyLocalStorage()
                     }
-                    const offlineClients = offlineClientsBuilder()
+                    const offlineClients = createOfflineClients()
                     await _syncClients(["正在同步数据", "首次同步可能花费较长时间"], offlineClients)
                     OctokitCertificationStore.version.set(P.XNH_DB_DATA_VERSION)
                     setMessage(["同步完成"])
@@ -208,7 +208,7 @@ export module GlobalSyncComponents {
                 setMessage(["正在重置远程数据库"])
                 await branch.rollback(commit)
 
-                const onlineClients = onlineClientsBuilder(cert.token, cert.repo)
+                const onlineClients = createOnlineClients(cert.token, cert.repo)
 
                 await _reverseSync(["正在重新同步到远程数据库..."], onlineClients)
                 OctokitCertificationStore.backupCommit.clear()
@@ -261,8 +261,14 @@ export module GlobalSyncComponents {
     const GlobalClientsContext = createNullableContext<IGlobalClients>("Clients not initialized")
 
 
-    export function useDBClients(): IGlobalClients {
+    export function useClients(): IGlobalClients {
         return useNullableContext(GlobalClientsContext)
+    }
+
+    export function useDownloadFile() {
+        const config = DbContexts.useProps()
+        const clients = useClients()
+        return (fileName: string) => UiSyncUtils.retrieveRemoteFile(config.props, clients.clients, fileName)
     }
 
     export function GlobalDataSynchronizationWrapper(props: {children: React.ReactNode}) {

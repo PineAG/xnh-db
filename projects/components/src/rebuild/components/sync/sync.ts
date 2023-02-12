@@ -4,6 +4,7 @@ import { DBStorage } from "../../data";
 
 export module UiSyncUtils {
     type GPBase = DbUiConfiguration.GlobalPropsBase
+    type DPBase = DbUiConfiguration.DataPropsBase
     import Utils = DbUiConfiguration.InternalUtils
     import SyncUtils = OfflineClientSynchronization
     import Progress = SyncUtils.ProgressResult.Progress
@@ -112,6 +113,15 @@ export module UiSyncUtils {
                 }
             }
         }
+    }
+
+    export async function retrieveRemoteFile<DP extends DPBase>(config: DP, clients: DBStorage.DBBackendSet<DP>, name: string): Promise<Blob> {
+        const {query, local, remote} = clients
+        if(!await query.files.available(name)) {
+            const data = await remote.files.read(name)
+            await local.files.write(name, data)
+        }
+        return query.files.read(name)
     }
 
     export module ProgressUtils {
