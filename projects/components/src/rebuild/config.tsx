@@ -43,7 +43,8 @@ export module DbUiConfiguration {
 
         export module LayoutProps {
             export type FullPage<T extends EntityBase, ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {
-                item: ItemLayoutProps<T>, 
+                item: ItemLayoutProps<T>,
+                $parentElement: () => React.ReactNode
                 relations: LayoutPropsForRelations<ColToRel>
             }
             export type SimplePage<T extends EntityBase> = {item: ItemLayoutProps<T>}

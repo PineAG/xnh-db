@@ -41,7 +41,7 @@ export module EndpointEditors {
     }
     
     
-    export function renderEndpoint<T extends FieldConfig.Fields.EndpointValueTypes>(inputBinding: XBinding.Binding<T | undefined>, config: FieldConfig.Fields.EndpointTypes): React.ReactNode {
+    export function renderEndpoint<T extends FieldConfig.Fields.EndpointValueTypes>(inputBinding: XBinding.Binding<T | undefined>, parentValue: T | undefined, config: FieldConfig.Fields.EndpointTypes): React.ReactNode {
         const binding = inputBinding as XBinding.Binding<any>
         switch(config.type) {
             case "avatar": return <Avatar binding={binding} config={config}/>

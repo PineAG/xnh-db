@@ -17,7 +17,7 @@ export module IOnlineClient {
 
     export interface Relation<Keys extends string, Payload> {
         getPayload(keys: Record<Keys, string>): Promise<Payload>
-        putRelation(keys: Record<Keys, string>, payload: Payload): Promise<void>
+        putRelation(keys: Record<Keys, string>, payload: DeepPartial<Payload>): Promise<void>
         getRelationsByKey<K extends Keys>(key: K, id: string): Promise<Record<Keys, string>[]>
         deleteRelation(keys: Record<Keys, string>): Promise<void>
     }

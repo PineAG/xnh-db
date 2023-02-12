@@ -8,6 +8,10 @@ export module InheritanceUtils {
     type OnlineClient<T> = IOnlineClient.Collection<T, BackendBase.Query>
     export type InheritanceClient = BackendBase.InheritanceClient
 
+    export async function getParentId(itemId: string, client: InheritanceClient): Promise<string | null> {
+        return getParentInternal(itemId, client)
+    }
+
     export async function getParents(initialId: string, client: InheritanceClient): Promise<string[]> {
         const parents: string[] = []
         for await (const id of walkParents(initialId, client)) {
