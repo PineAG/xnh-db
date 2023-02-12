@@ -1,18 +1,16 @@
-import { Flex, HStack, Loading } from "@pltk/components";
-import { Card, Checkbox, Empty } from "antd";
+import { Divider, Flex, HStack, Loading } from "@pltk/components";
+import { Card, Checkbox, Empty, Button } from "antd";
 import { DbUiConfiguration } from "../../config";
 import { XBinding } from "../binding";
 import { DbContexts } from "../context";
 import { GlobalSyncComponents } from "../sync";
 import { DBSearchWrapper } from "./wrapper";
 import {useState, useEffect} from "react"
-import { FieldConfig } from "@xnh-db/protocol";
 import { LayoutInjector } from "../inject";
 import { SearchInputComponents } from "./input";
 
 export module SearchResultComponents {
     type GPBase = DbUiConfiguration.GlobalPropsBase
-    import Utils = DbUiConfiguration.InternalUtils
     type SimpleInjection = DbUiConfiguration.InternalUtils.Injection.SimplePageInjectionProps<GPBase, string>
 
     export interface CollectionItemSelectorProps {
@@ -21,8 +19,6 @@ export module SearchResultComponents {
     }
 
     export function CollectionItemSelector(props: CollectionItemSelectorProps) {
-        const config = DbContexts.useProps()
-        const clients = GlobalSyncComponents.useClients()
         const [query, setQuery] = useState("")
 
         return <DBSearchWrapper.SearchProvider
@@ -32,6 +28,13 @@ export module SearchResultComponents {
             >
             <Flex direction="vertical">
                 <SearchInputComponents.DBSearchInput/>
+                {!props.binding.value ? <></> : (
+                    <HStack layout={["auto", "1fr"]}>
+                        <ResultItem itemId={props.binding.value}/>
+                        <Button type="primary" danger onClick={() => props.binding.update(null)}>取消选择</Button>
+                    </HStack>
+                )}
+                <Divider/>
                 <DBSearchWrapper.SearchConsumer>{(search) => {
                     if(search.results.pending === true) {
                         return <Loading/>
@@ -39,15 +42,12 @@ export module SearchResultComponents {
                     const items = search.results.items
                     return <Flex direction="vertical">
                         {items.map(it => {
+                            if(it === props.binding.value) {
+                                return <></>
+                            }
                             return <HStack layout={["auto", "1fr"]}>
-                                <Checkbox checked={it === props.binding.value} onChange={() => {
-                                    if(it === props.binding.value) {
-                                        props.binding.update(null)
-                                    } else {
-                                        props.binding.update(it)
-                                    }
-                                }}/>
                                 <ResultItem itemId={it}/>
+                                <Button type="primary" onClick={() => props.binding.update(it)}>选择</Button>
                             </HStack>
                         })}
                     </Flex>
