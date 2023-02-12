@@ -43,7 +43,7 @@ function getWrappersFromConfig<Props extends DPBase>(config: Props): WrapperSet<
     const inheritance: Record<string, IdbRelationWrapper<Record<"parent" | "child", any>, any>> = {}
     for(const name in config.collections) {
         if(!config.collections[name].inheritable) {
-            return
+            continue
         }
         const wrapper = new IdbRelationWrapper({
             parent: collections[name],

@@ -50,7 +50,7 @@ export module ConfigFlatten {
         return result
     }
     
-    export function extractFlatDataByConfig<T extends EntityBase>(data: Partial<FlattenedEntity<T>>, definition: FC.ConfigFromDeclaration<T>): DeepPartial<T> {
+    export function extractFlatDataByConfig<C extends FC.ConfigBase, T extends FC.EntityFromConfig<C>>(data: Partial<FlattenedEntity<T>>, definition: C): DeepPartial<T> {
         const result: any = {}
         for(const [keyPath, conf] of flattenConfig(definition)) {
             const flatPath = stringifyKeyPath(keyPath)
