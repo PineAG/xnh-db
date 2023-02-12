@@ -1,5 +1,5 @@
-import { Flex, Loading } from "@pltk/components";
-import { Card, Empty } from "antd";
+import { Flex, HStack, Loading } from "@pltk/components";
+import { Card, Checkbox, Empty } from "antd";
 import { DbUiConfiguration } from "../../config";
 import { XBinding } from "../binding";
 import { DbContexts } from "../context";
@@ -8,6 +8,7 @@ import { DBSearchWrapper } from "./wrapper";
 import {useState, useEffect} from "react"
 import { FieldConfig } from "@xnh-db/protocol";
 import { LayoutInjector } from "../inject";
+import { SearchInputComponents } from "./input";
 
 export module SearchResultComponents {
     type GPBase = DbUiConfiguration.GlobalPropsBase
@@ -22,8 +23,38 @@ export module SearchResultComponents {
     export function CollectionItemSelector(props: CollectionItemSelectorProps) {
         const config = DbContexts.useProps()
         const clients = GlobalSyncComponents.useClients()
-        return <span>还没做</span>
-        // TODO:
+        const [query, setQuery] = useState("")
+
+        return <DBSearchWrapper.SearchProvider
+                searchQuery={query}
+                onChange={setQuery}
+                collection={props.collectionName}
+            >
+            <Flex direction="vertical">
+                <SearchInputComponents.DBSearchInput/>
+                <DBSearchWrapper.SearchConsumer>{(search) => {
+                    if(search.results.pending === true) {
+                        return <Loading/>
+                    }
+                    const items = search.results.items
+                    return <Flex direction="vertical">
+                        {items.map(it => {
+                            return <HStack layout={["auto", "1fr"]}>
+                                <Checkbox checked={it === props.binding.value} onChange={() => {
+                                    if(it === props.binding.value) {
+                                        props.binding.update(null)
+                                    } else {
+                                        props.binding.update(it)
+                                    }
+                                }}/>
+                                <ResultItem itemId={it}/>
+                            </HStack>
+                        })}
+                    </Flex>
+                }}</DBSearchWrapper.SearchConsumer>
+            </Flex>
+        </DBSearchWrapper.SearchProvider>
+        
     }
 
     interface ResultListProps {
@@ -33,8 +64,6 @@ export module SearchResultComponents {
     export function ResultList({onItemOpen}: ResultListProps) {
         const {results, collectionName} = DBSearchWrapper.useSearchResults()
 
-        const clients = GlobalSyncComponents.useClients().clients.query
-        
         if(results.pending === true) {
             return <Loading/>
         } else if (results.items.length === 0) {
@@ -44,7 +73,6 @@ export module SearchResultComponents {
                 {results.items.map(id => (
                     <ResultItem
                         key={id}
-                        collectionName={collectionName}
                         itemId={id}
                         onClick={() => onItemOpen(collectionName, id)}
                     />
@@ -54,19 +82,19 @@ export module SearchResultComponents {
     }
 
     interface ResultItemProps {
-        collectionName: string
         itemId: string
-        onClick: () => void
+        onClick?: () => void
     }
     export function ResultItem(props: ResultItemProps) {
+        const {collectionName} = DBSearchWrapper.useSearchResults()
         const [injectionProps, setInjection] = useState<SimpleInjection | null>(null)
         const config = DbContexts.useProps()
         const clients = GlobalSyncComponents.useClients()
-        const ResultLayout = config.layout.layouts[props.collectionName].searchResult
+        const ResultLayout = config.layout.layouts[collectionName].searchResult
 
         useEffect(() => {
             initialize()
-        }, [props.collectionName, props.itemId])
+        }, [collectionName, props.itemId])
 
         if(injectionProps === null) {
             return <div style={{display: "grid", placeItems: "center"}}>
@@ -79,7 +107,7 @@ export module SearchResultComponents {
         }
 
         async function initialize() {
-            const injection = await LayoutInjector.createSimpleProps(config, clients.clients.query, props.collectionName, props.itemId)
+            const injection = await LayoutInjector.createSimpleProps(config, clients.clients.query, collectionName, props.itemId)
             setInjection(injection)
         }
         

@@ -25,9 +25,9 @@ export module DBSearchWrapper {
     
     export interface SearchProviderProps {
         collection: string
-        children: React.ReactNode
         searchQuery: string
-        onChange: (query: string) => Promise<void>
+        onChange: (query: string) => void
+        children: React.ReactNode
         patchSearch?: (query: DBSearch.IQuery) => DBSearch.IQuery
     }
     
@@ -64,6 +64,11 @@ export module DBSearchWrapper {
         function search(query: DBSearch.IQuery) {
             props.onChange(stringifyQuery(query))
         }
+    }
+
+    export function SearchConsumer(props: {children: (q: DBSearchState) => React.ReactNode}) {
+        const state = useNullableContext(SearchResultContext)
+        return <>{props.children(state)}</>
     }
 
     export function useSearchResults(): DBSearchState {
