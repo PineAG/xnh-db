@@ -1,13 +1,19 @@
+import { createNullableContext, useNullableContext } from "@pltk/components"
 import { XnhDBProtocol as P } from "@xnh-db/protocol"
+import { Modal } from "antd"
 import { useEffect, useState } from "react"
 import { DbUiConfiguration } from "../../config"
 import { BackendBase, DBStorage, IndexedDBBackend, OctokitBackend } from "../../data"
 import { DbContexts } from "../context"
+import { AuthorizationComponents } from "./auth"
+import { UiSyncUtils } from "./sync"
 
-OctokitBackend
 
+import GPBase = DbUiConfiguration.GlobalPropsBase
+import DPBase = DbUiConfiguration.DataPropsBase
 type IdbCollectionQuery = BackendBase.Query
 import OctokitCertificationStore = OctokitBackend.OctokitCertificationStore
+import OctokitClient = OctokitBackend.OctokitClient
 
 export module GlobalSyncComponents {
     type ForceProceedingAction = {proceed: () => Promise<void>}
@@ -34,15 +40,18 @@ export module GlobalSyncComponents {
         }
     }[keyof DataSynchronizationGlobalState]
 
-    function useDataSynchronizationGlobal(): DataSynchronizationGlobalResults {
+    function useDataSynchronizationGlobal<GP extends GPBase>(): DataSynchronizationGlobalResults {
         const [state, setState] = useState<keyof DataSynchronizationGlobalState>("pending")
         const [message, setPendingMessage] = useState<string[]>([])
         const [fetalMessage, setFetalMessage] = useState<string>("")
+
+        const globalProps = DbContexts.useProps() as GP
 
         const [clients, setClients] = useState<null | InitializedClients>(null)
 
         const onlineClientsBuilder = DbContexts.useOnlineClientsBuilder()
         const offlineClientsBuilder = DbContexts.useOfflineClientsBuilder()
+        const destroyLocalStorage = DbContexts.useDestroyLocalStorage()
 
         useEffect(() => {
             initialize()
@@ -119,29 +128,24 @@ export module GlobalSyncComponents {
                             if(version && version !== P.XNH_DB_DATA_VERSION) {
                                 state = "low_version"
                             }else{
-                                const idbClients = await _getDB()
-                                await _syncOctokit(["正在同步数据...", "首次同步可能花费较长时间"], cert, idbClients.offline)
+                                const onlineClients = onlineClientsBuilder(cert.token, cert.repo)
+                                await _syncClients(["正在同步数据...", "首次同步可能花费较长时间"], onlineClients)
                                 state = "online"
-                                setClients(onlineClientsBuilder(cert, ))
+                                setClients(onlineClientsBuilder(cert.token, cert.repo))
                             }
                         }
                     }
                 } else { // offline
-                    let idbClients: Awaited<ReturnType<typeof _getDB>>
                     if(version && version !== P.XNH_DB_DATA_VERSION) {
                         setMessage(["版本不一致, 正在重新同步..."])
-                        await IndexedDBBackend.destroyIdbStorage()
-                    } 
-                    idbClients = await _getDB()
-                    await _syncRestful(["正在同步数据", "首次同步可能花费较长时间"], idbClients.offline)
+                        await destroyLocalStorage()
+                    }
+                    const offlineClients = offlineClientsBuilder()
+                    await _syncClients(["正在同步数据", "首次同步可能花费较长时间"], offlineClients)
                     OctokitCertificationStore.version.set(P.XNH_DB_DATA_VERSION)
                     setMessage(["同步完成"])
                     state = "offline"
-                    setClients({
-                        query: idbClients.online,
-                        local: idbClients.offline, 
-                        remote: createRestfulOfflineClientsSet()
-                    })
+                    setClients(offlineClients)
                 }
                 setState(state)
             }catch(e) {
@@ -150,11 +154,6 @@ export module GlobalSyncComponents {
                 setState("fetal")
                 throw(e)
             }
-        }
-
-        async function _getDB(): ReturnType<typeof createIdbClients> {
-            setMessage(["正在准备本地数据库"])
-            return await createIdbClients()
         }
 
         async function _checkCert(cert: OctokitCertificationStore.IGithubCert): Promise<boolean> {
@@ -167,53 +166,12 @@ export module GlobalSyncComponents {
             }
         }
 
-        async function _syncOctokit(prefixMessages: string[], cert: OctokitCertificationStore.IGithubCert, localClients: P.IOfflineClientSet) {
-            const octokitClient = createOctokitOfflineClientSet(cert)
-            await _sync(prefixMessages, octokitClient, localClients)
+        async function _syncClients(prefixMessages: string[], clients: DBStorage.DBBackendSet<GP["props"]>) {
+            await UiSyncUtils.synchronizeAllClients(globalProps, clients, "download", message => setMessage([...prefixMessages, message]))
         }
 
-        async function _syncRestful(prefixMessages: string[], localClients: P.IOfflineClientSet) {
-            const restfulClient = createRestfulOfflineClientsSet()
-            await _sync(prefixMessages, restfulClient, localClients)
-        }
-
-        async function _sync(prefixMessages: string[], remoteClients: P.IOfflineClientSet, localClients: P.IOfflineClientSet) {
-            for await(const [itemType, progress] of synchronizeOfflineClientSet(remoteClients, localClients)) {
-                setMessage([
-                    ...prefixMessages,
-                    `正在更新 ${itemType.type === "collection" ? "条目集" : "关系集"}: ${itemType.name}`,
-                    stringifyProgressResult(progress)
-                ])
-            }
-            for await(const progress of OfflineClientSynchronization.Files.download(localClients.files, remoteClients.files)) {
-                setMessage([
-                    ...prefixMessages,
-                    stringifyProgressResult(progress)
-                ])
-            }
-        }
-
-        async function _reverseSync(prefixMessages: string[]) {
-            const cert = OctokitCertificationStore.cert.get()
-            if(!cert) {
-                throw new Error("Invalid state")
-            }
-            const remoteClients = createOctokitOfflineClientSet(cert)
-            setMessage([...prefixMessages, "准备本地数据库"])
-            const {offline: localClients} = await createIdbClients()
-            for await(const [itemType, progress] of synchronizeOfflineClientSet(localClients, remoteClients)) {
-                setMessage([
-                    ...prefixMessages,
-                    `正在更新 ${itemType.type === "collection" ? "条目集" : "关系集"}: ${itemType.name}`,
-                    stringifyProgressResult(progress)
-                ])
-            }
-            for await(const progress of OfflineClientSynchronization.Files.upload(localClients.files, remoteClients.files)) {
-                setMessage([
-                    ...prefixMessages,
-                    stringifyProgressResult(progress)
-                ])
-            }
+        async function _reverseSync(prefixMessages: string[], clients: DBStorage.DBBackendSet<GP["props"]>) {
+            await UiSyncUtils.synchronizeAllClients(globalProps, clients, "download", message => setMessage([...prefixMessages, message]))
         }
 
 
@@ -222,7 +180,7 @@ export module GlobalSyncComponents {
             setState("pending")
             try {
                 OctokitCertificationStore.clear()
-                await destroyIdbStorage()
+                await destroyLocalStorage()
                 await initialize()
             }catch(e) {
                 setFetalMessage(e.toString())
@@ -250,16 +208,12 @@ export module GlobalSyncComponents {
                 setMessage(["正在重置远程数据库"])
                 await branch.rollback(commit)
 
-                await _reverseSync(["正在重新同步到远程数据库..."])
+                const onlineClients = onlineClientsBuilder(cert.token, cert.repo)
+
+                await _reverseSync(["正在重新同步到远程数据库..."], onlineClients)
                 OctokitCertificationStore.backupCommit.clear()
 
-                setMessage(["准备本地数据库"])
-                const localClients = await createIdbClients()
-                setClients({
-                    query: localClients.online,
-                    local: localClients.offline, 
-                    remote: createOctokitOfflineClientSet(cert)
-                })
+                setClients(onlineClients)
                 setState("online")
             }catch(e) {
                 setFetalMessage(e.toString())
@@ -273,7 +227,7 @@ export module GlobalSyncComponents {
             setMessage([])
             setState("pending")
             try {
-                await destroyIdbStorage()
+                await destroyLocalStorage()
                 OctokitCertificationStore.version.set(P.XNH_DB_DATA_VERSION)
                 await initialize()
             }catch(e) {
@@ -301,9 +255,7 @@ export module GlobalSyncComponents {
 
     export interface IGlobalClients {
         mode: "online" | "offline"
-        query: P.IOnlineClientSet<IdbCollectionQuery>
-        local: P.IOfflineClientSet
-        remote: P.IOfflineClientSet
+        clients: DBStorage.DBBackendSet<DPBase>
     }
 
     const GlobalClientsContext = createNullableContext<IGlobalClients>("Clients not initialized")
@@ -315,7 +267,6 @@ export module GlobalSyncComponents {
 
     export function GlobalDataSynchronizationWrapper(props: {children: React.ReactNode}) {
         const syncState = useDataSynchronizationGlobal()
-        const [syncMessage, setSyncMessage] = useState<SyncMessage>({sync: false})
 
         if(syncState.type === "pending") {
             return <MessageDialog title="加载中">
@@ -329,13 +280,10 @@ export module GlobalSyncComponents {
         } else if (syncState.type === "online" || syncState.type === "offline") {
             const clients: IGlobalClients = {
                 mode: "online",
-                ...syncState.actions
+                clients: syncState.actions
             }
             return <GlobalClientsContext.Provider value={clients}>
-                <SyncMessageContext.Provider value={{value: syncMessage, update: setSyncMessage}}>
                     {props.children}
-                </SyncMessageContext.Provider>
-                <InternalSyncMessageDialog sync={syncMessage}/>
             </GlobalClientsContext.Provider>
         } else if (syncState.type === "broken_remote") {
             return <ProgressActionDialog title="远程数据库损坏" proceed={syncState.actions.proceed}>
@@ -352,7 +300,7 @@ export module GlobalSyncComponents {
                 <p style={{color: "red"}}>尚未同步的数据将全部丢失!</p>
             </ProgressActionDialog>
         } else if(syncState.type === "auth_required") {
-            return <GithubAuthDialog
+            return <AuthorizationComponents.GithubAuthDialog
                 onClose={cert => {
                     if(cert){
                         syncState.actions.proceed(cert)
@@ -378,32 +326,5 @@ export module GlobalSyncComponents {
         return <Modal title={props.title} open={true} onOk={props.proceed} cancelButtonProps={{ style: { display: 'none' } }} okText="继续" okButtonProps={{danger: true}}>
             {props.children}
         </Modal>
-    }
-
-
-    type SyncMessage = {sync: true, messages: string[]} | {sync: false}
-    type Binding<T> = {value: T, update(value: T): void}
-    const SyncMessageContext = createNullableContext<Binding<SyncMessage>>("Sync context not initialized")
-
-    export function useSyncDialog() {
-        const binding = useNullableContext(SyncMessageContext)
-        async function startSync(name: string, progress: AsyncGenerator<OfflineClientSynchronization.ProgressResult.Progress>) {
-            binding.update({sync: true, messages: [`开始同步: ${name}`]})
-            for await(const p of progress) {
-                binding.update({sync: true, messages: [`正在同步: ${name}`, stringifyProgressResult(p)]})
-            }
-            binding.update({sync: false})
-        }
-        return startSync
-    }
-
-    function InternalSyncMessageDialog(props: {sync: SyncMessage}) {
-        if(props.sync.sync) {
-            return <MessageDialog title="正在同步">
-                {props.sync.messages.map((it, i) => <p key={i}>{it}</p>)}
-            </MessageDialog>
-        } else {
-            return <></>
-        }
     }
 }

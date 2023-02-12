@@ -142,6 +142,13 @@ export function createOfflineClientSet<Props extends DPBase>(config: Props, dbNa
         collections[name] = new IdbCollectionOfflineClient(dbFactory, wrappers.collections[name])
     }
 
+    const inheritance: Record<string, IdbRelationOfflineClient<{parent: any, child: any}, {}>> = {}
+    for(const name in wrappers.collections) {
+        if(config.collections[name].inheritable) {
+            inheritance[name] = new IdbRelationOfflineClient(dbFactory, wrappers.inheritance[name])
+        }
+    }
+
     const relations: Record<string, IdbRelationOfflineClient<any, any>> = {}
     for(const name in wrappers.relations) {
         relations[name] = new IdbRelationOfflineClient(dbFactory, wrappers.relations[name])
@@ -152,6 +159,7 @@ export function createOfflineClientSet<Props extends DPBase>(config: Props, dbNa
     type Result = BackendBase.OfflineClientSet<Props>
     return {
         collections: collections as Result["collections"],
+        inheritance: inheritance as Result["inheritance"],
         relations: relations as Result["relations"],
         files
     }
