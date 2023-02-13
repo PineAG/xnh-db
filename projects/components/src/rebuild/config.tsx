@@ -33,15 +33,14 @@ export module DbUiConfiguration {
         )
 
         export type RelationPropsEndpoint = {
-            $richListElement: () => React.ReactElement
-            $simpleListElement: () => React.ReactElement
+            $element: () => React.ReactElement
         }
 
         export type LayoutPropsForRelations<ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {
             [R in keyof ColToRel]: RelationPropsEndpoint
         }
 
-        export module LayoutProps {
+        export module EntityLayoutProps {
             export type FullPage<T extends EntityBase, ColToRel extends Configuration.CollectionToRelationProps<any, any, any>> = {
                 item: ItemLayoutProps<T>,
                 $parentElement: () => React.ReactNode
@@ -50,16 +49,34 @@ export module DbUiConfiguration {
             export type SimplePage<T extends EntityBase> = {item: ItemLayoutProps<T>}
         }
 
-        export type Layout<
+        export type EntityLayout<
             T extends EntityBase,
             ColToRel extends Configuration.CollectionToRelationProps<any, any, any>
         > = {
-            fullPage: React.FC<LayoutProps.FullPage<T, ColToRel>>
-            searchResult: React.FC<LayoutProps.SimplePage<T>>
-            relationPreview: {
-                rich: React.FC<LayoutProps.SimplePage<T>>
-                simple: React.FC<LayoutProps.SimplePage<T>>
+            fullPage: React.FC<EntityLayoutProps.FullPage<T, ColToRel>>
+            searchResult: React.FC<EntityLayoutProps.SimplePage<T>>
+            inheritance: React.FC<EntityLayoutProps.SimplePage<T>>
+        }
+
+        export type PayloadRelationLayoutProps<
+            Collections extends Configuration.CollectionSetBase, 
+            Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
+            Relation extends keyof Relations
+        > = {
+            selfKey: keyof Collections[Relations[Relation]["collections"]],
+            payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>,
+            collections: {
+                [C in keyof Relations[Relation]["collections"]]:
+                    ItemLayoutProps<FieldConfig.EntityFromConfig<Collections[Relations[Relation]["collections"][C]]["config"]>>
             }
+        }
+
+        export type PayloadLayout<
+            Collections extends Configuration.CollectionSetBase, 
+            Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
+            Relation extends keyof Relations
+        > = {
+            relation: React.FC<PayloadRelationLayoutProps<Collections, Relations, Relation>>
         }
     }
 
@@ -102,18 +119,39 @@ export module DbUiConfiguration {
 
         export type CollectionLayoutProps<C extends CollectionProps<any, any>, ColToRel extends CollectionToRelationProps<any, any, any>> = (
             C extends CollectionProps<infer Entity, any> ?
-                Layouts.Layout<Entity, ColToRel> :
+                Layouts.EntityLayout<Entity, ColToRel> :
                 never
         )
 
-        export type LayoutProps<
+        export type EntityLayoutProps<
             Collections extends CollectionSetBase,
             ColToRel extends CollectionToRelationsBase<Extract<keyof Collections, string>, any>> = {
                 [C in Extract<keyof Collections, string>]: 
-                    Layouts.Layout<
+                    Layouts.EntityLayout<
                         FieldConfig.EntityFromConfig<Collections[C]["config"]>,
                         ColToRel[C]
                     >
+        }
+
+        export type PayloadLayoutProps<
+            Collections extends CollectionSetBase,
+            Relations extends RelationSetBase<Extract<keyof Collections, string>>,
+        > = {
+            [R in keyof Relations]: 
+                Layouts.PayloadLayout<
+                    Collections,
+                    Relations,
+                    R
+                >
+        }
+
+        export type LayoutProps<
+            Collections extends CollectionSetBase,
+            Relations extends RelationSetBase<Extract<keyof Collections, string>>,
+            ColToRel extends CollectionToRelationsBase<Extract<keyof Collections, string>, Relations>
+        > = {
+            entities: EntityLayoutProps<Collections, ColToRel>,
+            payloads: PayloadLayoutProps<Collections, Relations>
         }
 
         export type DataProps<
@@ -136,7 +174,7 @@ export module DbUiConfiguration {
 
         // export type LayoutProps<DProps extends DataProps<CollectionSetBase, any, any>> = LayoutPropsFromProps<DProps["collections"], DProps["collectionsToRelations"]>
 
-        export type LayoutPropsBase = LayoutProps<CollectionSetBase, any>
+        export type LayoutPropsBase = EntityLayoutProps<CollectionSetBase, any>
 
         type TitleDisplayProps<
             Collections extends CollectionSetBase, 
@@ -153,7 +191,7 @@ export module DbUiConfiguration {
             Props extends DataPropsBase
             > = {
                 titles: TitleDisplayProps<Props["collections"], Props["relations"]>
-                layouts: LayoutProps<Props["collections"], Props["collectionsToRelations"]>
+                layouts: Configuration.LayoutProps<Props["collections"], Props["relations"], Props["collectionsToRelations"]>
             }
         
         export type GlobalProps<Props extends DataPropsBase> = {
@@ -297,14 +335,14 @@ export module DbUiConfiguration {
         export type FullPage<
             Props extends PropsBase, 
             CollectionName extends keyof Props["collections"]
-        > = Layouts.LayoutProps.FullPage<
+        > = Layouts.EntityLayoutProps.FullPage<
             GetEntityFromProps<Props, CollectionName>, 
             Props["collectionsToRelations"][CollectionName]>
         
         type SimplePage<
             Props extends PropsBase,
             CollectionName extends keyof Props["collections"]
-            > = Layouts.LayoutProps.SimplePage<GetEntityFromProps<Props, CollectionName>>
+            > = Layouts.EntityLayoutProps.SimplePage<GetEntityFromProps<Props, CollectionName>>
         
         export type SearchResult<
             Props extends PropsBase,
@@ -334,14 +372,14 @@ export module DbUiConfiguration {
             export type FullPageInjectionProps<
                 GP extends Configuration.GlobalPropsBase,
                 CollectionName extends keyof GP["props"]["collections"]
-                > = Layouts.LayoutProps.FullPage<
+                > = Layouts.EntityLayoutProps.FullPage<
                     FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>,
                     GP["props"]["collectionsToRelations"][CollectionName]
                 >
             export type SimplePageInjectionProps<
                 GP extends Configuration.GlobalPropsBase,
                 CollectionName extends keyof GP["props"]["collections"]
-                > = Layouts.LayoutProps.SimplePage<FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>>
+                > = Layouts.EntityLayoutProps.SimplePage<FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>>
             }
             
             export type CollNames<GP extends Configuration.GlobalPropsBase> = Extract<keyof GP["props"]["collections"], string>

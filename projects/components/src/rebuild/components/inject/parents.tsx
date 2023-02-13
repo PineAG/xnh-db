@@ -32,7 +32,7 @@ export module InjectionParentComponents {
         const inheritable = props.config.props.collections[props.collectionName].inheritable
         const colClient = props.clients.collections[props.collectionName]
         const inheritClient = props.clients.inheritance[props.collectionName]
-        const RichLayout = props.config.layout.layouts[props.collectionName].relationPreview.rich
+        const RichLayout = props.config.layout.layouts.entities[props.collectionName].inheritance
         const titles = props.config.layout.titles.entityTitles[props.collectionName]
 
         useEffect(() => {
