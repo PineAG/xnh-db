@@ -344,7 +344,7 @@ export module RelationInjectionComponents {
         const [item, setItem] = useState<null | FieldConfig.EntityBase>(null)
         const {config, inheritable} = props.config.props.collections[props.targetCollectionName]
         const titles = props.config.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const Layout = props.config.layout.layouts[props.targetCollectionName].relationPreview.simple
+        const Layout = props.config.layout.layouts.entities[props.targetCollectionName].relationPreview.simple
 
         const collectionClient = props.clients.collections[props.targetCollectionName]
         const inheritClient = props.clients.inheritance[props.targetCollectionName]

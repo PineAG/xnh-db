@@ -1,4 +1,5 @@
 import { FieldConfig } from "@xnh-db/protocol"
+import { XBinding } from "./components/binding"
 
 export module DbUiConfiguration {
     import EntityBase = FieldConfig.EntityBase
@@ -55,10 +56,11 @@ export module DbUiConfiguration {
         > = {
             fullPage: React.FC<EntityLayoutProps.FullPage<T, ColToRel>>
             searchResult: React.FC<EntityLayoutProps.SimplePage<T>>
-            inheritance: React.FC<EntityLayoutProps.SimplePage<T>>
+            previewPage: React.FC<EntityLayoutProps.SimplePage<T>>
+            previewItem: React.FC<EntityLayoutProps.SimplePage<T>>
         }
 
-        export type PayloadRelationLayoutProps<
+        export type PayloadRelationPreviewLayoutProps<
             Collections extends Configuration.CollectionSetBase, 
             Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
             Relation extends keyof Relations
@@ -71,12 +73,25 @@ export module DbUiConfiguration {
             }
         }
 
+        export type PayloadRelationEditorLayoutProps<
+            Collections extends Configuration.CollectionSetBase, 
+            Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
+            Relation extends keyof Relations
+        > = {
+            selfKey: keyof Collections[Relations[Relation]["collections"]],
+            payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>,
+            collections: {
+                [C in keyof Relations[Relation]["collections"]]: XBinding.Binding<string | null>
+            }
+        }
+
         export type PayloadLayout<
             Collections extends Configuration.CollectionSetBase, 
             Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
             Relation extends keyof Relations
         > = {
-            relation: React.FC<PayloadRelationLayoutProps<Collections, Relations, Relation>>
+            relationPreview: React.FC<PayloadRelationPreviewLayoutProps<Collections, Relations, Relation>>
+            payloadEditor: React.FC<PayloadRelationEditorLayoutProps<Collections, Relations, Relation>>
         }
     }
 

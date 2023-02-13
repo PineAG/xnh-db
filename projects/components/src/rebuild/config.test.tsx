@@ -104,7 +104,8 @@ describe("UI Config Test", () => {
                 entities: {
                     character: {
                         fullPage: CharacterFullPage,
-                        inheritance: CharacterSimple,
+                        previewItem: CharacterSimple,
+                        previewPage: CharacterSimple,
                         searchResult: CharacterSimple
                     },
                     artwork: {
@@ -113,16 +114,19 @@ describe("UI Config Test", () => {
                             <p>{props.item.name.$element}</p>
                             <p>{props.relations.parents.$element()}</p>
                         </div>),
-                        inheritance: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
+                        previewItem: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
+                        previewPage: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
                         searchResult: (props) => <span>{props.item.name.$element}</span>
                     }
                 },
                 payloads: {
                     inheritance: {
-                        relation: (props) => <></>
+                        payloadEditor: (props) => <></>,
+                        relationPreview: (props) => <></>
                     },
                     artwork_character: {
-                        relation: (props) => <></>
+                        payloadEditor: (props) => <></>,
+                        relationPreview: (props) => <></>
                     }
                 }
             }
