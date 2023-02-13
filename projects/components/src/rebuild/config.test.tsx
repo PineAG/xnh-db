@@ -76,7 +76,7 @@ describe("UI Config Test", () => {
             return <div>
                 <h1>{props.item.$title}</h1>
                 <p>{props.item.name.$element}</p>
-                <p>{props.relations.children.$richListElement()}</p>
+                <p>{props.relations.children.$element()}</p>
             </div>
         })
 
@@ -101,25 +101,29 @@ describe("UI Config Test", () => {
                 }
             },
             layouts: {
-                character: {
-                    fullPage: CharacterFullPage,
-                    relationPreview: {
-                        rich: CharacterSimple,
-                        simple: CharacterSimple
+                entities: {
+                    character: {
+                        fullPage: CharacterFullPage,
+                        inheritance: CharacterSimple,
+                        searchResult: CharacterSimple
                     },
-                    searchResult: CharacterSimple
+                    artwork: {
+                        fullPage: (props) => (<div>
+                            <h1>{props.item.$title}</h1>
+                            <p>{props.item.name.$element}</p>
+                            <p>{props.relations.parents.$element()}</p>
+                        </div>),
+                        inheritance: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
+                        searchResult: (props) => <span>{props.item.name.$element}</span>
+                    }
                 },
-                artwork: {
-                    fullPage: (props) => (<div>
-                        <h1>{props.item.$title}</h1>
-                        <p>{props.item.name.$element}</p>
-                        <p>{props.relations.parents.$richListElement()}</p>
-                    </div>),
-                    relationPreview: {
-                        rich: (props) => (<div>{props.item.$title}={props.item.name.$element}</div>),
-                        simple: (props) => <span>{props.item.name.$element}</span>
+                payloads: {
+                    inheritance: {
+                        relation: (props) => <></>
                     },
-                    searchResult: (props) => <span>{props.item.name.$element}</span>
+                    artwork_character: {
+                        relation: (props) => <></>
+                    }
                 }
             }
         })
@@ -127,7 +131,9 @@ describe("UI Config Test", () => {
         const clients = DBStorage.createMemoryStorage(config, "test")
         const id = crypto.randomUUID()
         await clients.local.collections.artwork.updateItem(id, {name: "Megaman EXE"})
-        const itemOut = await clients.local.collections.artwork.getItem(id)
+        const itemOut = await clients.query.collections.artwork.getItemById(id)
         expect(itemOut.name).toBe("Megaman EXE")
+        const fullTextResult = await clients.query.collections.artwork.queryFullText("Mega")
+        expect(fullTextResult[0].id).toBe(id)
     })
 })
