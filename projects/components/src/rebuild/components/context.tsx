@@ -41,6 +41,16 @@ export module DbContexts {
         return () => DBStorage.createRestfulStorage(props.props, dbConf.dbName)
     }
 
+    export function useCollectionConfig(collectionName: string) {
+        const props = useProps()
+        return props.props.collections[collectionName].config
+    }
+
+    export function useRelationConfig(relationName: string) {
+        const props = useProps()
+        return props.props.relations[relationName].payloadConfig
+    }
+
     export function useDestroyLocalStorage() {
         const dbConf = useNullableContext(DBConfContext)
         return () => IndexedDBBackend.destroyDB(dbConf.dbName)

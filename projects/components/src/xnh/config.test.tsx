@@ -1,9 +1,8 @@
 import React from "react"
 import "fake-indexeddb/auto"
 import { FieldConfig } from "@xnh-db/protocol"
-import {DbUiConfiguration} from "./config"
-import {DBStorage} from "./data"
 import crypto from "crypto"
+import {DbUiConfiguration, DBSearch, DBStorage} from "../rebuild"
 
 import F = FieldConfig.Fields
 
@@ -129,7 +128,8 @@ describe("UI Config Test", () => {
                         relationPreview: (props) => <></>
                     }
                 }
-            }
+            },
+            global: {}
         })
 
         const clients = DBStorage.createMemoryStorage(config, "test")

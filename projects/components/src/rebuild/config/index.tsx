@@ -1,5 +1,7 @@
 import { FieldConfig } from "@xnh-db/protocol"
-import { XBinding } from "./components/binding"
+import { XBinding } from "../components/binding"
+import { InternalGlobalLayouts } from "./globalLayouts"
+export * from "./globalLayouts"
 
 export module DbUiConfiguration {
     import EntityBase = FieldConfig.EntityBase
@@ -207,6 +209,7 @@ export module DbUiConfiguration {
             > = {
                 titles: TitleDisplayProps<Props["collections"], Props["relations"]>
                 layouts: Configuration.LayoutProps<Props["collections"], Props["relations"], Props["collectionsToRelations"]>
+                global: InternalGlobalLayouts.GlobalLayoutProps
             }
         
         export type GlobalProps<Props extends DataPropsBase> = {
