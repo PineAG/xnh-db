@@ -2,21 +2,22 @@ import { FieldConfig } from "@xnh-db/protocol";
 import { XBinding } from "../components/binding";
 
 export module InternalGlobalLayouts {
-    export type EndpointEditorProps<T> = {
-        binding: XBinding.Binding<T | undefined>
-        config: FieldConfig.ConfigFromDeclaration<T>
+    export type EndpointEditorProps<N extends FieldConfig.Fields.EndpointNames> = {
+        binding: XBinding.Binding<FieldConfig.Fields.ValueType<N> | undefined>
+        config: FieldConfig.Fields.FieldTypes[N]
+        parentValue: FieldConfig.Fields.ValueType<N> | undefined
     }
     export type EndpointEditors = {
-        [E in FieldConfig.Fields.EndpointNames as Capitalize<E>]: React.FC<EndpointEditorProps<FieldConfig.Fields.ValueOfEndpoint[E]>>
+        [E in FieldConfig.Fields.EndpointNames]: React.FC<EndpointEditorProps<E>>
     }
     
-    export type EndpointViewerProps<T> = {
-        value: T | undefined
-        config: FieldConfig.ConfigFromDeclaration<T>
+    export type EndpointViewerProps<N extends FieldConfig.Fields.EndpointNames> = {
+        value: FieldConfig.Fields.ValueType<N> | undefined
+        config: FieldConfig.Fields.FieldTypes[N]
     }
 
     export type EndpointViewers = {
-        [E in FieldConfig.Fields.EndpointNames as Capitalize<E>]: React.FC<EndpointViewerProps<FieldConfig.Fields.ValueOfEndpoint[E]>>
+        [E in FieldConfig.Fields.EndpointNames]: React.FC<EndpointViewerProps<E>>
     }
 
     export module ComponentProps {
