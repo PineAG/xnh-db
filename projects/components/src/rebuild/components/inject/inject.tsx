@@ -31,7 +31,7 @@ export module LayoutInjector {
         const item = inheritClient ?
             await InheritanceUtils.getEntityPatchingParents(itemId, collectionConfig, collectionClient, inheritClient) :
             await collectionClient.getItemById(itemId)
-        const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(collectionConfig, item, titles)
+        const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config.layout.global.endpoint.viewers, collectionConfig, item, titles)
         return injectProps as Utils.ItemDisplayInjection<GP, CollectionName>
     }
         
@@ -80,7 +80,7 @@ export module LayoutInjector {
         relationBindings: RelationInjectionComponents.RelationBindings<GP, CollectionName>): Utils.FullPageInjectionProps<GP, CollectionName> {
         const collConf = config.props.collections[collectionName].config
         const titles = config.layout.titles.entityTitles[collectionName]
-        const item = InjectionProps.renderDynamicPropTree(collConf, entityBinding, undefined, titles as any) as Utils.ItemDisplayInjection<GP, CollectionName>
+        const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, entityBinding, undefined, titles as any) as Utils.ItemDisplayInjection<GP, CollectionName>
         return {
             item,
             $parentElement: () => <InjectionParentComponents.ParentEditorElementProps
@@ -100,7 +100,7 @@ export module LayoutInjector {
     >(config: GP, collectionName: CollectionName, binding: XBinding.Binding<DeepPartial<T>>): Utils.SimplePageInjectionProps<GP, CollectionName> {
         const collConf = config.props.collections[collectionName].config
         const titles = config.layout.titles.entityTitles[collectionName]
-        const item = InjectionProps.renderDynamicPropTree(collConf, binding, undefined, titles as any) as Utils.ItemDisplayInjection<GP, CollectionName>
+        const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, binding, undefined, titles as any) as Utils.ItemDisplayInjection<GP, CollectionName>
         return { item }
     }
 

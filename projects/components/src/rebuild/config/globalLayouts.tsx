@@ -1,5 +1,7 @@
 import { FieldConfig } from "@xnh-db/protocol";
 import { XBinding } from "../components/binding";
+import {useCallback} from "react"
+import { DbContexts } from "../components/context";
 
 export module InternalGlobalLayouts {
     export type EndpointEditorProps<N extends FieldConfig.Fields.EndpointNames> = {
@@ -38,18 +40,43 @@ export module InternalGlobalLayouts {
         export type TextInput = {binding: XBinding.Binding<string>}
 
         export type IconTypes = "add" | "delete" | "close"
-        export type IconButton = {}
 
-        export type FC<P> = React.FC<P & {style?: React.CSSProperties}>
+        export type RelationList = {children: React.ReactNode[]}
+        export type RelationTag = {children: React.ReactNode[], closable: boolean}
+
+        export type Image = {src: string | undefined}
+        export type Avatar = {src: string | undefined}
+        export type ImageListEditor = {images: string[], onDelete(src: string): void, onAdd(): void}
+        export type ImageSelector = {onChange: (files: FileList) => void}
+        export type ImageCropper = {src: string, crop: XBinding.Binding<{x: number, y: number, width: number, height: number}>}
+        export type ClosableTile = {children: React.ReactNode, onClose: () => void}
+
+        export type SelectableList = {searchElement: React.ReactNode, selectedItemElement: React.ReactNode, itemList: {id: string, element: React.ReactNode}[]}
+        export type SelectableListItem = {selected: boolean, onChange: () => void, children: React.ReactNode}
+
+        export type FC<P> = React.FC<WrappedProps<P>>
+        export type WrappedProps<P> = P & {style?: React.CSSProperties}
+        export type Props = {
+            Dialog: Dialog
+            DisplayDialog: DisplayDialog
+            SimpleCard: SimpleCard
+            AutoComplete: AutoComplete
+            TreeSelect: TreeSelect
+            TextInput: TextInput
+            RelationList: RelationList
+            RelationTag: RelationTag
+            Image: Image
+            Avatar: Avatar
+            ImageListEditor: ImageListEditor
+            ImageCropper: ImageCropper
+            ClosableTile: ClosableTile
+            SelectableList: SelectableList
+            SelectableListItem: SelectableListItem
+        }
     }
 
     export type GlobalComponents = {
-        Dialog: ComponentProps.FC<ComponentProps.Dialog>
-        DisplayDialog: ComponentProps.FC<ComponentProps.DisplayDialog>
-        SimpleCard: ComponentProps.FC<ComponentProps.SimpleCard>
-        AutoComplete: ComponentProps.FC<ComponentProps.AutoComplete>
-        TreeSelect: ComponentProps.FC<ComponentProps.TreeSelect>
-        TextInput: ComponentProps.FC<ComponentProps.TextInput>
+        [N in keyof ComponentProps.Props]: ComponentProps.FC<ComponentProps.Props[N]>
     }
 
     export interface GlobalLayoutProps {
@@ -59,5 +86,4 @@ export module InternalGlobalLayouts {
         }
         components: GlobalComponents
     }
-
 }

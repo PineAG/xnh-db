@@ -3,6 +3,7 @@ import "fake-indexeddb/auto"
 import { FieldConfig } from "@xnh-db/protocol"
 import crypto from "crypto"
 import {DbUiConfiguration, DBSearch, DBStorage} from "../rebuild"
+import {AntdComponents} from '../rebuild/adaptor'
 
 import F = FieldConfig.Fields
 
@@ -129,7 +130,7 @@ describe("UI Config Test", () => {
                     }
                 }
             },
-            global: {}
+            global: AntdComponents
         })
 
         const clients = DBStorage.createMemoryStorage(config, "test")

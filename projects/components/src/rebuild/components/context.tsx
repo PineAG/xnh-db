@@ -1,6 +1,6 @@
 import { BackendBase, DBStorage, IndexedDBBackend, OctokitBackend } from "../data"
 import { createNullableContext, useNullableContext } from "@pltk/components";
-import { DbUiConfiguration } from "../config";
+import { DbUiConfiguration, InternalGlobalLayouts } from "../config";
 
 export module DbContexts {
     type DPBase = DbUiConfiguration.DataPropsBase
@@ -54,5 +54,10 @@ export module DbContexts {
     export function useDestroyLocalStorage() {
         const dbConf = useNullableContext(DBConfContext)
         return () => IndexedDBBackend.destroyDB(dbConf.dbName)
+    }
+
+    export function useComponents(): InternalGlobalLayouts.GlobalComponents {
+        const props = useProps()
+        return props.layout.global.components
     }
 }
