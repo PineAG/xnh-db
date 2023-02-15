@@ -1,6 +1,38 @@
 import { BackendBase, DBStorage, IndexedDBBackend, OctokitBackend } from "../data"
-import { createNullableContext, useNullableContext } from "@pltk/components";
+import {useContext, createContext} from "react"
 import { DbUiConfiguration, InternalGlobalLayouts } from "../config";
+
+type NullableContextValue<T> = {state: "pending", message: string} | {state: "available", value: T}
+export type NullableContext<T> = {
+    context: React.Context<NullableContextValue<T>>
+    Provider: React.FC<{value: T, children: React.ReactNode}>
+    Consumer: React.FC<{children: (value: T) => React.ReactNode}>
+}
+
+export function createNullableContext<T = never>(message: string): NullableContext<T> {
+    const context = createContext<NullableContextValue<T>>({state: "pending", message})
+    const Provider = (props: {value: T, children: React.ReactNode}) => (<context.Provider value={{state: "available", value: props.value}}>
+        {props.children}
+    </context.Provider>)
+    const Consumer = (props: {children: (value: T) => React.ReactNode}) => (<context.Consumer>{
+            (value) => {
+                if(value.state === "pending") {
+                    throw new Error(value.message)
+                }
+                return props.children(value.value)
+            }
+        }</context.Consumer>)
+    return {context, Provider, Consumer}
+
+}
+export function useNullableContext<T>(context: NullableContext<T>): T {
+    const state = useContext(context.context)
+    if(state.state === "pending") {
+        throw new Error(state.message)
+    }
+    return state.value
+}
+
 
 export module DbContexts {
     type DPBase = DbUiConfiguration.DataPropsBase

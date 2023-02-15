@@ -1,8 +1,6 @@
-import { createNullableContext, Loading, useNullableContext } from "@pltk/components"
-import { message, Modal } from "antd"
 import React, { useEffect, useState } from "react"
 import { DbUiConfiguration } from "../../config"
-import { DbContexts } from "../context"
+import { createNullableContext, DbContexts, useNullableContext } from "../context"
 import { GlobalSyncComponents } from "./globalSync"
 import {UiSyncUtils} from "./sync"
 
@@ -68,6 +66,7 @@ export module CollectionSyncComponents {
 
     export function Provider<GP extends GPBase>(props: ProviderProps<GP>) {
         const syncResult = useCollectionSync<GP>(props.collection)
+        const {Loading} = DbContexts.useComponents()
         if(syncResult.pending === false) {
             return <ResultContext.Provider value={syncResult}>
                 {props.children}
@@ -96,6 +95,7 @@ export module CollectionSyncComponents {
 
     export function Wrapper<GP extends GPBase>(props: WrapperProps<GP>) {
         const syncResult = useCollectionSync<GP>(props.collection)
+        const {Loading} = DbContexts.useComponents()
 
         if(syncResult.pending === false) {
             return props.children(syncResult.updateCollection)
@@ -108,8 +108,9 @@ export module CollectionSyncComponents {
     }
 
     function MessageDialog(props: {messages: string[]}) {
-        return <Modal title="同步集合" open={true} cancelButtonProps={{ style: { display: 'none' } }} okButtonProps={{ style: { display: 'none' } }}>
+        const {DisplayDialog} = DbContexts.useComponents()
+        return <DisplayDialog title="同步集合" open={true} width="small">
             {props.messages?.map((it, i) => (<p key={i}>{it}</p>))}
-        </Modal>
+        </DisplayDialog>
     }
 }

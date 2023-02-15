@@ -23,29 +23,35 @@ export module InternalGlobalLayouts {
     }
 
     export module ComponentProps {
-        export type DialogSize = "narrow" | "wide"
+        export type DialogSize = "small" | "large" | "middle"
 
         export type Dialog = {onOkay?: () => void, onCancel?: () => void, open: boolean, title: string, children: React.ReactNode, width: DialogSize}
         export type DisplayDialog = {open: boolean, title: string, children: React.ReactNode, width: DialogSize}
         export type SimpleCard = {children: React.ReactNode}
 
-        export type AutoComplete = {binding: XBinding.Binding<string>, options: string[], onSearch: () => void}
-
+        export type AutoComplete = {value: string, onChange: (value: string) => void, options: string[], onSearch: () => void}
+        export interface SelectItem {
+            label: string
+            value: string
+        }
         export interface TreeNode {
             label: string
             value: string
             children?: TreeNode[]
         }
-        export type TreeSelect = {binding: XBinding.Binding<string | undefined>, options: TreeNode[]}
-        export type TextInput = {binding: XBinding.Binding<string>}
+        export type TreeSelect = {value: string, onChange: (value: string) => void, options: TreeNode[]}
+        export type Select = {value: string, onChange: (value: string) => void, options: SelectItem[], disabled?: boolean}
+        export type TextInput = {value: string, onChange: (value: string) => void, disabled?: boolean}
 
         export type IconTypes = "add" | "delete" | "close"
 
         export type RelationList = {children: React.ReactNode[]}
-        export type RelationTag = {children: React.ReactNode[], closable: boolean}
+        export type RelationTag = {children: React.ReactNode[], onClose?: () => void}
+        export type SearchQueryTag = {children: React.ReactNode, onClose: () => void}
 
         export type Image = {src: string | undefined}
         export type Avatar = {src: string | undefined}
+        export type Button = {type: "default" | "primary", onClick: () => void, icon?: IconTypes, children?: React.ReactNode, disabled?: boolean}
         export type ImageListEditor = {images: string[], onDelete(src: string): void, onAdd(): void}
         export type ImageSelector = {onChange: (files: FileList) => void}
         export type ImageCropper = {src: string, crop: XBinding.Binding<{x: number, y: number, width: number, height: number}>}
@@ -54,19 +60,37 @@ export module InternalGlobalLayouts {
         export type SelectableList = {searchElement: React.ReactNode, selectedItemElement: React.ReactNode, itemList: {id: string, element: React.ReactNode}[]}
         export type SelectableListItem = {selected: boolean, onChange: () => void, children: React.ReactNode}
 
+        export type Empty = {simple?: boolean}
+        export type Card = {children: React.ReactNode, onClick?: () => void}
+        export type Loading = {}
+        export type Divider = {}
+
+        export type QuickConfirm = {title: string, description?: string, onConfirm: () => void, children: React.ReactNode}
+
+        export type Steps = {current: number, steps: {title: string}[]}
+
         export type FC<P> = React.FC<WrappedProps<P>>
-        export type WrappedProps<P> = P & {style?: React.CSSProperties}
+        export type WrappedProps<P> = P & Pick<React.HTMLProps<HTMLElement>, "style">
         export type Props = {
             Dialog: Dialog
+            Empty: Empty
+            Loading: Loading
+            Divider: Divider
             DisplayDialog: DisplayDialog
+            Card: Card
             SimpleCard: SimpleCard
             AutoComplete: AutoComplete
+            QuickConfirm: QuickConfirm
             TreeSelect: TreeSelect
             TextInput: TextInput
             RelationList: RelationList
             RelationTag: RelationTag
+            SearchQueryTag: SearchQueryTag
             Image: Image
+            Steps: Steps
             Avatar: Avatar
+            Button: Button
+            Select: Select
             ImageListEditor: ImageListEditor
             ImageCropper: ImageCropper
             ClosableTile: ClosableTile

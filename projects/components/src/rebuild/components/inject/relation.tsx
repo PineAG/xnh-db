@@ -1,11 +1,10 @@
-import { Button, Icons, Loading } from "@pltk/components"
 import { FieldConfig, IOnlineClient } from "@xnh-db/protocol"
-import { Modal, Tag, TagProps } from "antd"
 import { useEffect, useState } from "react"
 import { DbUiConfiguration } from "../../config"
 import { BackendBase } from "../../data"
 import { InheritanceUtils } from "../../data/inherit"
 import { XBinding } from "../binding"
+import { DbContexts } from "../context"
 import { SearchResultComponents } from "../search"
 import { InjectionProps } from "./props"
 import GPBase = DbUiConfiguration.GlobalPropsBase
@@ -309,6 +308,7 @@ export module RelationInjectionComponents {
         const {config, inheritable} = props.config.props.collections[props.targetCollectionName]
         const titles = props.config.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
         const Layout = props.config.layout.layouts.entities[props.targetCollectionName].relationPreview.simple
+        const {Tag} = DbContexts.useComponents()
 
         const collectionClient = props.clients.collections[props.targetCollectionName]
         const inheritClient = props.clients.inheritance[props.targetCollectionName]

@@ -1,5 +1,3 @@
-import { Divider, Flex, HStack, Loading } from "@pltk/components";
-import { Card, Checkbox, Empty, Button } from "antd";
 import { DbUiConfiguration } from "../../config";
 import { XBinding } from "../binding";
 import { DbContexts } from "../context";
@@ -8,6 +6,7 @@ import { DBSearchWrapper } from "./wrapper";
 import {useState, useEffect} from "react"
 import { LayoutInjector } from "../inject";
 import { SearchInputComponents } from "./input";
+import { Flex, HStack } from "../utils";
 
 export module SearchResultComponents {
     type GPBase = DbUiConfiguration.GlobalPropsBase
@@ -21,6 +20,8 @@ export module SearchResultComponents {
     export function CollectionItemSelector(props: CollectionItemSelectorProps) {
         const [query, setQuery] = useState("")
 
+        const {Button, Loading, Divider} = DbContexts.useComponents()
+
         return <DBSearchWrapper.SearchProvider
                 searchQuery={query}
                 onChange={setQuery}
@@ -31,7 +32,7 @@ export module SearchResultComponents {
                 {!props.binding.value ? <></> : (
                     <HStack layout={["auto", "1fr"]}>
                         <ResultItem itemId={props.binding.value}/>
-                        <Button type="primary" danger onClick={() => props.binding.update(null)}>取消选择</Button>
+                        <Button type="primary" onClick={() => props.binding.update(null)}>取消选择</Button>
                     </HStack>
                 )}
                 <Divider/>
@@ -62,6 +63,7 @@ export module SearchResultComponents {
     }
     
     export function ResultList({onItemOpen}: ResultListProps) {
+        const {Empty, Loading} = DbContexts.useComponents()
         const {results, collectionName} = DBSearchWrapper.useSearchResults()
 
         if(results.pending === true) {
@@ -89,6 +91,7 @@ export module SearchResultComponents {
         const {collectionName} = DBSearchWrapper.useSearchResults()
         const [injectionProps, setInjection] = useState<SimpleInjection | null>(null)
         const config = DbContexts.useProps()
+        const {Card, Loading} = DbContexts.useComponents()
         const clients = GlobalSyncComponents.useClients()
         const ResultLayout = config.layout.layouts[collectionName].searchResult
 

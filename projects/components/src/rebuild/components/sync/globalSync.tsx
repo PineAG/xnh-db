@@ -1,10 +1,8 @@
-import { createNullableContext, useNullableContext } from "@pltk/components"
 import { XnhDBProtocol as P } from "@xnh-db/protocol"
-import { Modal } from "antd"
 import { useEffect, useState } from "react"
 import { DbUiConfiguration } from "../../config"
 import { BackendBase, DBStorage, IndexedDBBackend, OctokitBackend } from "../../data"
-import { DbContexts } from "../context"
+import { createNullableContext, DbContexts, useNullableContext } from "../context"
 import { AuthorizationComponents } from "./auth"
 import { UiSyncUtils } from "./sync"
 
@@ -323,14 +321,16 @@ export module GlobalSyncComponents {
     }
 
     function MessageDialog(props: {title: string, children: React.ReactNode}) {
-        return <Modal title={props.title} open={true} cancelButtonProps={{ style: { display: 'none' } }} okButtonProps={{ style: { display: 'none' } }}>
+        const {Dialog} = DbContexts.useComponents()
+        return <Dialog title={props.title} open={true}  width="small">
             {props.children}
-        </Modal>
+        </Dialog>
     }
 
     function ProgressActionDialog(props: {title: string, children: React.ReactNode, proceed: () => Promise<void>}) {
-        return <Modal title={props.title} open={true} onOk={props.proceed} cancelButtonProps={{ style: { display: 'none' } }} okText="继续" okButtonProps={{danger: true}}>
+        const {Dialog} = DbContexts.useComponents()
+        return <Dialog title={props.title} open={true} onOkay={props.proceed} width="small">
             {props.children}
-        </Modal>
+        </Dialog>
     }
 }

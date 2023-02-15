@@ -1,8 +1,6 @@
-
-import { Button } from "@pltk/components";
-import { Input, Modal, Select, Steps } from "antd";
 import { useEffect, useState } from "react";
 import { OctokitBackend } from "../../data";
+import { DbContexts } from "../context";
 
 import OctokitCertificationStore = OctokitBackend.OctokitCertificationStore
 import OctokitResults = OctokitBackend.OctokitResults
@@ -43,6 +41,7 @@ export module AuthorizationComponents {
         const [token, setToken] = useState("")
         const [repo, setRepo] = useState<null | OctokitResults.Repo>(null)
         const [branch, setBranch] = useState<null | string>(null)
+        const {Dialog, TextInput, Select, Steps} = DbContexts.useComponents()
 
         let content: React.ReactNode
         switch(step.step) {
@@ -83,7 +82,7 @@ export module AuthorizationComponents {
                     </ul>
                     </p>
                     <p>
-                        <Input value={token} onChange={evt => setToken(evt.target.value)}/>
+                        <TextInput value={token} onChange={setToken}/>
                     </p>
                 </div>)
                 break
@@ -133,10 +132,10 @@ export module AuthorizationComponents {
                 break
         }
 
-        return <Modal open={true} onCancel={() => props.onClose(null)} okText="继续" onOk={onNextStep} cancelButtonProps={{danger: props.dangerousCancel}}>
+        return <Dialog title="登录" width="middle" open={true} onCancel={() => props.onClose(null)} onOkay={onNextStep}>
             <Steps
                 current={StepIndex[step.step]}
-                items={[
+                steps={[
                     {title: "须知"},
                     {title: "获取GitHub密钥"},
                     {title: "选择项目"},
@@ -145,7 +144,7 @@ export module AuthorizationComponents {
                 ]}
             />
             {content}
-        </Modal>
+        </Dialog>
 
         async function onNextStep() {
             switch(step.step) {
@@ -196,14 +195,15 @@ export module AuthorizationComponents {
 
     export function DBLoginButton() {
         const [state, setState] = useState<"online" | "offline" | "login">("offline")
+        const {Button} = DbContexts.useComponents()
         useEffect(() => {
             setState(getCurrentMode())
         }, [])
 
         if(state === "offline") {
-            return <Button onClick={() => {setState("login")}}>登录</Button>
+            return <Button type="primary" onClick={() => {setState("login")}}>登录</Button>
         } else if (state === "online") {
-            return <Button onClick={() => {
+            return <Button type="primary" onClick={() => {
                 OctokitCertificationStore.cert.clear()
                 setState("offline")
             }}>退出</Button>

@@ -1,4 +1,3 @@
-import { DBinding } from "@pltk/components"
 import { useState } from "react"
 import { DeepPartial } from "utility-types"
 
@@ -69,15 +68,6 @@ export module XBinding {
     export function partialPropertyOf<T>(binding: Binding<DeepPartial<T>>): {join<K extends keyof T>(key: K): PartialPropertyBinding<T, K>} {
         return {
             join: (key) => new PartialPropertyBinding(binding, key)
-        }
-    }
-
-    export function toDBinding<T>(binding: Binding<T>): DBinding<T> {
-        return {
-            value: binding.value,
-            async update(value) {
-                binding.update(value)
-            }
         }
     }
 

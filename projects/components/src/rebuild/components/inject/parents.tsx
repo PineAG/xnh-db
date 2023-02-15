@@ -1,5 +1,3 @@
-import { Loading } from "@pltk/components"
-import { Empty, Modal } from "antd"
 import { useEffect, useState } from "react"
 import { InheritanceUtils } from "../../data/inherit"
 import { InjectionProps } from "./props"
@@ -11,6 +9,7 @@ import { BackendBase } from "../../data"
 import { FieldConfig } from "@xnh-db/protocol"
 import { XBinding } from "../binding"
 import { SearchResultComponents } from "../search"
+import { DbContexts } from "../context";
 
 export module InjectionParentComponents {
     interface StaticParentElementProps<
@@ -32,8 +31,11 @@ export module InjectionParentComponents {
         const inheritable = props.config.props.collections[props.collectionName].inheritable
         const colClient = props.clients.collections[props.collectionName]
         const inheritClient = props.clients.inheritance[props.collectionName]
-        const RichLayout = props.config.layout.layouts.entities[props.collectionName].inheritance
+        const RichLayout = props.config.layout.layouts.entities[props.collectionName].previewItem
         const titles = props.config.layout.titles.entityTitles[props.collectionName]
+
+        const {Empty, Loading} = DbContexts.useComponents()
+        const comp = DbContexts.useProps().layout.global.endpoint.viewers
 
         useEffect(() => {
             if(inheritable && inheritClient) {
@@ -45,12 +47,12 @@ export module InjectionParentComponents {
             return <></>
         }
         if(parentId === null) {
-            return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>
+            return <Empty simple/>
         }
         if(parentItem === null) {
             return <Loading/>
         }
-        const injectProps = InjectionProps.renderStaticPropTree(colConf, parentItem, titles as any)
+        const injectProps = InjectionProps.renderStaticPropTree(comp, colConf, parentItem, titles as any)
         return <RichLayout item={injectProps}/>
 
         async function initialize() {
@@ -77,6 +79,7 @@ export module InjectionParentComponents {
     >(props: ParentEditorElementProps<GP, CollectionName>) {
         const [showEditDialog, setShowEditDialog] = useState(false)
         const selectedParentBinding = XBinding.useBinding(props.binding.value)
+        const {Empty, Dialog} = DbContexts.useComponents()
 
         const internalComponent = props.binding.value ? 
             <StaticParentElement 
@@ -84,17 +87,19 @@ export module InjectionParentComponents {
                 clients={props.clients}
                 collectionName={props.collectionName}
                 itemId={props.binding.value}
-            /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>
+            /> : <Empty simple/>
 
         return <>
             {internalComponent}
-            <Modal open={showEditDialog}
+            <Dialog 
+                open={showEditDialog}
                 title="选择上级页面"
+                width="middle"
                 onCancel={() => {
                     selectedParentBinding.update(props.binding.value)
                     setShowEditDialog(false)
                 }} 
-                onOk={() => {
+                onOkay={() => {
                     props.binding.update(selectedParentBinding.value)
                     setShowEditDialog(false)
                 }}
@@ -103,7 +108,7 @@ export module InjectionParentComponents {
                     collectionName={props.collectionName}
                     binding={selectedParentBinding}
                 />
-            </Modal>
+            </Dialog>
         </>
     }
 }

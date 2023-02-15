@@ -13,7 +13,6 @@
     "@ant-design/icons": "^5.0.1",
     "@octokit/auth-token": "^3.0.3",
     "@octokit/rest": "^19.0.7",
-    "@pltk/components": "*",
     "@types/lodash": "^4.14.191",
     "@xnh-db/protocol": "*",
     "antd": "^5.1.6",

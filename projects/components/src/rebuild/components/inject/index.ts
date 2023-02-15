@@ -1,3 +1,3 @@
 export * from "./inject"
-export * from "./edit"
-export * from "./view"
+export * from "./parents"
+export * from "./relation"

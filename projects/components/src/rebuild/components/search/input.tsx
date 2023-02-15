@@ -3,13 +3,12 @@ import { DbContexts } from "../context"
 import { GlobalSyncComponents } from "../sync"
 
 import {useState, useEffect, useMemo} from "react"
-import { Flex, FormItem, HStack } from "@pltk/components"
-import { AutoComplete, Button, Card, Select, Tag, TreeSelect } from "antd"
 import * as AntdIcons from "@ant-design/icons"
 import { DBSearchWrapper } from "./wrapper"
 import { ConfigFlatten, FieldConfig } from "@xnh-db/protocol"
-import { DbUiConfiguration } from "../../config"
+import { DbUiConfiguration, InternalGlobalLayouts } from "../../config"
 import { DefaultOptionType } from "antd/es/select"
+import { Flex, FormItem, HStack } from "../utils"
 
 export module SearchInputComponents {
 
@@ -25,6 +24,7 @@ export module SearchInputComponents {
 
     export function DBSearchInput() {
         const search = DBSearchWrapper.useSearchResults()
+        const {Card} = DbContexts.useComponents()
 
         if(!isSimpleQuery(search.query)) {
             return <Card>
@@ -73,6 +73,7 @@ export module SearchInputComponents {
         onRemove: () => void
     }
     function QueryTag({query, onRemove}: QueryTagProps) {
+        const {SearchQueryTag} = DbContexts.useComponents()
         const search = DBSearchWrapper.useSearchResults()
         const flatTitles = useFlatTitles(search.collectionName)
         
@@ -84,14 +85,9 @@ export module SearchInputComponents {
             content = `${title}: ${query.property.value}`
         }
         
-        return <Tag
-            style={{fontSize: "1rem"}}
-            closable
-            onClose={(evt) => {
-                evt.preventDefault()
-                onRemove()
-            }}
-        >{content}</Tag>
+        return <SearchQueryTag
+            onClose={onRemove}
+        >{content}</SearchQueryTag>
     }
 
     interface InputProps<Q extends DBSearch.IQuery> {
@@ -103,6 +99,8 @@ export module SearchInputComponents {
         const flatConfig = useFlatConfig(collectionName)
         const flatPath = useFlatKeyPath(collectionName)
 
+        const {TreeSelect, Select, Button} = DbContexts.useComponents()
+
         const {clients} = GlobalSyncComponents.useClients()
 
         const [propertyPath, setPropertyPath] = useState("")
@@ -113,13 +111,12 @@ export module SearchInputComponents {
 
         return <HStack layout={["1fr", "1fr", "auto"]} spacing={8}>
             <TreeSelect
-                treeDefaultExpandAll
                 value={propertyPath}
                 onChange={value => {
                     setPropertyPath(value)
                     loadTags(value)
                 }}
-                treeData={propertyTree}/>
+                options={propertyTree}/>
             <Select
                 value={selectedTag}
                 onChange={setSelectedTag}
@@ -129,7 +126,7 @@ export module SearchInputComponents {
                     value: it
                 })) ?? []}
             />
-            <Button icon={<AntdIcons.PlusOutlined/>} disabled={!selectedTag} onClick={searchProperty} type="primary">搜索属性</Button>
+            <Button icon="add" disabled={!selectedTag} onClick={searchProperty} type="primary">搜索属性</Button>
         </HStack>
 
         async function loadTags(propertyName: string) {
@@ -151,12 +148,12 @@ export module SearchInputComponents {
         }
     }
 
-    function usePropertyTree(collectionName: string): DefaultOptionType[] {
+    function usePropertyTree(collectionName: string): InternalGlobalLayouts.ComponentProps.TreeNode[] {
         const flatTitles = useFlatTitles(collectionName)
         const config = DbContexts.useProps().props.collections[collectionName].config
         return useMemo(() => {
             const root = walk([], config)
-            const children = root.children as DefaultOptionType[]
+            const children = root.children as InternalGlobalLayouts.ComponentProps.TreeNode[]
             return children ?? []
         }, [collectionName])
 
@@ -182,6 +179,7 @@ export module SearchInputComponents {
         const [inputText, setInputText] = useState("")
         const [autoCompletes, setAutoCompletes] = useState<string[]>([])
 
+        const {AutoComplete, Button} = DbContexts.useComponents()
         const {collectionName} = DBSearchWrapper.useSearchResults()
         const {clients} = GlobalSyncComponents.useClients()
 
@@ -194,10 +192,10 @@ export module SearchInputComponents {
                 value={inputText}
                 onChange={setInputText}
                 onSearch={onSearch}
-                options={autoCompletes.map(it => ({value: it}))}
+                options={autoCompletes}
             />
             {/* <AntInput value={searchText} onChange={evt => {setSearchText(evt.target.value)}}/> */}
-            <Button icon={<AntdIcons.PlusOutlined/>} onClick={onComplete} type="primary">搜索关键字</Button>
+            <Button icon="add" onClick={onComplete} type="primary">搜索关键字</Button>
         </HStack>
 
         async function onSearch() {
