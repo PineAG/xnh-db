@@ -14,21 +14,19 @@ import RelNames = DbUiConfiguration.InternalUtils.RelName
 import Utils = DbUiConfiguration.InternalUtils.Injection
 
 export module RelationInjectionComponents {
-    export async function createRelationsInjection<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-        >(
-            config: GP,
-            collectionName: CollectionName,
-            itemId: string
-        ): Promise<Utils.RelationsDisplayInjection<GP, CollectionName>> {
-        const result: Record<string, Utils.RelationInjectionEndpoint> = {}
-        const collToRel = config.props.collectionsToRelations[collectionName]
-        type ColRelName = Extract<keyof GP["props"]["collectionsToRelations"][CollectionName], string>
-        for(const relName of Object.keys(collToRel) as ColRelName[]) {
-            result[relName] = await getRelationEndpointElement(collectionName, relName, itemId)
+    export type RelationsDisplayInjection = Utils.RelationsDisplayInjection<GPBase, string>
+
+    export function useCreateRelationsInjection(collectionName: string) {
+        const globalProps = DbContexts.useProps()
+        const collToRel = globalProps.props.collectionsToRelations[collectionName]
+
+        return async (itemId: string): Promise<RelationsDisplayInjection> => {
+            const result: Record<string, Utils.RelationInjectionEndpoint> = {}
+            for(const relName of Object.keys(collToRel)) {
+                result[relName] = await getRelationEndpointElement(collectionName, relName, itemId)
+            }
+            return result as RelationsDisplayInjection
         }
-        return result as Utils.RelationsDisplayInjection<GP, CollectionName>
     }
 
     async function getRelationEndpointElement(
@@ -38,9 +36,7 @@ export module RelationInjectionComponents {
     ): Promise<Utils.RelationInjectionEndpoint> {
         return {
             $element: () => <RelationListWrapper
-                config={config}
                 collectionName={collectionName}
-                clients={clients}
                 itemId={itemId}
                 relationMappingName={relationMappingName}
             />,

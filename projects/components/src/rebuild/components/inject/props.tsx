@@ -8,7 +8,7 @@ export module InjectionProps {
     type ConfigNodeBase = FieldConfig.ConfigBase | FieldConfig.Fields.EndpointTypes
 
     type TreeEntityBase = FieldConfig.EntityBase | FieldConfig.Fields.EndpointValueTypes
-    type PropsTreeTitle<T extends TreeEntityBase> = T extends FieldConfig.EntityBase ? DbUiConfiguration.TitlesFor<T>: string
+    type PropsTreeTitle<T extends TreeEntityBase> = DbUiConfiguration.TitlesFor<FieldConfig.EntityBase> | string
     type PropsTreeNode<T extends TreeEntityBase> = T extends FieldConfig.EntityBase ? Utils.InjectedEntity<T> : Utils.ItemInjectionEndpoint
 
     type EndpointEditors = InternalGlobalLayouts.EndpointEditors

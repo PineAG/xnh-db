@@ -10,29 +10,26 @@ import { FieldConfig } from "@xnh-db/protocol"
 import { XBinding } from "../binding"
 import { SearchResultComponents } from "../search"
 import { DbContexts } from "../context";
+import { GlobalSyncComponents } from "../sync";
 
 export module InjectionParentComponents {
-    interface StaticParentElementProps<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-    > {
-        config: GP,
-        clients: BackendBase.OnlineClientSet<GP["props"]>,
-        collectionName: CollectionName,
+    interface StaticParentElementProps {
+        collectionName: string,
         itemId: string
     }
-    export function StaticParentElement<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-    >(props: StaticParentElementProps<GP, CollectionName>) {
+    export function StaticParentElement(props: StaticParentElementProps) {
         const [parentId, setParentId] = useState<string | null>(null)
         const [parentItem, setParentItem] = useState<FieldConfig.EntityBase | null>(null)
-        const colConf = props.config.props.collections[props.collectionName].config
-        const inheritable = props.config.props.collections[props.collectionName].inheritable
-        const colClient = props.clients.collections[props.collectionName]
-        const inheritClient = props.clients.inheritance[props.collectionName]
-        const RichLayout = props.config.layout.layouts.entities[props.collectionName].previewItem
-        const titles = props.config.layout.titles.entityTitles[props.collectionName]
+
+        const globalProps = DbContexts.useProps()
+        const clients = GlobalSyncComponents.useQueryClients()
+
+        const colConf = globalProps.props.collections[props.collectionName].config
+        const inheritable = globalProps.props.collections[props.collectionName].inheritable
+        const colClient = clients.collections[props.collectionName]
+        const inheritClient = clients.inheritance[props.collectionName]
+        const RichLayout = globalProps.layout.layouts.entities[props.collectionName].previewItem
+        const titles = globalProps.layout.titles.entityTitles[props.collectionName]
 
         const {Empty, Loading} = DbContexts.useComponents()
         const comp = DbContexts.useProps().layout.global.endpoint.viewers
@@ -82,9 +79,7 @@ export module InjectionParentComponents {
         const {Empty, Dialog} = DbContexts.useComponents()
 
         const internalComponent = props.binding.value ? 
-            <StaticParentElement 
-                config={props.config}
-                clients={props.clients}
+            <StaticParentElement
                 collectionName={props.collectionName}
                 itemId={props.binding.value}
             /> : <Empty simple/>

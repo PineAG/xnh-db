@@ -12,57 +12,52 @@ import { InjectionParentComponents } from "./parents";
 import CollNames = DbUiConfiguration.InternalUtils.CollNames
 import Utils = DbUiConfiguration.InternalUtils.Injection
 import GPBase = DbUiConfiguration.GlobalPropsBase
+import { GlobalSyncComponents } from "../sync";
+import { DbContexts } from "../context";
 
 
-export module LayoutInjector {    
-    export async function createItemInjection<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-    >(
-        config: GP, 
-        clients: BackendBase.OnlineClientSet<GP["props"]>, 
-        collectionName: CollectionName,
-        itemId: string
-    ): Promise<Utils.ItemDisplayInjection<GP, CollectionName>> {
-        const collectionConfig = config.props.collections[collectionName].config
+export module LayoutInjector {
+    export type ItemDisplayInjection = Utils.ItemDisplayInjection<GPBase, string>
+
+    export function useCreateItemInjection(collectionName: string) {
+        const config = DbContexts.useProps()
+        const collectionConfig = DbContexts.useCollectionConfig(collectionName)
+        const clients = GlobalSyncComponents.useQueryClients()
         const collectionClient = clients.collections[collectionName]
         const inheritClient = clients.inheritance[collectionName]
-        const titles = config.layout.titles.entityTitles[collectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const item = inheritClient ?
-            await InheritanceUtils.getEntityPatchingParents(itemId, collectionConfig, collectionClient, inheritClient) :
-            await collectionClient.getItemById(itemId)
-        const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config.layout.global.endpoint.viewers, collectionConfig, item, titles)
-        return injectProps as Utils.ItemDisplayInjection<GP, CollectionName>
-    }
-        
+        const titles = config.layout.titles.entityTitles[collectionName]
 
-    export async function createFullPageProps<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-        >(
-            config: GP, 
-            clients: BackendBase.OnlineClientSet<GP["props"]>, 
-            collectionName: CollectionName,
-            itemId: string
-            ): Promise<Utils.FullPageInjectionProps<GP, CollectionName>> {
-        return {
-            item: await createItemInjection(config, clients, collectionName, itemId),
-            $parentElement: () => <InjectionParentComponents.StaticParentElement config={config} clients={clients} collectionName={collectionName} itemId={itemId} />,
-            relations: await RelationInjectionComponents.createRelationsInjection(config, clients, collectionName, itemId)
+        return async (itemId: string): Promise<ItemDisplayInjection> => {
+            const item = inheritClient ?
+                await InheritanceUtils.getEntityPatchingParents(itemId, collectionConfig, collectionClient, inheritClient) :
+                await collectionClient.getItemById(itemId)
+            const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config.layout.global.endpoint.viewers, collectionConfig, item, titles)
+            return injectProps
+        }
+    }
+    
+    export type FullPageInjectionProps = Utils.FullPageInjectionProps<GPBase, string>
+
+    export async function useCreateFullPageProps(collectionName: string) {
+        const createItemInjection = useCreateItemInjection(collectionName)
+        const createRelationsInjection = RelationInjectionComponents.useCreateRelationsInjection(collectionName)
+        return async (itemId: string): Promise<FullPageInjectionProps> => {
+            return {
+                item: await createItemInjection(itemId),
+                $parentElement: () => <InjectionParentComponents.StaticParentElement collectionName={collectionName} itemId={itemId} />,
+                relations: await createRelationsInjection(itemId)
+            }
         }
     }
 
-    export async function createSimpleProps<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-        >(
-            config: GP, 
-            clients: BackendBase.OnlineClientSet<GP["props"]>, 
-            collectionName: CollectionName,
-            itemId: string
-        ): Promise<Utils.SimplePageInjectionProps<GP, CollectionName>> {
-        return {
-            item: await createItemInjection(config, clients, collectionName, itemId)
+    export type SimplePageInjectionProps = Utils.SimplePageInjectionProps<GPBase, string>
+
+    export async function createSimpleProps(collectionName: string) {
+        const createItemInjection = useCreateItemInjection(collectionName)
+        return async (itemId: string): Promise<SimplePageInjectionProps> => {
+            return {
+                item: await createItemInjection(itemId)
+            }
         }
     }
 
