@@ -6,6 +6,7 @@ import { InheritanceUtils } from "../../data/inherit"
 import { XBinding } from "../binding"
 import { DbContexts } from "../context"
 import { SearchResultComponents } from "../search"
+import { GlobalSyncComponents } from "../sync"
 import { InjectionProps } from "./props"
 import GPBase = DbUiConfiguration.GlobalPropsBase
 import CollNames = DbUiConfiguration.InternalUtils.CollNames
@@ -17,8 +18,7 @@ export module RelationInjectionComponents {
         GP extends GPBase, 
         CollectionName extends CollNames<GP>
         >(
-            config: GP, 
-            clients: BackendBase.OnlineClientSet<GP["props"]>, 
+            config: GP,
             collectionName: CollectionName,
             itemId: string
         ): Promise<Utils.RelationsDisplayInjection<GP, CollectionName>> {
@@ -26,44 +26,30 @@ export module RelationInjectionComponents {
         const collToRel = config.props.collectionsToRelations[collectionName]
         type ColRelName = Extract<keyof GP["props"]["collectionsToRelations"][CollectionName], string>
         for(const relName of Object.keys(collToRel) as ColRelName[]) {
-            result[relName] = await getRelationEndpointElement(config, clients, collectionName, relName, itemId)
+            result[relName] = await getRelationEndpointElement(collectionName, relName, itemId)
         }
         return result as Utils.RelationsDisplayInjection<GP, CollectionName>
     }
 
-    async function getRelationEndpointElement<
-        GP extends GPBase,
-        CName extends CollNames<GP>,
-        RelName extends Extract<keyof GP["props"]["collectionsToRelations"][CName], string>
-        >(
-        config: GP, 
-        clients: BackendBase.OnlineClientSet<GP["props"]>,
-        collectionName: CName,
-        relationMappingName: RelName,
+    async function getRelationEndpointElement(
+        collectionName: string,
+        relationMappingName: string,
         itemId: string
     ): Promise<Utils.RelationInjectionEndpoint> {
-        const relations = await InheritanceUtils.getInheritedRelations(config.props, clients, collectionName, relationMappingName, itemId)
-
         return {
             $element: () => <RelationListWrapper
                 config={config}
                 collectionName={collectionName}
                 clients={clients}
+                itemId={itemId}
                 relationMappingName={relationMappingName}
-                relations={relations}
             />,
         }
     }
 
-    type RelationListWrapperProps<
-        GP extends GPBase,
-        CName extends CollNames<GP>,
-        RelName extends Extract<keyof GP["props"]["collectionsToRelations"][CName], string>,
-        BodyProps
-        > = {
-            config: GP,
-            collectionName: CName,
-            relationMappingName: RelName,
+    type RelationListWrapperProps<BodyProps> = {
+            collectionName: string,
+            relationMappingName: string,
             relations: InheritanceUtils.RelationQueryResult[],
             clients: BackendBase.OnlineClientSet<GP["props"]>,
             Body: React.FC<RelationItemWrapperProps<GP, any, any, BodyProps>>
@@ -276,18 +262,14 @@ export module RelationInjectionComponents {
     }
 
     interface RelationItemWrapperProps<
-        GP extends GPBase,
-        TargetCName extends CollNames<GP>,
-        RelName extends RelNames<GP>,
         BodyProps
     > {
-        config: GP
-        targetCollectionName: TargetCName
-        relationName: RelName,
-        clients: BackendBase.OnlineClientSet<GP["props"]>
+        sourceCollectionName: string,
+        targetCollectionName: string,
+        relationName: string,
         itemId: string,
         bodyProps?: BodyProps,
-        payload: FieldConfig.EntityFromConfig<GP["props"]["relations"][RelName]["payloadConfig"]>
+        payload: any,
         onDelete?: () => void
     }
 
@@ -295,15 +277,17 @@ export module RelationInjectionComponents {
         GP extends GPBase,
         TargetCName extends CollNames<GP>,
         RelName extends RelNames<GP>
-    > (props: RelationItemWrapperProps<GP, TargetCName, RelName, InternalGlobalLayouts.ComponentProps.RelationTag>) {
+    > (props: RelationItemWrapperProps<InternalGlobalLayouts.ComponentProps.RelationTag>) {
         const [item, setItem] = useState<null | FieldConfig.EntityBase>(null)
-        const {config, inheritable} = props.config.props.collections[props.targetCollectionName]
-        const titles = props.config.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const Layout = props.config.layout.layouts.entities[props.targetCollectionName].previewItem
+        const globalProps = DbContexts.useProps()
+        const clients = GlobalSyncComponents.useQueryClients()
+        const {config, inheritable} = globalProps.props.collections[props.targetCollectionName]
+        const titles = globalProps.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
+        const Layout = globalProps.layout.layouts.entities[props.targetCollectionName].previewItem
         const {RelationTag} = DbContexts.useComponents()
 
-        const collectionClient = props.clients.collections[props.targetCollectionName]
-        const inheritClient = props.clients.inheritance[props.targetCollectionName]
+        const collectionClient = clients.collections[props.targetCollectionName]
+        const inheritClient = clients.inheritance[props.targetCollectionName]
 
         useEffect(() => {
             initialize()
@@ -319,7 +303,7 @@ export module RelationInjectionComponents {
         }
         
         async function initialize() {
-            const targetItem = collectionClient ?
+            const targetItem = inheritClient ?
                     await InheritanceUtils.getEntityPatchingParents(props.itemId, config, collectionClient, inheritClient):
                     await collectionClient.getItemById(props.itemId)
             setItem(targetItem)
@@ -328,18 +312,18 @@ export module RelationInjectionComponents {
 
     type DivProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>
 
-    function RelationRichItemWrapper<
-        GP extends GPBase,
-        TargetCName extends CollNames<GP>,
-        RelName extends RelNames<GP>
-    > (props: RelationItemWrapperProps<GP, TargetCName, RelName, DivProps>) {
+    function RelationRichItemWrapper(props: RelationItemWrapperProps<DivProps>) {
         const [item, setItem] = useState<null | FieldConfig.EntityBase>(null)
-        const {config, inheritable} = props.config.props.collections[props.targetCollectionName]
-        const titles = props.config.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const Layout = props.config.layout.layouts.entities[props.targetCollectionName].relationPreview.simple
+        const globalProps = DbContexts.useProps()
+        const clients = GlobalSyncComponents.useQueryClients()
+        
 
-        const collectionClient = props.clients.collections[props.targetCollectionName]
-        const inheritClient = props.clients.inheritance[props.targetCollectionName]
+        const {config, inheritable} = globalProps.props.collections[props.targetCollectionName]
+        const titles = globalProps.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
+        const Layout = globalProps.layout.layouts.entities[props.targetCollectionName].previewItem
+
+        const collectionClient = clients.collections[props.targetCollectionName]
+        const inheritClient = clients.inheritance[props.targetCollectionName]
 
         useEffect(() => {
             initialize()
@@ -356,7 +340,7 @@ export module RelationInjectionComponents {
         }
         
         async function initialize() {
-            const targetItem = collectionClient ?
+            const targetItem = inheritClient ?
                     await InheritanceUtils.getEntityPatchingParents(props.itemId, config, collectionClient, inheritClient):
                     await collectionClient.getItemById(props.itemId)
             setItem(targetItem)

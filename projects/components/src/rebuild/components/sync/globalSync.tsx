@@ -263,6 +263,11 @@ export module GlobalSyncComponents {
         return useNullableContext(GlobalClientsContext)
     }
 
+    export function useQueryClients(): BackendBase.OnlineClientSet<DPBase> {
+        const clients = useClients()
+        return clients.clients.query
+    }
+
     export function useDownloadFile() {
         const config = DbContexts.useProps()
         const clients = useClients()
