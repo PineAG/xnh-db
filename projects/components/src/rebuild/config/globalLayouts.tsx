@@ -46,12 +46,13 @@ export module InternalGlobalLayouts {
         export type IconTypes = "add" | "delete" | "close"
 
         export type RelationList = {children: React.ReactNode[]}
-        export type RelationTag = {children: React.ReactNode[], onClose?: () => void}
+        export type RelationTag = {children: React.ReactNode, onClose?: () => void}
         export type SearchQueryTag = {children: React.ReactNode, onClose: () => void}
 
         export type Image = {src: string | undefined}
         export type Avatar = {src: string | undefined}
         export type Button = {type: "default" | "primary", onClick: () => void, icon?: IconTypes, children?: React.ReactNode, disabled?: boolean}
+        export type AddRelationButton = {onClick: () => void}
         export type ImageListEditor = {images: string[], onDelete(src: string): void, onAdd(): void}
         export type ImageSelector = {onChange: (files: FileList) => void}
         export type ImageCropper = {src: string, crop: XBinding.Binding<{x: number, y: number, width: number, height: number}>}
@@ -76,6 +77,7 @@ export module InternalGlobalLayouts {
             Empty: Empty
             Loading: Loading
             Divider: Divider
+            AddRelationButton: AddRelationButton
             DisplayDialog: DisplayDialog
             Card: Card
             SimpleCard: SimpleCard

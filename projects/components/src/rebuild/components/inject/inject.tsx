@@ -61,30 +61,31 @@ export module LayoutInjector {
         }
     }
 
-    export function getFullPagePropsFromBinding<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>,
-        T extends FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>
-    >(
-        config: GP,
-        clients: BackendBase.OnlineClientSet<GP["props"]>,
-        collectionName: CollectionName,
-        itemId: string,
-        entityBinding: XBinding.Binding<DeepPartial<T>>,
-        parentBinding: XBinding.Binding<string | null>,
-        relationBindings: RelationInjectionComponents.RelationBindings<GP, CollectionName>): Utils.FullPageInjectionProps<GP, CollectionName> {
+    export function useGetFullPagePropsFromBinding(
+        collectionName: string) {
+        const config = DbContexts.useProps()
+        const clients = GlobalSyncComponents.useQueryClients()
         const collConf = config.props.collections[collectionName].config
         const titles = config.layout.titles.entityTitles[collectionName]
-        const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, entityBinding, undefined, titles as any) as Utils.ItemDisplayInjection<GP, CollectionName>
-        return {
-            item,
-            $parentElement: () => <InjectionParentComponents.ParentEditorElementProps
-                config={config}
-                clients={clients}
-                collectionName={collectionName}
-                binding={parentBinding}
-            />,
-            relations: RelationInjectionComponents.createRelationsEditableInjection(config, clients, collectionName, itemId, relationBindings)
+        const createRelationsEditableInjection = RelationInjectionComponents.useCreateRelationsEditableInjection(collectionName)
+
+        return (
+            itemId: string,
+            entityBinding: XBinding.Binding<DeepPartial<FieldConfig.EntityBase>>,
+            parentBinding: XBinding.Binding<string | null>,
+            relationBindings: Record<string, XBinding.Binding<string[]>>
+        ): Utils.FullPageInjectionProps<DbUiConfiguration.GlobalPropsBase, string> => {
+            const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, entityBinding, undefined, titles as any)
+            return {
+                item,
+                $parentElement: () => <InjectionParentComponents.ParentEditorElementProps
+                    config={config}
+                    clients={clients}
+                    collectionName={collectionName}
+                    binding={parentBinding}
+                />,
+                relations: createRelationsEditableInjection(itemId, relationBindings)
+            }
         }
     }
 

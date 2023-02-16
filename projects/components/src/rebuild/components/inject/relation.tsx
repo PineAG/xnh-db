@@ -9,8 +9,6 @@ import { SearchResultComponents } from "../search"
 import { GlobalSyncComponents } from "../sync"
 import { InjectionProps } from "./props"
 import GPBase = DbUiConfiguration.GlobalPropsBase
-import CollNames = DbUiConfiguration.InternalUtils.CollNames
-import RelNames = DbUiConfiguration.InternalUtils.RelName
 import Utils = DbUiConfiguration.InternalUtils.Injection
 
 export module RelationInjectionComponents {
@@ -20,326 +18,133 @@ export module RelationInjectionComponents {
         const globalProps = DbContexts.useProps()
         const collToRel = globalProps.props.collectionsToRelations[collectionName]
 
-        return async (itemId: string): Promise<RelationsDisplayInjection> => {
+        return (itemId: string): RelationsDisplayInjection => {
             const result: Record<string, Utils.RelationInjectionEndpoint> = {}
             for(const relName of Object.keys(collToRel)) {
-                result[relName] = await getRelationEndpointElement(collectionName, relName, itemId)
+                result[relName] = {
+                    $element: () => <RelationViewList
+                        itemId={itemId}
+                        collectionName={collectionName}
+                        colToRelName={relName}
+                    />
+                }
             }
             return result as RelationsDisplayInjection
         }
     }
 
-    async function getRelationEndpointElement(
-        collectionName: string,
-        relationMappingName: string,
-        itemId: string
-    ): Promise<Utils.RelationInjectionEndpoint> {
-        return {
-            $element: () => <RelationListWrapper
-                collectionName={collectionName}
-                itemId={itemId}
-                relationMappingName={relationMappingName}
-            />,
-        }
-    }
-
-    type RelationListWrapperProps<BodyProps> = {
-            collectionName: string,
-            relationMappingName: string,
-            relations: InheritanceUtils.RelationQueryResult[],
-            clients: BackendBase.OnlineClientSet<GP["props"]>,
-            Body: React.FC<RelationItemWrapperProps<GP, any, any, BodyProps>>
-            bodyProps: BodyProps
-        }
-
-    function RelationListWrapper<
-        GP extends GPBase,
-        CName extends CollNames<GP>,
-        RelName extends Extract<keyof GP["props"]["collectionsToRelations"][CName], string>,
-        BodyProps
-        >(props: RelationListWrapperProps<GP, CName, RelName, BodyProps>) {
-
-        const {config, collectionName, relationMappingName} = props
-        const relToColConf = config.props.collectionsToRelations[collectionName][relationMappingName]
-        const targetRelationName = relToColConf.relation as RelNames<GP>
-        const targetKey = relToColConf.targetKey
-        const targetRelationConfig = config.props.relations[targetRelationName]
-        const targetCollectionName = targetRelationConfig.collections[targetKey]
-
-        const Wrapper = props.Body
-
-        return <>{props.relations.map((itemRef) => {
-            return <Wrapper
-                config={props.config}
-                clients={props.clients}
-                targetCollectionName={targetCollectionName}
-                itemId={itemRef.targetId}
-                payload={itemRef.payload as any}
-                relationName={targetRelationName}
-                bodyProps={props.bodyProps}
-            />
-        })}</>
-    }
-
-    export type RelationBindings<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-    > = {
-        [ColToRel in keyof GP["props"]["collectionsToRelations"][CollectionName]]: XBinding.Binding<string[]>
-    }
-
-    export function createRelationsEditableInjection<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>
-        >(
-            config: GP, 
-            clients: BackendBase.OnlineClientSet<GP["props"]>, 
-            collectionName: CollectionName,
-            itemId: string,
-            relationBindings: RelationBindings<GP, CollectionName>
-        ): Utils.RelationsDisplayInjection<GP, CollectionName> {
-        const result: Record<string, Utils.RelationInjectionEndpoint> = {}
-        const collToRel = config.props.collectionsToRelations[collectionName]
-        type ColRelName = Extract<keyof GP["props"]["collectionsToRelations"][CollectionName], string>
-        for(const relName of Object.keys(collToRel) as ColRelName[]) {
-            result[relName] = getRelationEndpointEditElement(config, clients, collectionName, relName, itemId, relationBindings[collectionName])
-        }
-        return result as Utils.RelationsDisplayInjection<GP, CollectionName>
-    }
-
-    function getRelationEndpointEditElement<
-        GP extends GPBase,
-        CName extends CollNames<GP>,
-        RelName extends Extract<keyof GP["props"]["collectionsToRelations"][CName], string>
-        >(
-        config: GP, 
-        clients: BackendBase.OnlineClientSet<GP["props"]>,
-        collectionName: CName,
-        relationMappingName: RelName,
-        itemId: string,
-        binding: XBinding.Binding<string[]>
-    ): Utils.RelationInjectionEndpoint {
-        return {
-            $richListElement: () => <RelationListEditor
-                config={config}
-                collectionName={collectionName}
-                clients={clients}
-                itemId={itemId}
-                relationMappingName={relationMappingName}
-                binding={binding}
-                Body={RelationRichItemWrapper}
-                bodyProps={{}}
-                />,
-            $simpleListElement: () => <RelationListEditor
-                config={config}
-                collectionName={collectionName}
-                itemId={itemId}
-                clients={clients}
-                relationMappingName={relationMappingName}
-                binding={binding}
-                Body={RelationSimpleItemWrapper}
-                bodyProps={{}}
-                />
-        }
-    }
-
-    type RelationListEditorProps<
-        GP extends GPBase,
-        CName extends CollNames<GP>,
-        RelName extends Extract<keyof GP["props"]["collectionsToRelations"][CName], string>,
-        BodyProps
-    > = {
-        itemId: string,
-        config: GP,
-        collectionName: CName,
-        relationMappingName: RelName,
-        binding: XBinding.Binding<string[]>,
-        clients: BackendBase.OnlineClientSet<GP["props"]>,
-        Body: React.FC<RelationItemWrapperProps<GP, any, any, BodyProps>>
-        bodyProps: BodyProps
-    }
-
-    function RelationListEditor<
-        GP extends GPBase,
-        CName extends CollNames<GP>,
-        RelName extends Extract<keyof GP["props"]["collectionsToRelations"][CName], string>,
-        BodyProps
-    >(props: RelationListEditorProps<GP, CName, RelName, BodyProps>) {
-        const {config, collectionName, relationMappingName, itemId, clients} = props
-        const {Dialog, Button} = DbContexts.useComponents()
-        const relToColConf = config.props.collectionsToRelations[collectionName][relationMappingName]
-        const targetRelationName = relToColConf.relation as RelNames<GP>
-        const targetKey = relToColConf.targetKey
-        const targetRelationConfig = config.props.relations[targetRelationName]
-        const targetCollectionName = targetRelationConfig.collections[targetKey]
-
-        const Wrapper = props.Body
-        const relationBinding = XBinding.fromArray(props.binding)
-        const relationClients = clients.relations[targetRelationName]
-
-        const [displaySelector, setDisplaySelector] = useState(false)
-        const selectedItemBinding = XBinding.useBinding<string | null>(null)
-        
-        return <>
-            {relationBinding.map((itemRef) => {
-                return <AsyncRelationItemWrapper
-                        client={relationClients}
-                        relationKey={{
-                            [relToColConf.selfKey]: props.itemId,
-                            [relToColConf.targetKey]: itemRef.value
-                        }}
-                    >{payload => {
-                    return <Wrapper
-                        config={props.config}
-                        clients={props.clients}
-                        targetCollectionName={targetCollectionName}
-                        itemId={itemRef.value}
-                        payload={payload as any}
-                        relationName={targetRelationName}
-                        bodyProps={props.bodyProps}
-                        onDelete={() => itemRef.remove()}
-                    />
-                }}</AsyncRelationItemWrapper>
-            })}
-            <Button
-                onClick={() => setDisplaySelector(true)}
-                icon="add"
-                type="default"
-            />
-            <Dialog
-                open={displaySelector}
-                title="选择项目"
-                width="large"
-                onOkay={() => {
-                    if(selectedItemBinding.value) {
-                        const targetId = selectedItemBinding.value
-                        props.binding.update([
-                            ...props.binding.value,
-                            targetId,
-                        ])
-                    }
-                    setDisplaySelector(false)
-                    selectedItemBinding.update(null)
-                }}
-                onCancel={() => {
-                    setDisplaySelector(false)
-                    selectedItemBinding.update(null)
-                }}
-            >
-                <SearchResultComponents.CollectionItemSelector 
-                    collectionName={props.collectionName}
-                    binding={selectedItemBinding}
-                />
-            </Dialog>
-        </>
-    }
-
-    interface AsyncRelationItemWrapperProps {
-        client: IOnlineClient.Relation<string, any>
-        relationKey: Record<string, string>
-        children: (payload: unknown) => React.ReactNode
-    }
-    function AsyncRelationItemWrapper(props: AsyncRelationItemWrapperProps) {
-        const [result, setResult] = useState<any | null>(null)
+    type RelationKey = Record<string, string>
+    type RelationViewListProps = {itemId: string, collectionName: string, colToRelName: string}
+    function RelationViewList(props: RelationViewListProps) {
+        const [relations, setRelations] = useState<RelationKey[] | null>(null)
         useEffect(() => {
             initialize()
-        }, [props.relationKey])
+        }, [props.itemId, props.colToRelName])
 
-        if(!result) {
+        const {client, selfKey} = useRelationUtils(props.collectionName, props.colToRelName)
+
+        const {RelationList, Loading} = DbContexts.useComponents()
+        if(relations === null) {
+            return <Loading/>
+        }else {
+            return <RelationList>
+                {relations.map(id => <RelationViewItem
+                    relationKey={id}
+                    collectionName={props.collectionName}
+                    colToRelName={props.colToRelName}
+                />)}
+            </RelationList>
+        }
+
+        async function initialize() {
+            const keys = await client.getRelationsByKey(selfKey, props.itemId)
+            setRelations(keys)
+        }
+    }
+
+    type RelationViewItemProps = {relationKey: RelationKey, collectionName: string, colToRelName: string}
+    function RelationViewItem(props: RelationViewItemProps) {
+        const [payload, setPayload] = useState<null | FieldConfig.EntityBase>(null)
+        const [collections, setCollections] = useState<null | Record<string, any>>(null)
+        const globalProps = DbContexts.useProps()
+        const collectionClients = GlobalSyncComponents.useQueryClients().collections
+        const {RelationTag, Loading} = DbContexts.useComponents()
+        const {client, selfKey, relationName, targetKey} = useRelationUtils(props.collectionName, props.colToRelName)
+        const InternalTag = globalProps.layout.layouts.payloads[relationName].relationPreview
+
+        const relationCollections = globalProps.props.relations[relationName].collections
+
+        const comp = globalProps.layout.global.endpoint.viewers
+        const payloadConfig = globalProps.props.relations[relationName].payloadConfig
+        const payloadTitles = globalProps.layout.titles.payloadTitles[relationName]
+
+        useEffect(() => {
+            initialize()
+        }, [props.relationKey, props.colToRelName, props.collectionName])
+
+        if(payload === null || collections === null) {
             return <Loading/>
         } else {
-            return <>{props.children(result)}</>
-        }
-
-        async function initialize() {
-            const payload = await props.client.getPayload(props.relationKey)
-            setResult(payload)
-        }
-    }
-
-    interface RelationItemWrapperProps<
-        BodyProps
-    > {
-        sourceCollectionName: string,
-        targetCollectionName: string,
-        relationName: string,
-        itemId: string,
-        bodyProps?: BodyProps,
-        payload: any,
-        onDelete?: () => void
-    }
-
-    function RelationSimpleItemWrapper<
-        GP extends GPBase,
-        TargetCName extends CollNames<GP>,
-        RelName extends RelNames<GP>
-    > (props: RelationItemWrapperProps<InternalGlobalLayouts.ComponentProps.RelationTag>) {
-        const [item, setItem] = useState<null | FieldConfig.EntityBase>(null)
-        const globalProps = DbContexts.useProps()
-        const clients = GlobalSyncComponents.useQueryClients()
-        const {config, inheritable} = globalProps.props.collections[props.targetCollectionName]
-        const titles = globalProps.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const Layout = globalProps.layout.layouts.entities[props.targetCollectionName].previewItem
-        const {RelationTag} = DbContexts.useComponents()
-
-        const collectionClient = clients.collections[props.targetCollectionName]
-        const inheritClient = clients.inheritance[props.targetCollectionName]
-
-        useEffect(() => {
-            initialize()
-        }, [props.targetCollectionName, props.itemId])
-
-        if(item === null) {
-            return <RelationTag {...props.bodyProps}>正在加载</RelationTag>
-        } else {
-            const itemProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config, item, titles)
-            return <RelationTag {...props.bodyProps}>
-                <Layout item={itemProps}/>
+            const payloadProps = InjectionProps.renderStaticPropTree(comp, payloadConfig, payload, payloadTitles)
+            return <RelationTag>
+                <InternalTag
+                    selfKey={selfKey as any}
+                    targetKey={targetKey as any}
+                    payload={payloadProps}
+                    collections={collections}
+                />
             </RelationTag>
         }
-        
-        async function initialize() {
-            const targetItem = inheritClient ?
-                    await InheritanceUtils.getEntityPatchingParents(props.itemId, config, collectionClient, inheritClient):
-                    await collectionClient.getItemById(props.itemId)
-            setItem(targetItem)
+
+        async function initialize(){
+            const payload = await client.getPayload(props.relationKey)
+            const collections: Record<string, FieldConfig.EntityBase> = {}
+            for(const name in relationCollections) {
+                const colName = relationCollections[name]
+                const colClient = collectionClients[colName]
+                const colId = props.relationKey[name]
+                collections[name] = await colClient.getItemById(colId)
+            }
+            setPayload(payload)
+            setCollections(collections)
         }
     }
 
-    type DivProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>
-
-    function RelationRichItemWrapper(props: RelationItemWrapperProps<DivProps>) {
-        const [item, setItem] = useState<null | FieldConfig.EntityBase>(null)
+    function useRelationUtils(collectionName: string, colToRelName: string) {
         const globalProps = DbContexts.useProps()
         const clients = GlobalSyncComponents.useQueryClients()
-        
-
-        const {config, inheritable} = globalProps.props.collections[props.targetCollectionName]
-        const titles = globalProps.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const Layout = globalProps.layout.layouts.entities[props.targetCollectionName].previewItem
-
-        const collectionClient = clients.collections[props.targetCollectionName]
-        const inheritClient = clients.inheritance[props.targetCollectionName]
-
-        useEffect(() => {
-            initialize()
-        }, [props.targetCollectionName, props.itemId])
-
-        // TODO: Styles
-        if(item === null) {
-            return <div {...props.bodyProps}>正在加载</div>
-        } else {
-            const itemProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config, item, titles)
-            return <div {...props.bodyProps}>
-                <Layout item={itemProps}/>
-            </div>
+        const {relation, selfKey, targetKey} = globalProps.props.collectionsToRelations[collectionName][colToRelName]
+        return {
+            client: clients.relations[relation],
+            relationName: relation,
+            selfKey, targetKey
         }
+    }
+    
+    type RelationBindings = Record<string, XBinding.Binding<string[]>>
+
+    export function useCreateRelationsEditableInjection(collectionName: string) {
+        const globalProps = DbContexts.useProps()
+        const collToRel = globalProps.props.collectionsToRelations[collectionName]
+
         
-        async function initialize() {
-            const targetItem = inheritClient ?
-                    await InheritanceUtils.getEntityPatchingParents(props.itemId, config, collectionClient, inheritClient):
-                    await collectionClient.getItemById(props.itemId)
-            setItem(targetItem)
+        return (itemId: string, relationBindings: RelationBindings): RelationsDisplayInjection => {
+            const result: Record<string, Utils.RelationInjectionEndpoint> = {}
+            for(const relName of Object.keys(collToRel)) {
+                result[relName] = {
+                    $element: () => <></>
+                }
+            }
+            return result as RelationsDisplayInjection
         }
+    }
+
+    type RelationEditorListProps = {itemId: string, binding: RelationBindings}
+    function RelationEditorList() {
+        TODO
+    }
+
+    function RelationEditorItem() {
+        
     }
 }
