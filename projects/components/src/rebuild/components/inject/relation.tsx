@@ -1,6 +1,6 @@
 import { FieldConfig, IOnlineClient } from "@xnh-db/protocol"
 import { useEffect, useState } from "react"
-import { DbUiConfiguration } from "../../config"
+import { DbUiConfiguration, InternalGlobalLayouts } from "../../config"
 import { BackendBase } from "../../data"
 import { InheritanceUtils } from "../../data/inherit"
 import { XBinding } from "../binding"
@@ -45,24 +45,13 @@ export module RelationInjectionComponents {
         const relations = await InheritanceUtils.getInheritedRelations(config.props, clients, collectionName, relationMappingName, itemId)
 
         return {
-            $richListElement: () => <RelationListWrapper
+            $element: () => <RelationListWrapper
                 config={config}
                 collectionName={collectionName}
                 clients={clients}
                 relationMappingName={relationMappingName}
                 relations={relations}
-                Body={RelationRichItemWrapper}
-                bodyProps={{}}
-                />,
-            $simpleListElement: () => <RelationListWrapper
-                config={config}
-                collectionName={collectionName}
-                clients={clients}
-                relationMappingName={relationMappingName}
-                relations={relations}
-                Body={RelationSimpleItemWrapper}
-                bodyProps={{}}
-                />
+            />,
         }
     }
 
@@ -195,6 +184,7 @@ export module RelationInjectionComponents {
         BodyProps
     >(props: RelationListEditorProps<GP, CName, RelName, BodyProps>) {
         const {config, collectionName, relationMappingName, itemId, clients} = props
+        const {Dialog, Button} = DbContexts.useComponents()
         const relToColConf = config.props.collectionsToRelations[collectionName][relationMappingName]
         const targetRelationName = relToColConf.relation as RelNames<GP>
         const targetKey = relToColConf.targetKey
@@ -231,12 +221,14 @@ export module RelationInjectionComponents {
             })}
             <Button
                 onClick={() => setDisplaySelector(true)}
-                icon={<Icons.Add/>}
+                icon="add"
+                type="default"
             />
-            <Modal
+            <Dialog
                 open={displaySelector}
                 title="选择项目"
-                onOk={() => {
+                width="large"
+                onOkay={() => {
                     if(selectedItemBinding.value) {
                         const targetId = selectedItemBinding.value
                         props.binding.update([
@@ -256,7 +248,7 @@ export module RelationInjectionComponents {
                     collectionName={props.collectionName}
                     binding={selectedItemBinding}
                 />
-            </Modal>
+            </Dialog>
         </>
     }
 
@@ -303,12 +295,12 @@ export module RelationInjectionComponents {
         GP extends GPBase,
         TargetCName extends CollNames<GP>,
         RelName extends RelNames<GP>
-    > (props: RelationItemWrapperProps<GP, TargetCName, RelName, TagProps>) {
+    > (props: RelationItemWrapperProps<GP, TargetCName, RelName, InternalGlobalLayouts.ComponentProps.RelationTag>) {
         const [item, setItem] = useState<null | FieldConfig.EntityBase>(null)
         const {config, inheritable} = props.config.props.collections[props.targetCollectionName]
         const titles = props.config.layout.titles.entityTitles[props.targetCollectionName] as DbUiConfiguration.TitlesFor<FieldConfig.EntityBase>
-        const Layout = props.config.layout.layouts.entities[props.targetCollectionName].relationPreview.simple
-        const {Tag} = DbContexts.useComponents()
+        const Layout = props.config.layout.layouts.entities[props.targetCollectionName].previewItem
+        const {RelationTag} = DbContexts.useComponents()
 
         const collectionClient = props.clients.collections[props.targetCollectionName]
         const inheritClient = props.clients.inheritance[props.targetCollectionName]
@@ -318,12 +310,12 @@ export module RelationInjectionComponents {
         }, [props.targetCollectionName, props.itemId])
 
         if(item === null) {
-            return <Tag {...props.bodyProps}>正在加载</Tag>
+            return <RelationTag {...props.bodyProps}>正在加载</RelationTag>
         } else {
             const itemProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config, item, titles)
-            return <Tag {...props.bodyProps}>
+            return <RelationTag {...props.bodyProps}>
                 <Layout item={itemProps}/>
-            </Tag>
+            </RelationTag>
         }
         
         async function initialize() {

@@ -68,6 +68,7 @@ export module DbUiConfiguration {
             Relation extends keyof Relations
         > = {
             selfKey: keyof Collections[Relations[Relation]["collections"]],
+            targetKey: keyof Collections[Relations[Relation]["collections"]],
             payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>,
             collections: {
                 [C in keyof Relations[Relation]["collections"]]:
@@ -81,6 +82,7 @@ export module DbUiConfiguration {
             Relation extends keyof Relations
         > = {
             selfKey: keyof Collections[Relations[Relation]["collections"]],
+            targetKey: keyof Collections[Relations[Relation]["collections"]],
             payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>,
             collections: {
                 [C in keyof Relations[Relation]["collections"]]: XBinding.Binding<string | null>
