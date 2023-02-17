@@ -52,7 +52,7 @@ export module LayoutInjector {
 
     export type SimplePageInjectionProps = Utils.SimplePageInjectionProps<GPBase, string>
 
-    export async function createSimpleProps(collectionName: string) {
+    export function useCreateSimpleProps(collectionName: string) {
         const createItemInjection = useCreateItemInjection(collectionName)
         return async (itemId: string): Promise<SimplePageInjectionProps> => {
             return {
@@ -73,7 +73,7 @@ export module LayoutInjector {
             itemId: string,
             entityBinding: XBinding.Binding<DeepPartial<FieldConfig.EntityBase>>,
             parentBinding: XBinding.Binding<string | null>,
-            relationBindings: Record<string, XBinding.Binding<string[]>>
+            relationBindings: Record<string, XBinding.Binding<Record<string, string>[]>>
         ): Utils.FullPageInjectionProps<DbUiConfiguration.GlobalPropsBase, string> => {
             const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, entityBinding, undefined, titles as any)
             return {

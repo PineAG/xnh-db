@@ -95,6 +95,8 @@ export module SearchResultComponents {
         const clients = GlobalSyncComponents.useClients()
         const ResultLayout = config.layout.layouts[collectionName].searchResult
 
+        const createSimpleProps = LayoutInjector.useCreateSimpleProps(collectionName)
+
         useEffect(() => {
             initialize()
         }, [collectionName, props.itemId])
@@ -110,7 +112,7 @@ export module SearchResultComponents {
         }
 
         async function initialize() {
-            const injection = await LayoutInjector.createSimpleProps(config, clients.clients.query, collectionName, props.itemId)
+            const injection = await createSimpleProps(props.itemId)
             setInjection(injection)
         }
         

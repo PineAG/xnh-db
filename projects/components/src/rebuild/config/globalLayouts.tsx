@@ -45,8 +45,8 @@ export module InternalGlobalLayouts {
 
         export type IconTypes = "add" | "delete" | "close"
 
-        export type RelationList = {children: React.ReactNode[]}
-        export type RelationTag = {children: React.ReactNode, onClose?: () => void}
+        export type RelationList = {children: React.ReactNode}
+        export type RelationTag = {children: React.ReactNode, onClose?: () => void, onClick: () => void}
         export type SearchQueryTag = {children: React.ReactNode, onClose: () => void}
 
         export type Image = {src: string | undefined}
@@ -68,6 +68,8 @@ export module InternalGlobalLayouts {
 
         export type QuickConfirm = {title: string, description?: string, onConfirm: () => void, children: React.ReactNode}
 
+        export type ItemPreviewWrapper = {children: React.ReactNode, onClick?: () => void}
+
         export type Steps = {current: number, steps: {title: string}[]}
 
         export type FC<P> = React.FC<WrappedProps<P>>
@@ -80,7 +82,6 @@ export module InternalGlobalLayouts {
             AddRelationButton: AddRelationButton
             DisplayDialog: DisplayDialog
             Card: Card
-            SimpleCard: SimpleCard
             AutoComplete: AutoComplete
             QuickConfirm: QuickConfirm
             TreeSelect: TreeSelect
@@ -88,16 +89,10 @@ export module InternalGlobalLayouts {
             RelationList: RelationList
             RelationTag: RelationTag
             SearchQueryTag: SearchQueryTag
-            Image: Image
+            ItemPreviewWrapper: ItemPreviewWrapper
             Steps: Steps
-            Avatar: Avatar
             Button: Button
             Select: Select
-            ImageListEditor: ImageListEditor
-            ImageCropper: ImageCropper
-            ClosableTile: ClosableTile
-            SelectableList: SelectableList
-            SelectableListItem: SelectableListItem
         }
     }
 

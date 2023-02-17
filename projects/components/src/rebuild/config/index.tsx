@@ -1,5 +1,6 @@
 import { FieldConfig } from "@xnh-db/protocol"
 import { XBinding } from "../components/binding"
+import { DBConfigActions } from "./actions"
 import { InternalGlobalLayouts } from "./globalLayouts"
 export * from "./globalLayouts"
 
@@ -81,12 +82,7 @@ export module DbUiConfiguration {
             Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
             Relation extends keyof Relations
         > = {
-            selfKey: keyof Collections[Relations[Relation]["collections"]],
-            targetKey: keyof Collections[Relations[Relation]["collections"]],
-            payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>,
-            collections: {
-                [C in keyof Relations[Relation]["collections"]]: XBinding.Binding<string | null>
-            }
+            payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>
         }
 
         export type PayloadLayout<
@@ -211,6 +207,7 @@ export module DbUiConfiguration {
             > = {
                 titles: TitleDisplayProps<Props["collections"], Props["relations"]>
                 layouts: Configuration.LayoutProps<Props["collections"], Props["relations"], Props["collectionsToRelations"]>
+                actions: DBConfigActions.Actions<Props>,
                 global: InternalGlobalLayouts.GlobalLayoutProps
             }
         

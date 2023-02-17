@@ -1,5 +1,5 @@
 import { UserOutlined } from "@ant-design/icons"
-import {useState, useEffect} from "react"
+import React, {useState, useEffect} from "react"
 import { useDBClients, useLocalSyncResult } from "../sync"
 import { useObjectURL, useObjectURLList } from "./image"
 import { Avatar, AvatarProps, Image as AntImage, Empty as AntEmpty, ImageProps, Carousel } from "antd";
@@ -68,7 +68,7 @@ export module PreviewViews {
         }
 
         return <div>
-            <div style={{width: props.width, height: props.height}} onClick={() => setShowList(true)}>
+            <div style={{width: "100%", height: "100%"}} onClick={() => setShowList(true)}>
                 <AntImage src={urlList[0]} preview={{visible: false}} width={props.width}/>
             </div>
             <div style={{display: "none"}}>

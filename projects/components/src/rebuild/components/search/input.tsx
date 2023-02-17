@@ -3,11 +3,9 @@ import { DbContexts } from "../context"
 import { GlobalSyncComponents } from "../sync"
 
 import {useState, useEffect, useMemo} from "react"
-import * as AntdIcons from "@ant-design/icons"
 import { DBSearchWrapper } from "./wrapper"
 import { ConfigFlatten, FieldConfig } from "@xnh-db/protocol"
 import { DbUiConfiguration, InternalGlobalLayouts } from "../../config"
-import { DefaultOptionType } from "antd/es/select"
 import { Flex, FormItem, HStack } from "../utils"
 
 export module SearchInputComponents {
@@ -157,7 +155,7 @@ export module SearchInputComponents {
             return children ?? []
         }, [collectionName])
 
-        function walk(path: string[], c: any): DefaultOptionType {
+        function walk(path: string[], c: any): InternalGlobalLayouts.ComponentProps.TreeNode {
             const keyPath = ConfigFlatten.stringifyKeyPath(path)
             if(FieldConfig.Fields.isEndpointType(c)) {
                 return {

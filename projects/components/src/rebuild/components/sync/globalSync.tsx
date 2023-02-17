@@ -274,6 +274,30 @@ export module GlobalSyncComponents {
         return (fileName: string) => UiSyncUtils.retrieveRemoteFile(config.props, clients.clients, fileName)
     }
 
+    export function useObjectURL(fileName: string | undefined) {
+        const downloadFile = useDownloadFile()
+        const [url, setUrl] = useState<string | null>(null)
+        useEffect(() => {
+            let url: string | undefined
+            load().then(s => {
+                url = s
+                setUrl(s)
+            })
+            return () => {
+                if(url) {
+                    URL.revokeObjectURL(url)
+                }
+            }
+        })
+
+        return url
+
+        async function load() {
+            const blob = await downloadFile(fileName)
+            return URL.createObjectURL(blob)
+        }
+    }
+
     export function GlobalDataSynchronizationWrapper(props: {children: React.ReactNode}) {
         const syncState = useDataSynchronizationGlobal()
 
