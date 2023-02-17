@@ -12,18 +12,7 @@ import { AntdWrapperUtils } from "./utils";
 export module AntdEndpointViewers {
     export const viewers: InternalGlobalLayouts.EndpointViewers = {
         avatar: (props) => {
-            const objectURL = GlobalSyncComponents.useObjectURL(props.value)
-            if(objectURL) {
-                return <Avatar
-                    size={Conf.avatarSize}
-                    src={objectURL}
-                />
-            } else {
-                return <Avatar
-                size={Conf.avatarSize}
-                icon={<UserOutlined/>}
-            />
-            }
+            return <AntdWrapperUtils.AsyncAvatar fileName={props.value}/>
         },
         fullText: (props) => {
             return <div>{props.value}</div>
