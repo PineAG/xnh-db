@@ -53,7 +53,7 @@ export module AntdEndpointViewers {
         },
         tagList: (props) => {
             return <Flex direction="horizontal">
-                {props.value.map(it => <Tag key={it}>{it}</Tag>)}
+                {props.value?.map(it => <Tag key={it}>{it}</Tag>)}
             </Flex>
         },
     }

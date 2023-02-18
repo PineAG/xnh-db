@@ -45,6 +45,7 @@ export module RelationInjectionComponents {
 
         const globalProps = DbContexts.useProps()
         const {client, selfKey, targetKey, relationName, targetCollection} = useRelationUtils(props.collectionName, props.colToRelName)
+        const openItem = globalProps.layout.actions.useOpenItem(targetCollection)
 
         const {RelationList, Loading, RelationTag} = DbContexts.useComponents()
         if(relations === null) {
@@ -53,7 +54,7 @@ export module RelationInjectionComponents {
             return <RelationList>
                 {relations.map(id => <RelationTag 
                     key={IOfflineClient.stringifyRelationKey(id)}
-                    onClick={() => globalProps.layout.actions.openItem(targetCollection, id[targetKey])}>
+                    onClick={() => openItem(id[targetKey])}>
                     <RelationViewItem
                         relationKey={id}
                         collectionName={props.collectionName}

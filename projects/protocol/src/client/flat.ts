@@ -18,7 +18,7 @@ export module ConfigFlatten {
 
         type FlattenedInternal<T, Endpoint, Prefix extends string | null> = (
             T extends Endpoint ?
-                {[K in Prefix]: T}:
+                {[K in Extract<Prefix, string>]: T}:
                 {
                     [K in Extract<keyof T, string>]: FlattenedInternal<T[K], Endpoint, ConcatPrefix<Prefix, K>>
                 }[Extract<keyof T, string>]
@@ -34,7 +34,7 @@ export module ConfigFlatten {
     export type FlattenedEntity<T extends EntityBase> = Flattened.Flattened<T, FieldConfig.Fields.EndpointValueTypes>
     export type FlattenedConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T>> = Flattened.Flattened<C, FieldConfig.Fields.EndpointTypes>
     
-    export function flattenDataByConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T> = FC.ConfigFromDeclaration<T>>(data: DeepPartial<T>, definition: C): FlattenedEntity<DeepPartial<T>> {
+    export function flattenDataByConfig<T extends EntityBase, C extends FC.ConfigFromDeclaration<T> = FC.ConfigFromDeclaration<T>>(data: DeepPartial<T>, definition: C): Partial<FlattenedEntity<T>> {
         const results = flattenByConfig({
             data: data,
             config: definition,
@@ -46,11 +46,11 @@ export module ConfigFlatten {
                 stringifyKeyPath(keyPath),
                 value
             ]
-        })) as FlattenedEntity<DeepPartial<T>>
+        })) as Partial<FlattenedEntity<T>>
         return result
     }
     
-    export function extractFlatDataByConfig<C extends FC.ConfigBase, T extends FC.EntityFromConfig<C>>(data: Partial<FlattenedEntity<T>>, definition: C): DeepPartial<T> {
+    export function extractFlatDataByConfig<T extends FC.EntityBase>(data: Partial<FlattenedEntity<T>>, definition: FC.ConfigFromDeclaration<T>): DeepPartial<T> {
         const result: any = {}
         for(const [keyPath, conf] of flattenConfig(definition)) {
             const flatPath = stringifyKeyPath(keyPath)

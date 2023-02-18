@@ -14,7 +14,11 @@ export module AntdUpload {
     
     export function useUploadFile(props: UseUploadFileProps): [() => void, JSX.Element] {
         const ref = useRef<HTMLInputElement>(null)
-        const ele = <input ref={ref} type="file" style={{display: "none"}} accept={props.accept} multiple={props.multiple} onChange={evt => props.onUpload(evt.target.files)}/>
+        const ele = <input ref={ref} type="file" style={{display: "none"}} accept={props.accept} multiple={props.multiple} onChange={evt => {
+            if(evt.target.files) {
+                props.onUpload(evt.target.files)
+            }
+        }}/>
         return [onUpload, ele]
     
         function onUpload() {
@@ -91,6 +95,9 @@ export module AntdUpload {
                 canvas.width = Math.floor(img.width * scale)
                 canvas.height = Math.floor(img.height * scale)
                 const ctx = canvas.getContext("2d")
+                if(!ctx) {
+                    throw new Error("corrupted ctx")
+                }
                 ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height)
                 setCrop({x: 0, y: 0, width: canvas.width, height: canvas.height, unit: "px"})
                 return scale
@@ -117,6 +124,9 @@ export module AntdUpload {
                 canvas.width = Math.floor(width * scale)
                 canvas.height = Math.floor(height * scale)
                 const ctx = canvas.getContext("2d")
+                if(!ctx) {
+                    throw new Error("corrupted ctx")
+                }
                 ctx.drawImage(img, x, y, width, height, 0, 0, canvas.width, canvas.height)
             })
             const newId = crypto.randomUUID()
@@ -160,7 +170,9 @@ export module AntdUpload {
             }
             const item = items[0]
             const file = item.getAsFile()
-            props.onChange(file)
+            if(file) {
+                props.onChange(file)
+            }
         }
 
         async function onUploadByFileList(files: FileList) {

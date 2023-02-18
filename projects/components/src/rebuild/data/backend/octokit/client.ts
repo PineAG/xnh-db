@@ -92,6 +92,7 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
             const bin = base64.toUint8Array(b64)
             return new Blob([bin])
         }
+        throw new Error("This shouldn't happen.")
     }
     async write(path: string, value: Blob): Promise<void> {
         const b64 = base64.fromUint8Array(new Uint8Array(await value.arrayBuffer()))
@@ -133,6 +134,9 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
 
     async delete(path: string): Promise<void> {
         const sha = await this.getSHA(path)
+        if(!sha) {
+            throw new Error("sha == undefined")
+        }
         await this.octokit.repos.deleteFile({
             owner: this.branch.owner,
             repo: this.branch.repo,

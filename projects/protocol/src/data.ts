@@ -15,13 +15,25 @@ export module XnhDBProtocol {
         }
     }
 
-    export type ICharacter = FieldConfig.AsEntity<{
+    export type IBase = FieldConfig.AsEntity<{
         id: string
         title: string
         name: InternationalName
         profile: string
         photos: string[]
         description: string
+    }>
+
+    export const BaseConfig = FieldConfig.makeConfig.for<IBase>().as({
+        id: F.id(),
+        title: F.fullText(1.5),
+        name: createInternationalNameDefinition(),
+        profile: F.avatar(),
+        photos: F.gallery(),
+        description: F.fullText(0.1),
+    })
+
+    export type ICharacter = FieldConfig.AsEntity<IBase & {
         appearance: {
             eyes: {
                 color: string[],
@@ -33,15 +45,10 @@ export module XnhDBProtocol {
                 features: string[]
             }
         }
-    }> 
+    }>
 
     export const CharacterDefinition = FieldConfig.makeConfig.for<ICharacter>().as({
-        id: F.id(),
-        title: F.fullText(1.5),
-        name: createInternationalNameDefinition(),
-        profile: F.avatar(),
-        photos: F.gallery(),
-        description: F.fullText(0.1),
+        ...BaseConfig,
         appearance: {
             eyes: {
                 color: F.tagList("color"),
@@ -55,7 +62,7 @@ export module XnhDBProtocol {
         },
     })
 
-    export type IArtwork = FieldConfig.AsEntity<{
+    export type IArtwork = FieldConfig.AsEntity<IBase & {
         id: string
         title: string,
         name: InternationalName
@@ -64,14 +71,10 @@ export module XnhDBProtocol {
     }>
 
     export const ArtworkDefinition = FieldConfig.makeConfig.for<IArtwork>().as({
-        id: F.id(),
-        title: F.fullText(1.5),
-        name: createInternationalNameDefinition(),
-        photos: F.gallery(),
-        description: F.fullText(0.1)
+        ...BaseConfig,
     })
 
-    export type ICreator = FieldConfig.AsEntity<{
+    export type ICreator = FieldConfig.AsEntity<IBase & {
         id: string
         title: string,
         name: InternationalName
@@ -80,14 +83,10 @@ export module XnhDBProtocol {
     }>
 
     export const CreatorDefinition = FieldConfig.makeConfig.for<ICreator>().as({
-        id: F.id(),
-        title: F.fullText(1.5),
-        name: createInternationalNameDefinition(),
-        photos: F.gallery(),
-        description: F.fullText(0.1)
+        ...BaseConfig,
     })
 
-    export type IVoiceActor = FieldConfig.AsEntity<{
+    export type IVoiceActor = FieldConfig.AsEntity<IBase & {
         id: string
         title: string,
         name: InternationalName
@@ -96,11 +95,7 @@ export module XnhDBProtocol {
     }> 
 
     export const VoiceActorDefinition = FieldConfig.makeConfig.for<IVoiceActor>().as({
-        id: F.id(),
-        title: F.fullText(1.5),
-        name: createInternationalNameDefinition(),
-        photos: F.gallery(),
-        description: F.fullText(0.1)
+        ...BaseConfig,
     })
 
     /**

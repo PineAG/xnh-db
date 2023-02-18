@@ -106,7 +106,7 @@ export module SearchResultComponents {
                 <Loading/>
             </div>
         } else {
-            <Card onClick={props.onClick}>
+            return <Card onClick={props.onClick}>
                 <ResultLayout {...injectionProps}/>
             </Card>
         }

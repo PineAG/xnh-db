@@ -5,7 +5,7 @@ import { BackendBase } from "./base";
     export class RestfulPathClient implements OfflinePathClientUtils.IPathClient {
         constructor(private rootPath: string) {}
 
-        async read(path: string): Promise<Blob> {
+        async read(path: string): Promise<Blob | null> {
             const res = await fetch(`/${this.rootPath}/${path}`, {
                 method: "GET",
                 headers: {

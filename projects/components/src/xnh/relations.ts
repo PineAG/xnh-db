@@ -1,7 +1,7 @@
 import { XnhDBProtocol as P } from "@xnh-db/protocol";
 import { DbUiConfiguration } from "../rebuild";
 
-export module XnhRelationsLayouts {
+export module XnhRelationsTitles {
     import RP = P.RelationPayloads
     export const Interpersonal: DbUiConfiguration.TitlesFor<RP.Interpersonal> = {
         $title: "人际关系",

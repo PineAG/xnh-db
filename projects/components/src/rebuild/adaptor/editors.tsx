@@ -43,7 +43,7 @@ export module AntdEndpointEditors {
         number: (props) => {
             return <InputNumber
                 value={props.binding.value ?? props.config.options.default ?? 0}
-                onChange={value => props.binding.update(value)}
+                onChange={value => props.binding.update(value ?? undefined)}
                 min={props.config.options.min}
                 max={props.config.options.max}
                 step={props.config.options.step}
@@ -73,7 +73,7 @@ export module AntdEndpointEditors {
                                 return
                             }
                             props.binding.update([
-                                ...props.binding.value.filter(it => it !== newTagBinding.value),
+                                ...(props.binding.value?.filter(it => it !== newTagBinding.value) ?? []),
                                 newTagBinding.value
                             ])
                             newTagBinding.update("")

@@ -39,20 +39,20 @@ export module XBinding {
         }
     }
 
-    export class PartialPropertyBinding<T, K extends keyof T> implements Binding<DeepPartial<T[K]>> {
-        constructor(private parent: Binding<DeepPartial<T>>, private key: K) {
+    export class PartialPropertyBinding<T, K extends keyof T> implements Binding<DeepPartial<T[K]> | undefined> {
+        constructor(private parent: Binding<DeepPartial<T> | {} | undefined>, private key: K) {
         }
 
-        get value(): DeepPartial<T[K]> {
+        get value(): DeepPartial<T[K]> | undefined {
             const parent = this.parent.value
-            if(parent === undefined) {
+            if(parent === undefined || parent === null) {
                 return undefined
             } else {
                 return parent[this.key as string]
             }
         }
 
-        update(value: DeepPartial<T[K]>) {
+        update(value: DeepPartial<T[K]> | undefined) {
             const parent = this.parent.value
             this.parent.update({
                 ...parent,
@@ -61,7 +61,7 @@ export module XBinding {
         }
 
         join<NextK extends keyof T[K]>(key: NextK): PartialPropertyBinding<T[K], NextK> {
-            return new PartialPropertyBinding(this, key)
+            return new PartialPropertyBinding<T[K], NextK>(this, key)
         }
     }
 

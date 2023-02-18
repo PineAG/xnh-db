@@ -18,8 +18,12 @@ export module IdbFileClientWrapper {
         return !!(await existWrapper.get(db, name))
     }
 
-    export function read(db: idb.IDBPDatabase, name: string): Promise<Blob> {
-        return blobWrapper.get(db, name)
+    export async function read(db: idb.IDBPDatabase, name: string): Promise<Blob> {
+        const blob = await blobWrapper.get(db, name)
+        if(!blob) {
+            throw new Error(`Missing file: ${name}`)
+        }
+        return blob
     }
 
     export async function write(db: idb.IDBPDatabase, name: string, data: Blob): Promise<void> {
@@ -40,6 +44,9 @@ export module IdbFileClientWrapper {
         const keys = await timeWrapper.getAllKeys(db)
         return await Promise.all(keys.map(async k => {
             const time = await timeWrapper.get(db, k)
+            if(!time) {
+                throw new Error(`Missing timestamp: ${k}`)
+            }
             return [k, new Date(time)] as [string, Date]
         }))
     }

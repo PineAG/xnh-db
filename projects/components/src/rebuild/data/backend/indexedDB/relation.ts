@@ -31,7 +31,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
         for(const key in wrappers) {
             relationIndices[key] = {keyPath: key, isArray: false, unique: false}
         }
-        this.relationWrapper = new IdbStoreWrapper(`${this.storeName}:relations`, relationIndices)
+        this.relationWrapper = new IdbStoreWrapper(`${this.storeName}:relations`, relationIndices as Record<keyof C, IdbIndexOption>)
 
         this.timeWrapper = new IdbStoreWrapper(`${this.storeName}:index`, {})
         this.payloadWrapper = new IdbStoreWrapper(`${this.storeName}:payload`, {})
@@ -94,6 +94,9 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
                 this.relationWrapper.get(db, k), 
                 this.timeWrapper.get(db, k)
             ])
+            if(!key || !date) {
+                throw new Error()
+            }
             return {key, date: new Date(date)}
         }))
     }

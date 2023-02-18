@@ -130,6 +130,10 @@ describe("UI Config Test", () => {
                     }
                 }
             },
+            actions: {
+                useOpenItem: () => () => {},
+                useOpenSearch: () => () => {}
+            },
             global: AntdComponents
         })
 

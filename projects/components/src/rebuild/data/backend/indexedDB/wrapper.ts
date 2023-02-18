@@ -40,31 +40,31 @@ export class IdbStoreWrapper<T, Indices extends string> {
 
     get(db: idb.IDBPDatabase, id: string): Promise<T | undefined> {
         return this.transaction(db, "readonly", async tx => {
-            return await tx.store.get(id)
+            return await tx.store?.get(id)
         }) 
     }
 
     getAllKeys(db: idb.IDBPDatabase): Promise<string[]> {
         return this.transaction(db, "readonly", async tx => {
-            return await tx.store.getAllKeys()
+            return await tx.store?.getAllKeys() ?? []
         }) 
     }
 
     put(db: idb.IDBPDatabase, id: string, value: T): Promise<void> {
         return this.transaction(db, "readwrite", async tx => {
-            await tx.store.put(value, id)
+            await tx.store?.put(value, id)
         })
     }
 
     delete(db: idb.IDBPDatabase, id: string): Promise<void> {
         return this.transaction(db, "readwrite", async tx => {
-            await tx.store.delete(id)
+            await tx.store?.delete(id)
         })
     }
 
     clear(db: idb.IDBPDatabase): Promise<void> {
         return this.transaction(db, "readwrite", async tx => {
-            await tx.store.clear()
+            await tx.store?.clear()
         })
     }
 
@@ -91,7 +91,7 @@ export class IdbStoreWrapper<T, Indices extends string> {
 
     queryKeys(db: idb.IDBPDatabase, query: IDBKeyRange, count: number): Promise<string[]> {
         return this.transaction(db, "readonly", async tx => {
-            return tx.store.getAllKeys(query, count)
+            return tx.store?.getAllKeys(query, count) ?? []
         })
     }
 }

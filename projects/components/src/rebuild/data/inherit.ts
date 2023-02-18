@@ -43,6 +43,7 @@ export module InheritanceUtils {
         const queue = await getChildrenInternal(initialId, client)
         while(queue.length > 0) {
             const id = queue.shift()
+            if(!id) break;
             yield id
             const children = await getChildrenInternal(id, client)
             queue.push(...children)
@@ -58,6 +59,7 @@ export module InheritanceUtils {
         const queue = await getParentsInternal(parentId, client)
         while(queue.length > 0) {
             const id = queue.shift()
+            if(!id) break;
             if(id === childId) {
                 return false
             }
@@ -93,7 +95,11 @@ export module InheritanceUtils {
         parents.reverse()
         const item = await onlineClient.getItemById(itemId)
         const items = [...parents, item]
-        return items.reduce((l, r) => mergeEntities<T>(l, r, config))
+        let result: DeepPartial<T> | undefined = undefined
+        for(const e of items) {
+            result = mergeEntities(result, e, config)
+        }
+        return result ?? {} as DeepPartial<T>
     }
 
     export type RelationQueryResult = {

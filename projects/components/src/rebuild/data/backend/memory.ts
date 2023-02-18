@@ -23,10 +23,12 @@ export class MemoryPathClient implements OfflinePathClientUtils.IPathClient {
 export function createOfflineClientSet<Props extends DbUiConfiguration.DataPropsBase>(config: Props): BackendBase.OfflineClientSet<Props> {
     const clients = new Map<string, MemoryPathClient>()
     function clientFactory(path: string) {
-        if(!clients.has(path)) {
-            clients.set(path, new MemoryPathClient())
+        let client = clients.get(path)
+        if(!client) {
+            client = new MemoryPathClient()
+            clients.set(path, client)
         }
-        return clients.get(path)
+        return client
     }
     return BackendBase.Path.createOfflineClientSetFromPathFactory(config, clientFactory)
 }

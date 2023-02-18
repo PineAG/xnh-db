@@ -281,7 +281,7 @@ export module GlobalSyncComponents {
             let url: string | undefined
             load().then(s => {
                 url = s
-                setUrl(s)
+                setUrl(s ?? null)
             })
             return () => {
                 if(url) {
@@ -293,6 +293,9 @@ export module GlobalSyncComponents {
         return url
 
         async function load() {
+            if(!fileName) {
+                return
+            }
             const blob = await downloadFile(fileName)
             return URL.createObjectURL(blob)
         }

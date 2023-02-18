@@ -20,7 +20,7 @@ export module DbUiConfiguration {
         )
     }
 
-    module Layouts {
+    export module Layouts {
         export type LayoutPropsEndpoint = {
             $title: string
             $element: React.ReactNode
@@ -59,7 +59,6 @@ export module DbUiConfiguration {
         > = {
             fullPage: React.FC<EntityLayoutProps.FullPage<T, ColToRel>>
             searchResult: React.FC<EntityLayoutProps.SimplePage<T>>
-            previewPage: React.FC<EntityLayoutProps.SimplePage<T>>
             previewItem: React.FC<EntityLayoutProps.SimplePage<T>>
         }
 
@@ -307,7 +306,6 @@ export module DbUiConfiguration {
         export function makeDisplayProps<Props extends Configuration.DataPropsBase>(config: Props, layouts: Configuration.DisplayProps<Props>): Configuration.DisplayProps<Props> {
             return layouts
         }
-
     }
 
     export type DataPropsBase = Configuration.DataPropsBase
@@ -337,10 +335,17 @@ export module DbUiConfiguration {
                 return component
         }
 
-        export function relation<
+        // export function previewPage<
+        //     Props extends Configuration.DataPropsBase, 
+        //     CollectionName extends keyof Props["collections"]
+        //     >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.PreviewPage<Props, CollectionName>>) {
+        //         return component
+        // }
+
+        export function previewItem<
             Props extends Configuration.DataPropsBase, 
             CollectionName extends keyof Props["collections"]
-            >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.Relation<Props, CollectionName>>) {
+            >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.PreviewItem<Props, CollectionName>>) {
                 return component
         }
     }
@@ -365,7 +370,11 @@ export module DbUiConfiguration {
             Props extends PropsBase,
             CollectionName extends keyof Props["collections"]> = SimplePage<Props, CollectionName>
         
-        export type Relation<
+        export type PreviewPage<
+            Props extends PropsBase,
+            CollectionName extends keyof Props["collections"]> = SimplePage<Props, CollectionName>
+        
+        export type PreviewItem<
             Props extends PropsBase,
             CollectionName extends keyof Props["collections"]> = SimplePage<Props, CollectionName>
             

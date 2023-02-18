@@ -49,9 +49,8 @@ export module InternalEntityEditors {
     export function EntitySelect(props: EntitySelectProps) {
         const globalProps = DbContexts.useProps()
         const {ItemPreviewWrapper, Loading, Empty} = DbContexts.useComponents()
-        const PreviewItem = globalProps.layout.layouts.entities[props.collectionName].previewPage
+        const PreviewItem = globalProps.layout.layouts.entities[props.collectionName].previewItem
 
-        const clients = GlobalSyncComponents.useQueryClients()
         const [item, setItem] = useState<LayoutInjector.SimplePageInjectionProps | "pending" | "empty">("pending")
         const [openSelect, setOpenSelect] = useState(false)
 
@@ -63,6 +62,10 @@ export module InternalEntityEditors {
 
         if(item === "pending") {
             return <Loading/>
+        }
+
+        if(!props.binding.value) {
+            return <Empty/>
         }
 
         return <ItemPreviewWrapper onClick={() => setOpenSelect(true)}>

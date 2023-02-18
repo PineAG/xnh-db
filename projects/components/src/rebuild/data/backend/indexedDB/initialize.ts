@@ -80,7 +80,7 @@ function initializeWrappers<Props extends DPBase>(db: idb.IDBPDatabase, wrappers
         wrappers.collections[name].onUpgrade(db)
     }
     for(const name in wrappers.inheritance) {
-        wrappers.inheritance[name].onUpgrade(db)
+        wrappers.inheritance[name]?.onUpgrade(db)
     }
     for(const name in wrappers.relations) {
         wrappers.relations[name].onUpgrade(db)
@@ -110,7 +110,9 @@ export function createOnlineClientSet<Props extends DPBase>(config: Props, dbNam
 
     const inheritance: Record<string, IdbRelationOnlineClient<Record<"parent" | "child", any>, {}>> = {}
     for(const name in wrappers.inheritance) {
-        inheritance[name] = new IdbRelationOnlineClient(dbFactory, wrappers.inheritance[name])
+        const wrapper = wrappers.inheritance[name]
+        if(!wrapper) throw new Error()
+        inheritance[name] = new IdbRelationOnlineClient(dbFactory, wrapper)
     }
 
     const relations: Record<string, IdbRelationOnlineClient<any, any>> = {}
@@ -146,7 +148,11 @@ export function createOfflineClientSet<Props extends DPBase>(config: Props, dbNa
     const inheritance: Record<string, IdbRelationOfflineClient<{parent: any, child: any}, {}>> = {}
     for(const name in wrappers.collections) {
         if(config.collections[name].inheritable) {
-            inheritance[name] = new IdbRelationOfflineClient(dbFactory, wrappers.inheritance[name])
+            const wrapper = wrappers.inheritance[name]
+            if(!wrapper) {
+                throw new Error()
+            }
+            inheritance[name] = new IdbRelationOfflineClient(dbFactory, wrapper)
         }
     }
 

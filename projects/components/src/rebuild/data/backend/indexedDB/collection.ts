@@ -75,6 +75,9 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
         const keys = await this.timeWrapper.getAllKeys(db)
         return await Promise.all(keys.map(async k => {
             const time = await this.timeWrapper.get(db, k)
+            if(!time) {
+                throw new Error(`Missing timestamp: ${k}`)
+            }
             return [k, new Date(time)] as [string, Date]
         }))
     }
@@ -96,7 +99,7 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
 
     private async getFullText(db: idb.IDBPDatabase, id: string): Promise<FullTextItem | null> {
         const result = await this.fullTextWrapper.get(db, id)
-        return result
+        return result ?? null
     }
 
     private async updateFullTextTerms(db: idb.IDBPDatabase, terms: Record<string, number>): Promise<void> {
@@ -150,7 +153,9 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
         return await Promise.all(keys.map(async id => {
             const item = await this.fullTextWrapper.get(db, id)
             const termFreq = await this.fullTextTermsWrapper.get(db, keyword) ?? 0
-            
+            if(!item) {
+                throw new Error(`Not exist: ${id}`)
+            }
             const weight = item.weights[keyword] * Math.log(termFreq + 1)
             return {id, weight}
         }))

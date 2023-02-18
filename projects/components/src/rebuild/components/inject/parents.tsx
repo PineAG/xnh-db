@@ -55,6 +55,9 @@ export module InjectionParentComponents {
         </ItemPreviewWrapper>
 
         async function initialize() {
+            if(!inheritClient) {
+                return <>Not inheritable</>
+            }
             const parentId = await InheritanceUtils.getParentId(props.itemId, inheritClient)
             setParentId(parentId)
             if(parentId === null) return;

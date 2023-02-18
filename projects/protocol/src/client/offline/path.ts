@@ -31,7 +31,7 @@ export module OfflinePathClientUtils {
         }
 
         mapToArray(m: MapIndex<Key>): IOfflineClient.CollectionIndex<Key> {
-            const a = []
+            const a: IOfflineClient.CollectionIndex<Key> = []
             for(const [key, ts] of Object.values(m)) {
                 a.push({key, date: new Date(ts)})
             }

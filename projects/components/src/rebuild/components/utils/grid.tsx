@@ -120,7 +120,7 @@ export interface FormItemProps {
 
 export function FormItem(props: FormItemProps) {
     return <HStack layout={["auto", "1fr"]}>
-        <span>{props.label}</span>
+        <span>{props.label}:</span>
         <span>{props.children}</span>
     </HStack>
 }

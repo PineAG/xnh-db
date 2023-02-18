@@ -1,17 +1,8 @@
 {
+    "extends": "../../template/tsconfig.json",
     "compilerOptions": {
-        "experimentalDecorators": true,
-        "target": "ES2017",
         "outDir": "lib",
-        "sourceMap": true,
-        "declaration": true,
-        "composite": false,
-        "declarationMap": true,
-        "moduleResolution": "node",
-        "module": "ESNext",
-        "esModuleInterop": true,
-        "rootDir": "src",
-        "jsx": "react-jsx"
+        "rootDir": "src"
     },
     "include": [
         "./src/**/*"

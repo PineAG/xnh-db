@@ -116,7 +116,7 @@ export module AuthorizationComponents {
                     </p>
                     <Select 
                         style={{width: "100%"}}
-                        value={branch}
+                        value={branch ?? ""}
                         onChange={setBranch}
                         options={step.payload.branchList.map(it => ({
                             label: it,

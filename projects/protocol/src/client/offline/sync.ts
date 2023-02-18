@@ -25,10 +25,9 @@ export module OfflineClientSynchronization {
         const newIndexMap = new Map<string, {key: K, date: Date}>()
         const sourceKeys = new Map(sourceIndex.map(it => [keySerializer(it.key), it]))
         const destKeys = new Map(destinationIndex.map(it => [keySerializer(it.key), it]))
-        for(const k of sourceKeys.keys()) {
-            const srcItem = sourceKeys.get(k)
-            if(destKeys.has(k)) {
-                const dstItem = destKeys.get(k)
+        for(const [k, srcItem] of sourceKeys.entries()) {
+            const dstItem = destKeys.get(k)
+            if(dstItem) {
                 if(srcItem.date.getTime() > dstItem.date.getTime()) {
                     result.push({type: "update", key: srcItem.key, date: srcItem.date})
                     newIndexMap.set(k, {
@@ -46,8 +45,7 @@ export module OfflineClientSynchronization {
                 newIndexMap.set(k, srcItem)
             }
         }
-        for(const k of destKeys.keys()) {
-            const dstItem = destKeys.get(k)
+        for(const [k, dstItem] of destKeys.entries()) {
             if(!sourceKeys.has(k)) {
                 result.push({type: "delete", key: dstItem.key, date: dstItem.date})
             }

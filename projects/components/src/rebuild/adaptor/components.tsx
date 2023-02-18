@@ -105,7 +105,7 @@ export module AntdGlobalComponents {
         },
         Button: (props) => {
             return <Antd.Button
-                icon={Icons[props.icon]}
+                icon={props.icon ? Icons[props.icon] : undefined}
                 type={props.type}
                 onClick={props.onClick}
                 disabled={props.disabled}

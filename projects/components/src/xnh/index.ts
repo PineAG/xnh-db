@@ -1,7 +1,17 @@
 import { XnhDBProtocol as P } from "@xnh-db/protocol"
-import { DbUiConfiguration } from "../rebuild"
+import { useContext, createContext } from "react"
+import { DBSearch, DbUiConfiguration } from "../rebuild"
+import { AntdComponents } from "../rebuild/adaptor"
+import { XnhArtwork } from "./artwork"
+import { XnhCharacter } from "./character"
+import { XnhCreator } from "./creator"
+import { XnhRelationsTitles } from "./relations"
+import { XnhVoiceActor } from "./voiceActor"
 
 export module XnhUiConfiguration {
+    const OpenEntityContext = createContext<(c: string, id: string) => void>(() => {})
+    const OpenSearchContext = createContext<(c: string, q: DBSearch.IQuery) => void>(() => {})
+
     export const config = DbUiConfiguration.makeConfig.withCollections(b => ({
         character: b.createCollectionOfEntity<P.ICharacter>(true).withConfig(P.CharacterDefinition),
         artwork: b.createCollectionOfEntity<P.IArtwork>(true).withConfig(P.ArtworkDefinition),
@@ -45,5 +55,63 @@ export module XnhUiConfiguration {
         creator: b => ({
             artwork: b.toRelation("artwork_creator", {selfKey: "creator", targetKey: "artwork"})
         }),
+    }).done()
+
+    export const layouts = DbUiConfiguration.makeDisplayProps(config, {
+        layouts: {
+            entities: {
+                character: {
+                    fullPage: XnhCharacter.fullPage,
+                    searchResult: XnhCharacter.searchResult,
+                    previewItem: XnhCharacter.previewItem,
+                },
+                creator: {
+                    fullPage: XnhCreator.fullPage,
+                    searchResult: XnhCreator.searchResult,
+                    previewItem: XnhCreator.previewItem,
+                },
+                artwork: {
+                    fullPage: XnhArtwork.fullPage,
+                    searchResult: XnhArtwork.searchResult,
+                    previewItem: XnhArtwork.previewItem,
+                },
+                voiceActor: {
+                    fullPage: XnhVoiceActor.fullPage,
+                    searchResult: XnhVoiceActor.searchResult,
+                    previewItem: XnhVoiceActor.previewItem,
+                }
+            },
+            payloads: {
+                interpersonal: undefined,
+                artwork_creator: undefined,
+                character_artwork: undefined,
+                character_voiceActor: undefined,
+            }
+        },
+        titles: {
+            entityTitles: {
+                character: XnhCharacter.CharacterTitles,
+                artwork: XnhArtwork.ArtworkTitles,
+                creator: XnhCreator.CreatorTitles,
+                voiceActor: XnhVoiceActor.VoiceActorTitles,
+            },
+            payloadTitles: {
+                interpersonal: XnhRelationsTitles.Interpersonal,
+                artwork_creator: XnhRelationsTitles.Artwork_Creator,
+                character_artwork: XnhRelationsTitles.Character_Artwork,
+                character_voiceActor: XnhRelationsTitles.Character_VoiceActor
+            }
+        },
+        actions: {
+            useOpenItem(collectionName) {
+                const openItem = useContext(OpenEntityContext)
+                return (itemId) => openItem(collectionName, itemId)
+            },
+            useOpenSearch(collectionName) {
+                const openSearch = useContext(OpenSearchContext)
+                return (query) => openSearch(collectionName, query)
+            },
+        },
+        global: AntdComponents
     })
 }
