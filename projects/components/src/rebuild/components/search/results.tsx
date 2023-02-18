@@ -62,21 +62,24 @@ export module SearchResultComponents {
         onItemOpen(collectionName: string, id: string): void
     }
     
-    export function ResultList({onItemOpen}: ResultListProps) {
+    export function ResultList() {
         const {Empty, Loading} = DbContexts.useComponents()
         const {results, collectionName} = DBSearchWrapper.useSearchResults()
+        const globalProps = DbContexts.useProps()
+
+        const openItem = globalProps.layout.actions.useOpenItem(collectionName)
 
         if(results.pending === true) {
             return <Loading/>
         } else if (results.items.length === 0) {
             return <Empty/>
         } else {
-            <Flex direction="vertical" spacing={8}>
+            return <Flex direction="vertical" spacing={8}>
                 {results.items.map(id => (
                     <ResultItem
                         key={id}
                         itemId={id}
-                        onClick={() => onItemOpen(collectionName, id)}
+                        onClick={() => openItem(id)}
                     />
                 ))}
             </Flex>

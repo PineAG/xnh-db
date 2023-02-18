@@ -1,18 +1,27 @@
-import React from "react"
+import React, { useState } from "react"
+import {render, screen} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import '@testing-library/jest-dom'
 import crypto from "crypto"
 import "fake-indexeddb/auto"
 import { XnhUiConfiguration } from "."
-import { DBSearch, DBSearchWrapper, DBStorage, GlobalSyncComponents, SearchInputComponents } from "../rebuild"
+import { DBSearch, DBSearchWrapper, DBStorage, GlobalSyncComponents, SearchInputComponents, SearchResultComponents } from "../rebuild"
 import { DbContexts } from "../rebuild/components/context"
 
 const config = XnhUiConfiguration.config
 const layouts = XnhUiConfiguration.layouts
 
 function TestComponent() {
+    const [query, setQuery] = useState("")
     return <DbContexts.AppProvider config={config} layout={layouts} dbName="test-db">
             <GlobalSyncComponents.Mock.GlobalSyncWrapper>
-                <DBSearchWrapper.SearchProvider>
+                <DBSearchWrapper.SearchProvider
+                        collection="character"
+                        searchQuery={query}
+                        onChange={setQuery}
+                    >
                     <SearchInputComponents.DBSearchInput />
+                    <SearchResultComponents.ResultList/>
                 </DBSearchWrapper.SearchProvider>
             </GlobalSyncComponents.Mock.GlobalSyncWrapper>
         </DbContexts.AppProvider>
@@ -28,6 +37,6 @@ describe("UI Config Test", () => {
         const fullTextResult = await clients.query.collections.artwork.queryFullText("Mega")
         expect(fullTextResult[0].id).toBe(id)
 
-        const component = 
+        // render(<TestComponent/>)
     })
 })
