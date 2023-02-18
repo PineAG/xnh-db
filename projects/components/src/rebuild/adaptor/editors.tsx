@@ -69,8 +69,11 @@ export module AntdEndpointEditors {
                     <Button 
                         icon={<PlusOutlined/>} type="primary"
                         onClick={() => {
+                            if(!newTagBinding.value) {
+                                return
+                            }
                             props.binding.update([
-                                ...props.binding.value,
+                                ...props.binding.value.filter(it => it !== newTagBinding.value),
                                 newTagBinding.value
                             ])
                             newTagBinding.update("")
