@@ -45,7 +45,7 @@ export module LayoutInjector {
     
     export type FullPageInjectionProps = Utils.FullPageInjectionProps<GPBase, string>
 
-    export async function useCreateFullPageProps(collectionName: string) {
+    export function useCreateFullPageProps(collectionName: string) {
         const createItemInjection = useCreateItemInjection(collectionName)
         const createRelationsInjection = RelationInjectionComponents.useCreateRelationsInjection(collectionName)
         return async (itemId: string): Promise<FullPageInjectionProps> => {
@@ -68,6 +68,8 @@ export module LayoutInjector {
         }
     }
 
+    export type RelationBindingGroup = Record<string, XBinding.Binding<Record<string, string>[]>>
+
     export function useGetFullPagePropsFromBinding(collectionName: string) {
         const config = DbContexts.useProps()
         const clients = GlobalSyncComponents.useQueryClients()
@@ -81,7 +83,7 @@ export module LayoutInjector {
             itemId: string,
             entityBinding: XBinding.Binding<DeepPartial<FieldConfig.EntityBase>>,
             parentBinding: XBinding.Binding<string | null>,
-            relationBindings: Record<string, XBinding.Binding<Record<string, string>[]>>
+            relationBindings: RelationBindingGroup
         ): Utils.FullPageInjectionProps<DbUiConfiguration.GlobalPropsBase, string> => {
             const item = renderTree(collConf, entityBinding, undefined, titles as any)
             return {

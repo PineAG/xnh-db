@@ -58,6 +58,7 @@ export module DbUiConfiguration {
             ColToRel extends Configuration.CollectionToRelationProps<any, any, any>
         > = {
             fullPage: React.FC<EntityLayoutProps.FullPage<T, ColToRel>>
+            newPage: React.FC<EntityLayoutProps.SimplePage<T>>,
             searchResult: React.FC<EntityLayoutProps.SimplePage<T>>
             previewItem: React.FC<EntityLayoutProps.SimplePage<T>>
         }
@@ -327,6 +328,12 @@ export module DbUiConfiguration {
                 return component
         }
 
+        export function newPage<
+            Props extends Configuration.DataPropsBase, 
+            CollectionName extends keyof Props["collections"]
+            >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.SearchResult<Props, CollectionName>>) {
+                return component
+        }
         
         export function searchResult<
             Props extends Configuration.DataPropsBase, 
