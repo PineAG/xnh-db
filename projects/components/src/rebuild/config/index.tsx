@@ -67,8 +67,8 @@ export module DbUiConfiguration {
             Relations extends Configuration.RelationSetBase<Extract<keyof Collections, string>>,
             Relation extends keyof Relations
         > = {
-            selfKey: keyof Collections[Relations[Relation]["collections"]],
-            targetKey: keyof Collections[Relations[Relation]["collections"]],
+            selfKey: keyof Relations[Relation]["collections"],
+            targetKey: keyof Relations[Relation]["collections"],
             payload: ItemLayoutProps<FieldConfig.EntityFromConfig<Relations[Relation]["payloadConfig"]>>,
             collections: {
                 [C in keyof Relations[Relation]["collections"]]:
@@ -346,6 +346,22 @@ export module DbUiConfiguration {
             Props extends Configuration.DataPropsBase, 
             CollectionName extends keyof Props["collections"]
             >(config: Props, collection: CollectionName, component: React.FC<LayoutProps.PreviewItem<Props, CollectionName>>) {
+                return component
+        }
+
+        export function payloadPreview<
+            Props extends Configuration.DataPropsBase, 
+            RelName extends keyof Props["relations"]
+        >(config: Props, relation: RelName, 
+                component: React.FC<Layouts.PayloadRelationPreviewLayoutProps<Props["collections"], Props["relations"], RelName>>) {
+                return component
+        }
+
+        export function payloadEditor<
+            Props extends Configuration.DataPropsBase, 
+            RelName extends keyof Props["relations"]
+        >(config: Props, relation: RelName, 
+                component: React.FC<Layouts.PayloadRelationEditorLayoutProps<Props["collections"], Props["relations"], RelName>>) {
                 return component
         }
     }

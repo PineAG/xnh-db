@@ -135,11 +135,13 @@ export module XnhDBProtocol {
         })
 
         export type Interpersonal = FieldConfig.AsEntity<{
-            relation: [string, string]
+            leftRelation: string
+            rightRelation: string
         }>
 
         export const Interpersonal_Definition = FieldConfig.makeConfig.for<Interpersonal>().as({
-            relation: F.tagList("interpersonal.relation")
+            leftRelation: F.tagList("interpersonal.relation"),
+            rightRelation: F.tagList("interpersonal.relation"),
         })
     }
 

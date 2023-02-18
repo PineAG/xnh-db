@@ -7,7 +7,7 @@ export module UiSyncUtils {
     type DPBase = DbUiConfiguration.DataPropsBase
     import Utils = DbUiConfiguration.InternalUtils
     import SyncUtils = OfflineClientSynchronization
-    import Progress = SyncUtils.ProgressResult.Progress
+    type Progress = SyncUtils.ProgressResult.Progress
 
     export type SynchronizationMode = "download" | "upload"
     type ProgMsgHandler = (msg: string) => void

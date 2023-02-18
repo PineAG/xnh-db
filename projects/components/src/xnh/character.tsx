@@ -1,7 +1,7 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
-import { XnhUiConfiguration } from ".";
-import { DBSearchWrapper, DbUiConfiguration, Flex, FormItem, HStack } from "../rebuild";
+import { DbUiConfiguration, Flex, FormItem } from "../rebuild";
 import { XnhBase } from "./base";
+import { config } from "./config";
 
 export module XnhCharacter {
     export const CharacterTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.ICharacter> = {
@@ -23,7 +23,7 @@ export module XnhCharacter {
         }
     }
     
-    export const fullPage = DbUiConfiguration.wrapLayout.fullPage(XnhUiConfiguration.config, "character", props => {
+    export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "character", props => {
         return <Flex direction="vertical">
             <>
             {/* Item Data */}
@@ -60,11 +60,11 @@ export module XnhCharacter {
         </Flex>
     })
 
-    export const searchResult = DbUiConfiguration.wrapLayout.searchResult(XnhUiConfiguration.config, "character", props => {
+    export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "character", props => {
         return <XnhBase.BaseSearchWrapper item={props.item}>
 
         </XnhBase.BaseSearchWrapper>
     })
 
-    export const previewItem = DbUiConfiguration.wrapLayout.previewItem(XnhUiConfiguration.config, "character", searchResult)
+    export const previewItem = DbUiConfiguration.wrapLayout.previewItem(config, "character", searchResult)
 }

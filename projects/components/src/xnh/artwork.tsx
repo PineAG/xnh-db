@@ -1,7 +1,7 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
-import { XnhUiConfiguration } from ".";
-import { DbUiConfiguration, Flex, FormItem, HStack } from "../rebuild";
+import { DbUiConfiguration, Flex, FormItem } from "../rebuild";
 import { XnhBase } from "./base";
+import { config } from "./config";
 
 export module XnhArtwork {
     export const ArtworkTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.IArtwork> = {
@@ -9,7 +9,7 @@ export module XnhArtwork {
         ...XnhBase.titles,
     }
 
-    export const fullPage = DbUiConfiguration.wrapLayout.fullPage(XnhUiConfiguration.config, "artwork", props => {
+    export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "artwork", props => {
         return <Flex direction="vertical">
             <>
             {/* Item Data */}
@@ -29,11 +29,11 @@ export module XnhArtwork {
         </Flex>
     })
 
-    export const searchResult = DbUiConfiguration.wrapLayout.searchResult(XnhUiConfiguration.config, "artwork", props => {
+    export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "artwork", props => {
         return <XnhBase.BaseSearchWrapper item={props.item}>
 
         </XnhBase.BaseSearchWrapper>
     })
 
-    export const previewItem = DbUiConfiguration.wrapLayout.previewItem(XnhUiConfiguration.config, "artwork", searchResult)
+    export const previewItem = DbUiConfiguration.wrapLayout.previewItem(config, "artwork", searchResult)
 }

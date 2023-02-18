@@ -1,6 +1,5 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
 import React from "react";
-import { XnhUiConfiguration } from ".";
 import { DbUiConfiguration, Flex, FormItem, HStack } from "../rebuild";
 
 export module XnhBase {
