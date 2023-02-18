@@ -1,5 +1,4 @@
-import { createContext, useContext } from "react"
-import { DBSearch, DbUiConfiguration } from "../rebuild"
+import { DbUiConfiguration } from "../rebuild"
 import { AntdComponents } from "../rebuild/adaptor"
 import { XnhArtwork } from "./artwork"
 import { XnhCharacter } from "./character"
@@ -7,9 +6,6 @@ import { config } from "./config"
 import { XnhCreator } from "./creator"
 import { XnhArtwork_Creator, XnhCharacter_Artwork, XnhCharacter_VoiceActor, XnhInterpersonal } from "./relations"
 import { XnhVoiceActor } from "./voiceActor"
-
-const OpenEntityContext = createContext<(c: string, id: string) => void>(() => { })
-const OpenSearchContext = createContext<(c: string, q: DBSearch.IQuery) => void>(() => { })
 
 export const layouts = DbUiConfiguration.makeDisplayProps(config, {
     layouts: {
@@ -67,16 +63,6 @@ export const layouts = DbUiConfiguration.makeDisplayProps(config, {
             character_artwork: XnhCharacter_Artwork.titles,
             character_voiceActor: XnhCharacter_VoiceActor.titles
         }
-    },
-    actions: {
-        useOpenItem(collectionName) {
-            const openItem = useContext(OpenEntityContext)
-            return (itemId) => openItem(collectionName, itemId)
-        },
-        useOpenSearch(collectionName) {
-            const openSearch = useContext(OpenSearchContext)
-            return (query) => openSearch(collectionName, query)
-        },
     },
     global: AntdComponents
 })

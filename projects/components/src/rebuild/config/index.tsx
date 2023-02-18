@@ -94,7 +94,7 @@ export module DbUiConfiguration {
         }
     }
 
-    module Configuration {
+    export module Configuration {
         export type CollectionProps<T extends EntityBase, Conf extends ConfigFromDeclaration<T>> = {
             config: Conf
             inheritable?: boolean
@@ -206,7 +206,6 @@ export module DbUiConfiguration {
             > = {
                 titles: TitleDisplayProps<Props["collections"], Props["relations"]>
                 layouts: Configuration.LayoutProps<Props["collections"], Props["relations"], Props["collectionsToRelations"]>
-                actions: DBConfigActions.Actions<Props>,
                 global: InternalGlobalLayouts.GlobalLayoutProps
             }
         

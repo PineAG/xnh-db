@@ -13,7 +13,17 @@ const layouts = XnhUiConfiguration.layouts
 
 function TestComponent() {
     const [query, setQuery] = useState("")
-    return <DbContexts.AppProvider config={config} layout={layouts} dbName="test-db">
+    return <DbContexts.AppProvider 
+            config={config} layout={layouts} dbName="test-db"
+            actions={{
+                useOpenItem(collectionName) {
+                    return () => {}
+                },
+                useOpenSearch(collectionName) {
+                    return () => {}
+                },
+            }}
+            >
             <GlobalSyncComponents.Mock.GlobalSyncWrapper>
                 <DBSearchWrapper.SearchProvider
                         collection="character"

@@ -1,6 +1,7 @@
 import { BackendBase, DBStorage, IndexedDBBackend, OctokitBackend } from "../data"
 import {useContext, createContext} from "react"
 import { DbUiConfiguration, InternalGlobalLayouts } from "../config";
+import { DBConfigActions } from "../config/actions";
 
 type NullableContextValue<T> = {state: "pending", message: string} | {state: "available", value: T}
 export type NullableContext<T> = {
@@ -40,6 +41,7 @@ export module DbContexts {
         config: Props
         layout: DbUiConfiguration.DisplayProps<Props>
         dbName: string
+        actions: DBConfigActions.Actions<Props>,
         children: React.ReactNode
     }
     interface DBConf {
