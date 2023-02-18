@@ -87,7 +87,11 @@ export module RelationInjectionComponents {
         if(relationData === null) {
             return <Loading/>
         } else {
-            const payloadProps = InjectionProps.renderStaticPropTree(comp, payloadConfig, relationData.payload, payloadTitles)
+            const payloadProps = InjectionProps.renderStaticPropTree(payloadConfig, relationData.payload, payloadTitles, {
+                components: comp,
+                openItem: () => {},
+                openSearch: () => {}
+            })
             return <InternalTag
                     selfKey={selfKey as any}
                     targetKey={targetKey as any}
@@ -211,7 +215,11 @@ export module RelationInjectionComponents {
         if(relationData === null) {
             return <Loading/>
         } else {
-            const payloadProps = InjectionProps.renderStaticPropTree(comp, payloadConfig, relationData.payload, payloadTitles)
+            const payloadProps = InjectionProps.renderStaticPropTree(payloadConfig, relationData.payload, payloadTitles, {
+                components: comp,
+                openItem: () => {},
+                openSearch: () => {}
+            })
             return <>
             <RelationTag onClick={() => setShowDialog(true)} onClose={props.onRemove}>
                 <InternalTag

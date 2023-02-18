@@ -27,11 +27,18 @@ export module LayoutInjector {
         const inheritClient = clients.inheritance[collectionName]
         const titles = config.layout.titles.entityTitles[collectionName]
 
+        const {useOpenItem, useOpenSearch} = config.layout.actions
+        const openItem = useOpenItem(collectionName)
+        const openSearch = useOpenSearch(collectionName)
+
         return async (itemId: string): Promise<ItemDisplayInjection> => {
             const item = inheritClient ?
                 await InheritanceUtils.getEntityPatchingParents(itemId, collectionConfig, collectionClient, inheritClient) :
                 await collectionClient.getItemById(itemId)
-            const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(config.layout.global.endpoint.viewers, collectionConfig, item, titles)
+            const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(collectionConfig, item, titles, {
+                components: config.layout.global.endpoint.viewers,
+                openItem, openSearch
+            })
             return injectProps
         }
     }
@@ -61,13 +68,14 @@ export module LayoutInjector {
         }
     }
 
-    export function useGetFullPagePropsFromBinding(
-        collectionName: string) {
+    export function useGetFullPagePropsFromBinding(collectionName: string) {
         const config = DbContexts.useProps()
         const clients = GlobalSyncComponents.useQueryClients()
         const collConf = config.props.collections[collectionName].config
         const titles = config.layout.titles.entityTitles[collectionName]
         const createRelationsEditableInjection = RelationInjectionComponents.useCreateRelationsEditableInjection(collectionName)
+
+        const renderTree = InjectionProps.useRenderDynamicPropTree(collectionName)
 
         return (
             itemId: string,
@@ -75,7 +83,7 @@ export module LayoutInjector {
             parentBinding: XBinding.Binding<string | null>,
             relationBindings: Record<string, XBinding.Binding<Record<string, string>[]>>
         ): Utils.FullPageInjectionProps<DbUiConfiguration.GlobalPropsBase, string> => {
-            const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, entityBinding, undefined, titles as any)
+            const item = renderTree(collConf, entityBinding, undefined, titles as any)
             return {
                 item,
                 $parentElement: () => <InjectionParentComponents.ParentEditorElementProps
@@ -89,15 +97,18 @@ export module LayoutInjector {
         }
     }
 
-    export function getSimplePagePropsFromBinding<
-        GP extends GPBase, 
-        CollectionName extends CollNames<GP>,
-        T extends FieldConfig.EntityFromConfig<GP["props"]["collections"][CollectionName]["config"]>
-    >(config: GP, collectionName: CollectionName, binding: XBinding.Binding<DeepPartial<T>>): Utils.SimplePageInjectionProps<GP, CollectionName> {
+    export function useCreateSimplePagePropsFromBinding(collectionName: string) {
+        const config = DbContexts.useProps()
+
         const collConf = config.props.collections[collectionName].config
         const titles = config.layout.titles.entityTitles[collectionName]
-        const item = InjectionProps.renderDynamicPropTree(config.layout.global.endpoint.editors, collConf, binding, undefined, titles as any) as Utils.ItemDisplayInjection<GP, CollectionName>
-        return { item }
+
+        const renderTree = InjectionProps.useRenderDynamicPropTree(collectionName)
+        
+        return (binding: XBinding.Binding<DeepPartial<FieldConfig.EntityBase>>): Utils.SimplePageInjectionProps<DbUiConfiguration.GlobalPropsBase, string> => {
+            const item = renderTree(collConf, binding, undefined, titles as any)
+            return { item }
+        }
     }
 
     

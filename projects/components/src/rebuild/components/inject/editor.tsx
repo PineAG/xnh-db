@@ -18,7 +18,12 @@ export module InternalEntityEditors {
         const payloadConfig = globalProps.props.relations[props.relationName].payloadConfig
         const InternalEditor = globalProps.layout.layouts.payloads[props.relationName].payloadEditor
         const payloadTitles = globalProps.layout.titles.payloadTitles[props.relationName]
-        const payloadProps = InjectionProps.renderDynamicPropTree(comp, payloadConfig, props.binding, {}, payloadTitles)
+
+        const payloadProps = InjectionProps.renderDynamicPropTree(payloadConfig, props.binding, {}, payloadTitles, {
+            components: comp,
+            openItem: () => {},
+            openSearch: () => {}
+        })
 
         return <InternalEditor
             payload={payloadProps}

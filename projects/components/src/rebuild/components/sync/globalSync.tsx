@@ -1,7 +1,8 @@
 import { XnhDBProtocol as P } from "@xnh-db/protocol"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { DbUiConfiguration } from "../../config"
 import { BackendBase, DBStorage, IndexedDBBackend, OctokitBackend } from "../../data"
+import { XBinding } from "../binding"
 import { createNullableContext, DbContexts, useNullableContext } from "../context"
 import { AuthorizationComponents } from "./auth"
 import { UiSyncUtils } from "./sync"
@@ -364,5 +365,18 @@ export module GlobalSyncComponents {
         return <Dialog title={props.title} open={true} onOkay={props.proceed} width="small">
             {props.children}
         </Dialog>
+    }
+
+    export module Mock {
+        export function GlobalSyncWrapper(props: {children: React.ReactNode}) {
+            const createMockClients = DbContexts.useMockClientsBuilder()
+
+            return <GlobalClientsContext.Provider value={{
+                mode: "online",
+                clients: createMockClients()
+            }}>
+                    {props.children}
+            </GlobalClientsContext.Provider>
+        }
     }
 }

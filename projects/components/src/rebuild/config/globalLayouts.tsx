@@ -2,12 +2,16 @@ import { FieldConfig } from "@xnh-db/protocol";
 import { XBinding } from "../components/binding";
 import {useCallback} from "react"
 import { DbContexts } from "../components/context";
+import { DBSearch } from "../data";
 
 export module InternalGlobalLayouts {
     export type EndpointEditorProps<N extends FieldConfig.Fields.EndpointNames> = {
         binding: XBinding.Binding<FieldConfig.Fields.ValueType<N> | undefined>
         config: FieldConfig.Fields.FieldTypes[N]
         parentValue: FieldConfig.Fields.ValueType<N> | undefined
+        openItem: (id: string) => void
+        openSearch: (query: DBSearch.IQuery) => void
+        propertyPath: string[]
     }
     export type EndpointEditors = {
         [E in FieldConfig.Fields.EndpointNames]: React.FC<EndpointEditorProps<E>>
@@ -16,6 +20,9 @@ export module InternalGlobalLayouts {
     export type EndpointViewerProps<N extends FieldConfig.Fields.EndpointNames> = {
         value: FieldConfig.Fields.ValueType<N> | undefined
         config: FieldConfig.Fields.FieldTypes[N]
+        propertyPath: string[]
+        openItem: (id: string) => void
+        openSearch: (query: DBSearch.IQuery) => void
     }
 
     export type EndpointViewers = {

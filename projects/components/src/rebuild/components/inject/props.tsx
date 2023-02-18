@@ -3,6 +3,8 @@ import { DbUiConfiguration, InternalGlobalLayouts } from "../../config"
 import { DeepPartial } from "utility-types";
 import { XBinding } from "../binding"
 import Utils = DbUiConfiguration.InternalUtils.Injection
+import { DbContexts } from "../context";
+import { DBSearch } from "../../data";
 
 export module InjectionProps {
     type ConfigNodeBase = FieldConfig.ConfigBase | FieldConfig.Fields.EndpointTypes
@@ -13,8 +15,33 @@ export module InjectionProps {
 
     type EndpointEditors = InternalGlobalLayouts.EndpointEditors
     type EndpointViewers = InternalGlobalLayouts.EndpointViewers
+
+    interface RenderStaticPropTreeProps {
+        components: EndpointViewers
+        openItem(id: string): void
+        openSearch(q: DBSearch.IQuery): void
+    }
+
+    export function useRenderStaticPropTree<T extends TreeEntityBase>(collectionName: string) {
+        const globalProps = DbContexts.useProps()
+        const components = globalProps.layout.global.endpoint.viewers
+        const openSearch = globalProps.layout.actions.useOpenSearch(collectionName)
+        const openItem = globalProps.layout.actions.useOpenItem(collectionName)
+        const ctx: RenderStaticPropTreeProps = {
+            components,
+            openItem,
+            openSearch
+        }
+        return (config: FieldConfig.ConfigFromDeclaration<T>, value: T, title: PropsTreeTitle<T>) => {
+            return renderStaticPropTree(config, value, title, ctx)
+        }
+    }
     
-    export function renderStaticPropTree<T extends TreeEntityBase>(comp: EndpointViewers, config: FieldConfig.ConfigFromDeclaration<T>, value: T, title: PropsTreeTitle<T>): PropsTreeNode<T> {
+    export function renderStaticPropTree<T extends TreeEntityBase>(config: FieldConfig.ConfigFromDeclaration<T>, value: T, title: PropsTreeTitle<T>, options: RenderStaticPropTreeProps): PropsTreeNode<T> {
+        return renderStaticPropTreeInternal([], config, value, title, options)
+    }
+
+    function renderStaticPropTreeInternal<T extends TreeEntityBase>(path: string[], config: FieldConfig.ConfigFromDeclaration<T>, value: T, title: PropsTreeTitle<T>, ctx: RenderStaticPropTreeProps) {
         if(FieldConfig.Fields.isEndpointType(config)) {
             if(typeof title !== "string") {
                 throw new Error("Title is not string.")
@@ -24,7 +51,7 @@ export module InjectionProps {
             }
             return {
                 $title: title,
-                $element: renderStaticEndpoint(comp, config, value as FieldConfig.Fields.EndpointValueTypes)
+                $element: renderStaticEndpoint(path, config, value as FieldConfig.Fields.EndpointValueTypes, ctx)
             } as PropsTreeNode<T>
         } else {
             const results: Record<string, string | PropsTreeNode<any>> = {
@@ -34,22 +61,53 @@ export module InjectionProps {
                 const nextValue = value === undefined ? undefined : value[key as string]
                 const nextConfig = config[key] as ConfigNodeBase
                 const nextTitle = title[key as string]
-                results[key] = renderStaticPropTree(comp, nextConfig, nextValue, nextTitle)
+                results[key] = renderStaticPropTreeInternal([...path, key], nextConfig, nextValue, nextTitle, ctx)
             }
             return results as PropsTreeNode<T>
         }
-    } 
+    }
 
     function renderStaticEndpoint<
         N extends FieldConfig.Fields.EndpointNames,
         T extends FieldConfig.Fields.ValueType<N>,
         C extends FieldConfig.Fields.FieldTypes[N],
-    >(comp: EndpointViewers, config: C, value: T | undefined): React.ReactNode {
-        const Comp: React.FC<InternalGlobalLayouts.EndpointViewerProps<N>> = comp[config.type]
-        return <Comp value={value} config={config}/>
+    >(path: string[], config: C, value: T | undefined, ctx: RenderStaticPropTreeProps): React.ReactNode {
+        const Comp: React.FC<InternalGlobalLayouts.EndpointViewerProps<N>> = ctx.components[config.type]
+        return <Comp 
+            value={value} 
+            config={config}
+            propertyPath={path}
+            openItem={ctx.openItem}
+            openSearch={ctx.openSearch}
+        />
+    }
+
+    interface RenderDynamicPropTreeProps {
+        components: EndpointEditors
+        openItem(id: string): void
+        openSearch(q: DBSearch.IQuery): void
+    }
+
+    export function useRenderDynamicPropTree<T extends TreeEntityBase>(collectionName: string) {
+        const globalProps = DbContexts.useProps()
+        const components = globalProps.layout.global.endpoint.editors
+        const openSearch = globalProps.layout.actions.useOpenSearch(collectionName)
+        const openItem = globalProps.layout.actions.useOpenItem(collectionName)
+        const ctx: RenderDynamicPropTreeProps = {
+            components,
+            openItem,
+            openSearch
+        }
+        return (config: FieldConfig.ConfigFromDeclaration<T>, binding: XBinding.Binding<DeepPartial<T>>, parentValue: DeepPartial<T>, title: PropsTreeTitle<T>) => {
+            return renderDynamicPropTree(config, binding, parentValue, title, ctx)
+        }
     }
     
-    export function renderDynamicPropTree<T extends TreeEntityBase>(comp: EndpointEditors, config: FieldConfig.ConfigFromDeclaration<T>, binding: XBinding.Binding<DeepPartial<T>>, parentValue: DeepPartial<T>, title: PropsTreeTitle<T>): PropsTreeNode<T> {
+    export function renderDynamicPropTree<T extends TreeEntityBase>(config: FieldConfig.ConfigFromDeclaration<T>, binding: XBinding.Binding<DeepPartial<T>>, parentValue: DeepPartial<T>, title: PropsTreeTitle<T>, options: RenderDynamicPropTreeProps): PropsTreeNode<T> {
+        return renderDynamicPropTreeInternal([], config, binding, parentValue, title, options)
+    }
+
+    function renderDynamicPropTreeInternal<T extends TreeEntityBase>(path: string[], config: FieldConfig.ConfigFromDeclaration<T>, binding: XBinding.Binding<DeepPartial<T>>, parentValue: DeepPartial<T>, title: PropsTreeTitle<T>, ctx: RenderDynamicPropTreeProps): PropsTreeNode<T> {
         if(FieldConfig.Fields.isEndpointType(config)) {
             if(typeof title !== "string") {
                 throw new Error("Title is not string.")
@@ -59,7 +117,7 @@ export module InjectionProps {
             }
             return {
                 $title: title,
-                $element: renderDynamicEndpoint(comp, config, binding as XBinding.Binding<FieldConfig.Fields.EndpointValueTypes>, parentValue as FieldConfig.Fields.EndpointValueTypes)
+                $element: renderDynamicEndpoint(path, config, binding as XBinding.Binding<FieldConfig.Fields.EndpointValueTypes>, parentValue as FieldConfig.Fields.EndpointValueTypes, ctx)
             } as PropsTreeNode<T>
         } else {
             const results: Record<string, string | PropsTreeNode<any>> = {
@@ -70,7 +128,7 @@ export module InjectionProps {
                 const nextConfig = config[key] as FieldConfig.ConfigFromDeclaration<any>
                 const nextParent = parentValue === undefined ? undefined : parentValue[key as any]
                 const nextTitle = title[key as string]
-                results[key] = renderDynamicPropTree(comp, nextConfig, nextBinding, nextParent, nextTitle)
+                results[key] = renderDynamicPropTreeInternal([...path, key], nextConfig, nextBinding, nextParent, nextTitle, ctx)
             }
             return results as PropsTreeNode<T>
         }
@@ -81,12 +139,20 @@ export module InjectionProps {
         T extends FieldConfig.Fields.ValueType<N>,
         C extends FieldConfig.Fields.FieldTypes[N],
     >(
-        comp: EndpointEditors,
+        path: string[],
         config: C, 
         binding: XBinding.Binding<T | undefined>, 
-        parentValue: T | undefined
+        parentValue: T | undefined,
+        ctx: RenderDynamicPropTreeProps
     ): React.ReactNode {
-        const Comp: React.FC<InternalGlobalLayouts.EndpointEditorProps<N>> = comp[config.type]
-        return <Comp binding={binding} config={config} parentValue={parentValue}/>
+        const Comp: React.FC<InternalGlobalLayouts.EndpointEditorProps<N>> = ctx.components[config.type]
+        return <Comp
+            binding={binding} 
+            config={config} 
+            parentValue={parentValue}
+            propertyPath={path}
+            openItem={ctx.openItem}
+            openSearch={ctx.openSearch}
+        />
     }
 }

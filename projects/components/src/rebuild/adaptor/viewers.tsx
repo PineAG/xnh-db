@@ -49,11 +49,41 @@ export module AntdEndpointViewers {
             return <div>{props.value}</div>
         },
         tag: (props) => {
-            return <Tag>{props.value}</Tag>
+            return <Tag
+                onClick={() => {
+                    if(!props.value) return;
+                    props.openSearch({
+                        type: "merge",
+                        operator: "and",
+                        children: [{
+                            type: "property",
+                            property: {
+                                keyPath: props.propertyPath,
+                                value: props.value
+                            }
+                        }]
+                    })
+                }}
+            >{props.value}</Tag>
         },
         tagList: (props) => {
             return <Flex direction="horizontal">
-                {props.value?.map(it => <Tag key={it}>{it}</Tag>)}
+                {props.value?.map(it => <Tag
+                    key={it}
+                    onClick={() => {
+                        props.openSearch({
+                            type: "merge",
+                            operator: "and",
+                            children: [{
+                                type: "property",
+                                property: {
+                                    keyPath: props.propertyPath,
+                                    value: it
+                                }
+                            }]
+                        })
+                    }}
+                >{it}</Tag>)}
             </Flex>
         },
     }

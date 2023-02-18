@@ -32,7 +32,8 @@ export module InjectionParentComponents {
         const titles = globalProps.layout.titles.entityTitles[props.collectionName]
 
         const {Empty, Loading, ItemPreviewWrapper} = DbContexts.useComponents()
-        const comp = DbContexts.useProps().layout.global.endpoint.viewers
+
+        const renderTree = InjectionProps.useRenderStaticPropTree(props.collectionName)
 
         useEffect(() => {
             if(inheritable && inheritClient) {
@@ -49,7 +50,7 @@ export module InjectionParentComponents {
         if(parentItem === null) {
             return <Loading/>
         }
-        const injectProps = InjectionProps.renderStaticPropTree(comp, colConf, parentItem, titles as any)
+        const injectProps = renderTree(colConf, parentItem, titles as any)
         return <ItemPreviewWrapper>
             <RichLayout item={injectProps}/>
         </ItemPreviewWrapper>

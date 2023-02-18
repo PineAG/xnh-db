@@ -73,6 +73,12 @@ export module DbContexts {
         return () => DBStorage.createRestfulStorage(props.props, dbConf.dbName)
     }
 
+    export function useMockClientsBuilder() {
+        const dbConf = useNullableContext(DBConfContext)
+        const props = useProps()
+        return () => DBStorage.createMemoryStorage(props.props, dbConf.dbName)
+    }
+
     export function useCollectionConfig(collectionName: string) {
         const props = useProps()
         return props.props.collections[collectionName].config
