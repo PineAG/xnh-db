@@ -25,8 +25,8 @@ export module InjectionProps {
     export function useRenderStaticPropTree<T extends TreeEntityBase>(collectionName: string) {
         const globalProps = DbContexts.useProps()
         const components = globalProps.layout.global.endpoint.viewers
-        const openSearch = globalProps.layout.actions.useOpenSearch(collectionName)
-        const openItem = globalProps.layout.actions.useOpenItem(collectionName)
+        const openSearch = globalProps.actions.useOpenSearch(collectionName)
+        const openItem = globalProps.actions.useOpenItem(collectionName)
         const ctx: RenderStaticPropTreeProps = {
             components,
             openItem,
@@ -91,8 +91,8 @@ export module InjectionProps {
     export function useRenderDynamicPropTree<T extends TreeEntityBase>(collectionName: string) {
         const globalProps = DbContexts.useProps()
         const components = globalProps.layout.global.endpoint.editors
-        const openSearch = globalProps.layout.actions.useOpenSearch(collectionName)
-        const openItem = globalProps.layout.actions.useOpenItem(collectionName)
+        const openSearch = globalProps.actions.useOpenSearch(collectionName)
+        const openItem = globalProps.actions.useOpenItem(collectionName)
         const ctx: RenderDynamicPropTreeProps = {
             components,
             openItem,

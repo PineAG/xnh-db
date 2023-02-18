@@ -67,7 +67,7 @@ export module SearchResultComponents {
         const {results, collectionName} = DBSearchWrapper.useSearchResults()
         const globalProps = DbContexts.useProps()
 
-        const openItem = globalProps.layout.actions.useOpenItem(collectionName)
+        const openItem = globalProps.actions.useOpenItem(collectionName)
 
         if(results.pending === true) {
             return <Loading/>

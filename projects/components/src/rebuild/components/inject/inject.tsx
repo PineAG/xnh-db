@@ -27,7 +27,7 @@ export module LayoutInjector {
         const inheritClient = clients.inheritance[collectionName]
         const titles = config.layout.titles.entityTitles[collectionName]
 
-        const {useOpenItem, useOpenSearch} = config.layout.actions
+        const {useOpenItem, useOpenSearch} = config.actions
         const openItem = useOpenItem(collectionName)
         const openSearch = useOpenSearch(collectionName)
 

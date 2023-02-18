@@ -212,6 +212,7 @@ export module DbUiConfiguration {
         export type GlobalProps<Props extends DataPropsBase> = {
             props: Props
             layout: DisplayProps<Props>
+            actions: DBConfigActions.Actions<Props>
         }
 
         export type GlobalPropsBase = GlobalProps<DataPropsBase>

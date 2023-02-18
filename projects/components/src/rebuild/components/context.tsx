@@ -52,7 +52,7 @@ export module DbContexts {
     const DBConfContext = createNullableContext<DBConf>("AppProvider not initialized")
 
     export function AppProvider<DProps extends DPBase>(props: AppProps<DProps>) {
-        return <GlobalPropsContext.Provider value={{props: props.config, layout: props.layout}}>
+        return <GlobalPropsContext.Provider value={{props: props.config, layout: props.layout, actions: props.actions}}>
             <DBConfContext.Provider value={{dbName: props.dbName}}>
                 {props.children}
             </DBConfContext.Provider>

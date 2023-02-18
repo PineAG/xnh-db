@@ -45,7 +45,7 @@ export module RelationInjectionComponents {
 
         const globalProps = DbContexts.useProps()
         const {client, selfKey, targetKey, relationName, targetCollection} = useRelationUtils(props.collectionName, props.colToRelName)
-        const openItem = globalProps.layout.actions.useOpenItem(targetCollection)
+        const openItem = globalProps.actions.useOpenItem(targetCollection)
 
         const {RelationList, Loading, RelationTag} = DbContexts.useComponents()
         if(relations === null) {
