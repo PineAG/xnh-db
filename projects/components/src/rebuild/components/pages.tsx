@@ -81,11 +81,13 @@ export module DBPages {
             const collectionClient = clients.collections[collectionName]
             const entity = await collectionClient.getItemById(itemId)
             setEntity(entity)
+            entityBinding.update(entity)
 
             const inheritClient = clients.inheritance[collectionName]
             if(inheritClient) {
                 const parentId = await InheritanceUtils.getParentId(itemId, inheritClient)
                 setParent(parentId)
+                parentBinding.update(parentId)
             }
 
             const relations: Record<string, Record<string, string>[]> = {}
@@ -94,6 +96,9 @@ export module DBPages {
                 relations[relRef] = await clients.relations[relationName].getRelationsByKey(selfKey, itemId)
             }
             setRelations(relations)
+            for(const k of Object.keys(relations)) {
+                relationBinding[k].update(relations[k])
+            }
             
             setPending(false)
         }
@@ -102,7 +107,7 @@ export module DBPages {
             const collectionClient = clients.collections[collectionName]
             const inheritClient = clients.inheritance[collectionName]
 
-            await collectionClient.putItem(itemId, entity.value)
+            await collectionClient.putItem(itemId, entityBinding.value)
             if(inheritClient) {
                 const parents = await inheritClient.getRelationsByKey("child", itemId)
                 for(const p of parents) {
@@ -178,7 +183,7 @@ export module DBPages {
     function useRelationBindingGroup(emptyArrays: Record<string, Record<string, string>[]>): LayoutInjector.RelationBindingGroup {
         const binding = XBinding.useBinding(emptyArrays)
         const bindingGroup: Record<string, XBinding.Binding<Record<string, string>[]>> = {}
-        for(const key in binding) {
+        for(const key in binding.value) {
             bindingGroup[key] = XBinding.propertyOf(binding).join(key)
         }
         return bindingGroup

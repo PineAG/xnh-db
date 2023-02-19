@@ -49,9 +49,10 @@ export module InjectionProps {
             if(value !== undefined && !FieldConfig.isValidEndpointValue(config, value)) {
                 console.log("Invalid type")
             }
+            const element = renderStaticEndpoint(path, config, value as FieldConfig.Fields.EndpointValueTypes, ctx)
             return {
                 $title: title,
-                $element: renderStaticEndpoint(path, config, value as FieldConfig.Fields.EndpointValueTypes, ctx)
+                $element: element
             } as PropsTreeNode<T>
         } else {
             const results: Record<string, string | PropsTreeNode<any>> = {
@@ -115,9 +116,10 @@ export module InjectionProps {
             if(binding.value !== undefined && !FieldConfig.isValidEndpointValue(config, binding.value)) {
                 throw new Error("Invalid type")
             }
+            const element = renderDynamicEndpoint(path, config, binding as XBinding.Binding<FieldConfig.Fields.EndpointValueTypes>, parentValue as FieldConfig.Fields.EndpointValueTypes, ctx)
             return {
                 $title: title,
-                $element: renderDynamicEndpoint(path, config, binding as XBinding.Binding<FieldConfig.Fields.EndpointValueTypes>, parentValue as FieldConfig.Fields.EndpointValueTypes, ctx)
+                $element: element 
             } as PropsTreeNode<T>
         } else {
             const results: Record<string, string | PropsTreeNode<any>> = {

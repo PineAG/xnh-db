@@ -16,8 +16,6 @@ export module XnhCreator {
             <XnhBase.BaseItemWrapper item={props.item}>
                 
             </XnhBase.BaseItemWrapper>
-            {/* Parent */}
-            {props.$parentElement}
             {/* Relations */}
             <FormItem label="角色">
                 {props.relations.character.$element()}

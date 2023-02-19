@@ -22,12 +22,15 @@ export module AntdEndpointEditors {
                 <AntdUpload.ImageUploadDialog
                     open={showUpload}
                     onCancel={() => setShowUpload(false)}
-                    onUpload={fileId => props.binding.update(fileId)}
+                    onUpload={fileId => {
+                        props.binding.update(fileId)
+                        setShowUpload(false)
+                    }}
                 />
             </>
         },
         fullText: (props) => {
-            return <Input.TextArea
+            return <Input
                 value={props.binding.value}
                 onChange={evt => props.binding.update(evt.target.value)}/>
         },

@@ -55,6 +55,7 @@ export module AntdWrapperUtils {
         const filteredOptions = allOptions.filter(it => !props.binding.value || it.includes(props.binding.value))
 
         return <AutoComplete
+            style={{width: "100%"}}
             value={props.binding.value}
             onChange={(value) => props.binding.update(value)}
             options={filteredOptions.map(it => ({label: it, value: it}))}

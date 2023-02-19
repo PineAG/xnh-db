@@ -17,7 +17,7 @@ export module XnhArtwork {
                 
             </XnhBase.BaseItemWrapper>
             {/* Parent */}
-            {props.$parentElement}
+            {props.$parentElement()}
             {/* Relations */}
             <FormItem label="角色">
                 {props.relations.character.$element()}

@@ -114,7 +114,8 @@ export module SearchInputComponents {
                     setPropertyPath(value)
                     loadTags(value)
                 }}
-                options={propertyTree}/>
+                options={propertyTree}
+            />
             <Select
                 value={selectedTag}
                 onChange={setSelectedTag}
@@ -151,21 +152,36 @@ export module SearchInputComponents {
         const config = DbContexts.useProps().props.collections[collectionName].config
         return useMemo(() => {
             const root = walk([], config)
-            const children = root.children as InternalGlobalLayouts.ComponentProps.TreeNode[]
+            const children = root?.children ?? [] as InternalGlobalLayouts.ComponentProps.TreeNode[]
             return children ?? []
         }, [collectionName])
 
-        function walk(path: string[], c: any): InternalGlobalLayouts.ComponentProps.TreeNode {
+        function walk(path: string[], c: any): InternalGlobalLayouts.ComponentProps.TreeNode | null {
             const keyPath = ConfigFlatten.stringifyKeyPath(path)
             if(FieldConfig.Fields.isEndpointType(c)) {
-                return {
-                    label: flatTitles[keyPath],
-                    value: ConfigFlatten.stringifyKeyPath(path)
+                if(c.type === "tag" || c.type === "tagList") {
+                    return {
+                        title: flatTitles[keyPath],
+                        value: ConfigFlatten.stringifyKeyPath(path)
+                    }
+                } else {
+                    return null
                 }
+                
             } else {
-                const children = Object.keys(c).map(k => walk([...path, k], c[k]))
+                const children: InternalGlobalLayouts.ComponentProps.TreeNode[] = []
+                for(const k in c) {
+                    const n = walk([...path, k], c[k])
+                    if(n) {
+                        children.push(n)
+                    }
+                }
+                if(children.length === 0) {
+                    return null
+                }
+                const keyPath = ConfigFlatten.stringifyKeyPath(path)
                 return {
-                    label: flatTitles[keyPath],
+                    title: flatTitles[keyPath],
                     value: keyPath,
                     children
                 }
@@ -257,8 +273,8 @@ export module SearchInputComponents {
             if(FieldConfig.Fields.isEndpointType(c)) {
                 yield [path, t]
             } else {
-                yield [path, t["$title"]]
-                for(const key in config) {
+                for(const key in c) {
+                    yield [path, t["$title"]]
                     yield* walk([...path, key], t[key], c[key])
                 }
             }

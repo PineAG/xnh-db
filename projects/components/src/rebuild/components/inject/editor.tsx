@@ -1,10 +1,8 @@
 import { FieldConfig } from "@xnh-db/protocol";
 import { XBinding } from "../binding";
 import { DbContexts } from "../context";
-import { GlobalSyncComponents } from "../sync";
-import { Flex } from "../utils";
+import { Flex, FormItem } from "../utils";
 import { InjectionProps } from "./props";
-import { useRelationUtils } from "./utils";
 import {useState, useEffect} from "react"
 import { DBSearchWrapper, SearchInputComponents, SearchResultComponents } from "../search";
 import { LayoutInjector } from "./inject";
@@ -34,17 +32,21 @@ export module InternalEntityEditors {
     type RelationKeyEditor = {relationName: string, fixedKeys: RelationKeys, binding: XBinding.Binding<RelationKeys>}
     export function RelationKeyEditor(props: RelationKeyEditor): JSX.Element {
         const globalProps = DbContexts.useProps()
+        const collectionsConf = globalProps.props.relations[props.relationName].collections
         return <Flex direction="vertical">
-            {Object.keys(props.binding).map(key => {
+            {Object.keys(collectionsConf).map(key => {
                 if(key in props.fixedKeys) {
-                    return <></>
+                    return null
                 } else {
                     const collectionName = globalProps.props.relations[props.relationName].collections[key]
                     const nextBinding = XBinding.propertyOf(props.binding).join(key)
-                    return <EntitySelect
-                        collectionName={collectionName}
-                        binding={nextBinding}
-                    />
+                    const title = globalProps.layout.titles.entityTitles[collectionName]["$title"]
+                    return <FormItem key={key} label={title}>
+                        <EntitySelect
+                            collectionName={collectionName}
+                            binding={nextBinding}
+                        />
+                    </FormItem>
                 }
             })}
         </Flex>
@@ -69,26 +71,34 @@ export module InternalEntityEditors {
             return <Loading/>
         }
 
+        const dialog = <SelectEntityDialog
+            collectionName={props.collectionName}
+            open={openSelect}
+            itemId={null}
+            onCancel={onCancel}
+            onSelect={onSelect}
+        />
+
         if(!props.binding.value) {
-            return <Empty/>
+            return <>
+                <div 
+                    onClick={() => setOpenSelect(true)}
+                    style={{display: "grid", placeItems: "center"}}>
+                    <Empty />
+                </div>
+                {dialog}
+            </>
         }
 
-        return <ItemPreviewWrapper onClick={() => setOpenSelect(true)}>
-            {
-                item === "empty" ? <Empty simple/> :
-                <PreviewItem {...item}/>
-            }
-            <SelectEntityDialog
-                collectionName={props.collectionName}
-                open={openSelect}
-                itemId={props.binding.value}
-                onCancel={() => setOpenSelect(false)}
-                onSelect={id => {
-                    props.binding.update(id)
-                    setOpenSelect(false)
-                }}
-            />
-        </ItemPreviewWrapper>
+        return <>
+            <ItemPreviewWrapper onClick={() => setOpenSelect(true)}>
+                {
+                    item === "empty" ? <Empty simple/> :
+                    <PreviewItem {...item}/>
+                }
+            </ItemPreviewWrapper>
+            {dialog}
+        </>
 
         async function initialize() {
             setItem("pending")
@@ -99,9 +109,18 @@ export module InternalEntityEditors {
                 setItem("empty")
             }
         }
+
+        function onSelect(id: string) {
+            props.binding.update(id)
+            setOpenSelect(false)
+        }
+
+        function onCancel() {
+            setOpenSelect(false)
+        }
     }
 
-    type SelectEntityDialogProps = {collectionName: string, open: boolean, itemId: string, onCancel: () => void, onSelect: (id: string) => void, }
+    type SelectEntityDialogProps = {collectionName: string, open: boolean, itemId: string | null, onCancel: () => void, onSelect: (id: string) => void, }
     export function SelectEntityDialog(props: SelectEntityDialogProps) {
         const globalProps = DbContexts.useProps()
         const {Dialog} = DbContexts.useComponents()
@@ -113,9 +132,15 @@ export module InternalEntityEditors {
                 title={`选择 ${title}`}
                 open={props.open}
                 width="large"
-                onCancel={props.onCancel}
+                onCancel={() => {
+                    props.onCancel()
+                }}
                 onOkay={() => {
-                    props.onSelect(idBinding.value)
+                    if(idBinding.value) {
+                        props.onSelect(idBinding.value)
+                    } else {
+                        console.warn("Aborted as nothing selected.")
+                    }
                 }}
             >
             <DBSearchWrapper.SearchProvider collection={props.collectionName} searchQuery={query} onChange={setQuery}>

@@ -38,6 +38,7 @@ export module XnhCharacter_Artwork {
     }
 
     export const payloadPreview = DbUiConfiguration.wrapLayout.payloadPreview(config, "character_artwork", props => {
+        console.log(props.selfKey, props.collections.artwork.title.$element)
         if(props.selfKey === "character") {
             return <>{props.collections.artwork.title.$element}</>
         } else {

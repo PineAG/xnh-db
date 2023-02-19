@@ -56,6 +56,35 @@ export module CollectionSyncComponents {
         }
     }
 
+    export function useUpstreamSynchronize(collectionName: string): [React.ReactNode, () => Promise<void>] {
+        const globalConfig = DbContexts.useProps()
+        const {mode, clients} = GlobalSyncComponents.useClients()
+        const {DisplayDialog} = DbContexts.useComponents()
+
+        const [messages, setMessages] = useState<string[] | null>(null)
+
+        if(mode === "offline") {
+            console.error("Not online.")
+            return [<div>尚未登录！</div>, () => Promise.resolve()]
+        }
+
+        if(messages === null) {
+            return [<></>, upload]
+        } else {
+            const component = <DisplayDialog open={true} width="small" title="正在上传数据">
+                {messages.map(it => <p key={it}>{it}</p>)}
+            </DisplayDialog>
+            return [component, upload]
+        }
+
+        async function upload() {
+            await Utils.synchronizeCollection(globalConfig, clients, collectionName, "upload", message => {
+                setMessages(["正在上传数据", message])
+            })
+            setMessages(null)
+        }
+    }
+
     type ConsumerFn = (upload: UploadFn) => React.ReactNode
     const ResultContext = createNullableContext<CollectionSyncResult>("Collection sync not initialized")
 

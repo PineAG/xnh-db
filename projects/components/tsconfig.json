@@ -2,7 +2,8 @@
     "extends": "../../template/tsconfig.json",
     "compilerOptions": {
         "outDir": "lib",
-        "rootDir": "src"
+        "rootDir": "src",
+        "plugins": [{ "name": "typescript-plugin-css-modules" }]
     },
     "include": [
         "./src/**/*"

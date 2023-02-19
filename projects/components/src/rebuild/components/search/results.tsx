@@ -18,43 +18,34 @@ export module SearchResultComponents {
     }
 
     export function CollectionItemSelector(props: CollectionItemSelectorProps) {
-        const [query, setQuery] = useState("")
-
         const {Button, Loading, Divider} = DbContexts.useComponents()
 
-        return <DBSearchWrapper.SearchProvider
-                searchQuery={query}
-                onChange={setQuery}
-                collection={props.collectionName}
-            >
-            <Flex direction="vertical">
-                <SearchInputComponents.DBSearchInput/>
-                {!props.binding.value ? <></> : (
-                    <HStack layout={["auto", "1fr"]}>
-                        <ResultItem itemId={props.binding.value}/>
-                        <Button type="primary" onClick={() => props.binding.update(null)}>取消选择</Button>
-                    </HStack>
-                )}
-                <Divider/>
-                <DBSearchWrapper.SearchConsumer>{(search) => {
-                    if(search.results.pending === true) {
-                        return <Loading/>
-                    }
-                    const items = search.results.items
-                    return <Flex direction="vertical">
-                        {items.map(it => {
-                            if(it === props.binding.value) {
-                                return <></>
-                            }
-                            return <HStack layout={["auto", "1fr"]}>
-                                <ResultItem itemId={it}/>
-                                <Button type="primary" onClick={() => props.binding.update(it)}>选择</Button>
-                            </HStack>
-                        })}
-                    </Flex>
-                }}</DBSearchWrapper.SearchConsumer>
-            </Flex>
-        </DBSearchWrapper.SearchProvider>
+        return <Flex direction="vertical">
+            {!props.binding.value ? <></> : (
+                <HStack layout={["auto", "1fr"]}>
+                    <ResultItem itemId={props.binding.value}/>
+                    <Button type="primary" onClick={() => props.binding.update(null)} style={{maxWidth: "50px"}}>取消选择</Button>
+                </HStack>
+            )}
+            <Divider/>
+            <DBSearchWrapper.SearchConsumer>{(search) => {
+                if(search.results.pending === true) {
+                    return <Loading/>
+                }
+                const items = search.results.items
+                return <Flex direction="vertical">
+                    {items.map(it => {
+                        if(it === props.binding.value) {
+                            return <></>
+                        }
+                        return <HStack layout={["1fr", "auto"]}>
+                            <ResultItem itemId={it}/>
+                            <Button type="primary" onClick={() => props.binding.update(it)} style={{maxWidth: "50px"}}>选择</Button>
+                        </HStack>
+                    })}
+                </Flex>
+            }}</DBSearchWrapper.SearchConsumer>
+        </Flex>
         
     }
 
@@ -96,7 +87,7 @@ export module SearchResultComponents {
         const config = DbContexts.useProps()
         const {Card, Loading} = DbContexts.useComponents()
         const clients = GlobalSyncComponents.useClients()
-        const ResultLayout = config.layout.layouts[collectionName].searchResult
+        const ResultLayout = config.layout.layouts.entities[collectionName].searchResult
 
         const createSimpleProps = LayoutInjector.useCreateSimpleProps(collectionName)
 

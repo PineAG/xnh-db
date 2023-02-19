@@ -20,7 +20,9 @@ export module XnhBase {
     type BaseWrapperProps = {item: DbUiConfiguration.Layouts.ItemLayoutProps<XnhDBProtocol.IBase>, children: React.ReactNode}
     export function BaseItemWrapper(props: BaseWrapperProps) {
         return <HStack layout={["auto", "1fr"]}>
-            {props.item.photos.$element}
+            <div style={{minWidth: "250px"}}>
+                {props.item.photos.$element}
+            </div>
             <Flex direction="vertical">
                 <HStack layout={["auto", "1fr"]}>
                     {props.item.profile.$element}
@@ -32,10 +34,10 @@ export module XnhBase {
                             {props.item.name.zhs.$element}
                         </FormItem>
                         <FormItem label={props.item.name.en.$title}>
-                            {props.item.name.zhs.$element}
+                            {props.item.name.en.$element}
                         </FormItem>
                         <FormItem label={props.item.name.ja.$title}>
-                            {props.item.name.zhs.$element}
+                            {props.item.name.ja.$element}
                         </FormItem>
                     </Flex>
                 </FormItem>

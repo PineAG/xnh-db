@@ -159,12 +159,14 @@ export module RelationInjectionComponents {
     function RelationEditorList(props: RelationEditorListProps) {
         const [showCreateDialog, setShowCreateDialog] = useState(false)
         const bindingItems = XBinding.fromArray(props.binding)
-        const {selfKey, relationName, client} = useRelationUtils(props.colToRelName, props.colToRelName)
+        const {selfKey, relationName, client} = useRelationUtils(props.collectionName, props.colToRelName)
+        const isValidKey = useIsValidKey(relationName)
 
         const {RelationList, RelationTag, AddRelationButton} = DbContexts.useComponents()
         return <RelationList>
             {bindingItems.map(item => (
                 <RelationEditorItem 
+                    key={IOfflineClient.stringifyRelationKey(item.value)}
                     itemId={props.itemId}
                     relationKey={item}
                     collectionName={props.collectionName}
@@ -189,6 +191,9 @@ export module RelationInjectionComponents {
         }
 
         async function onRelationCreate(payload: FieldConfig.EntityBase, keys: RelationKey) {
+            if(!isValidKey(keys)) {
+                throw new Error(`Invalid relation: ${JSON.stringify(keys)}`)
+            }
             await client.putRelation(keys, payload)
             props.binding.update([
                 ...props.binding.value,
@@ -198,9 +203,22 @@ export module RelationInjectionComponents {
         }
     }
 
+    function useIsValidKey(relationName: string) {
+        const globalProps = DbContexts.useProps()
+        const collections = globalProps.props.relations[relationName].collections
+        return (keys: Record<string, string>) => {
+            for(const key in collections) {
+                if(!keys[key]) {
+                    return false
+                }
+            }
+            return true
+        }
+    }
+
     type RelationEditorItemProps = {itemId: string, relationKey: XBinding.Binding<RelationKey>, collectionName: string, colToRelName: string, onRemove: () => void}
     function RelationEditorItem(props: RelationEditorItemProps) {
-        const {selfKey, targetKey, relationName, client} = useRelationUtils(props.colToRelName, props.colToRelName)
+        const {selfKey, targetKey, relationName, client} = useRelationUtils(props.collectionName, props.colToRelName)
         const globalProps = DbContexts.useProps()
         const relationData = useRelationData(props.relationKey.value, props.collectionName, props.colToRelName)
         const InternalTag = globalProps.layout.layouts.payloads[relationName].relationPreview
@@ -228,20 +246,22 @@ export module RelationInjectionComponents {
                     collections={relationData.collections}
                     payload={payloadProps}
                 />
+                <InternalEntityEditors.RelationEditDialog
+                    open={showDialog}
+                    fixedKeys={{[selfKey]: props.itemId}}
+                    relationName={relationName}
+                    initialKeys={props.relationKey.value}
+                    initialPayload={relationData.payload}
+                    onCancel={() => {
+                        setShowDialog(false)
+                    }}
+                    onOk={async (payload, keys) => {
+                        await client.putRelation(keys, payload)
+                        props.relationKey.update(keys)
+                        setShowDialog(false)
+                    }}
+                />
             </RelationTag>
-            <InternalEntityEditors.RelationEditDialog
-                open={showDialog}
-                fixedKeys={{[selfKey]: props.itemId}}
-                relationName={relationName}
-                initialKeys={props.relationKey.value}
-                initialPayload={relationData.payload}
-                onCancel={() => setShowDialog(false)}
-                onOk={async (payload, keys) => {
-                    await client.putRelation(keys, payload)
-                    props.relationKey.update(keys)
-                    setShowDialog(false)
-                }}
-            />
         </>
         }
     }

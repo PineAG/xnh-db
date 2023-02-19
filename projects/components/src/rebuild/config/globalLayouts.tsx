@@ -42,7 +42,7 @@ export module InternalGlobalLayouts {
             value: string
         }
         export interface TreeNode {
-            label: string
+            title: string
             value: string
             children?: TreeNode[]
         }

@@ -30,7 +30,7 @@ export module XnhCharacter {
             {/* Item Data */}
             <NewPage item={props.item}/>
             {/* Parent */}
-            {props.$parentElement}
+            {props.$parentElement()}
             {/* Relations */}
             <FormItem label="作品">
                 {props.relations.artwork.$element()}
@@ -44,26 +44,24 @@ export module XnhCharacter {
 
     export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "character", props => {
         return <XnhBase.BaseItemWrapper item={props.item}>
-            <XnhBase.BaseItemWrapper item={props.item}>
-                <FormItem label={props.item.appearance.$title}>
-                    <FormItem label={props.item.appearance.eyes.$title}>
-                        <FormItem label={props.item.appearance.eyes.color.$title}>
-                            {props.item.appearance.eyes.color.$element}
-                        </FormItem>
-                        <FormItem label={props.item.appearance.eyes.features.$title}>
-                            {props.item.appearance.eyes.features.$element}
-                        </FormItem>
+            <FormItem label={props.item.appearance.$title}>
+                <FormItem label={props.item.appearance.eyes.$title}>
+                    <FormItem label={props.item.appearance.eyes.color.$title}>
+                        {props.item.appearance.eyes.color.$element}
                     </FormItem>
-                    <FormItem label={props.item.appearance.hair.$title}>
-                        <FormItem label={props.item.appearance.hair.color.$title}>
-                            {props.item.appearance.hair.color.$element}
-                        </FormItem>
-                        <FormItem label={props.item.appearance.hair.shape.$title}>
-                            {props.item.appearance.hair.shape.$element}
-                        </FormItem>
+                    <FormItem label={props.item.appearance.eyes.features.$title}>
+                        {props.item.appearance.eyes.features.$element}
                     </FormItem>
+                </FormItem>
+                <FormItem label={props.item.appearance.hair.$title}>
+                    <FormItem label={props.item.appearance.hair.color.$title}>
+                        {props.item.appearance.hair.color.$element}
                     </FormItem>
-            </XnhBase.BaseItemWrapper>
+                    <FormItem label={props.item.appearance.hair.shape.$title}>
+                        {props.item.appearance.hair.shape.$element}
+                    </FormItem>
+                </FormItem>
+            </FormItem>
         </XnhBase.BaseItemWrapper>
     })
 

@@ -16,6 +16,7 @@
     "@types/lodash": "^4.14.191",
     "@xnh-db/protocol": "*",
     "antd": "^5.1.6",
+    "cropperjs": "^1.5.13",
     "idb": "^7.1.1",
     "js-base64": "^3.7.4",
     "lodash": "^4.17.21",
@@ -36,6 +37,7 @@
     "fake-indexeddb": "^4.0.1",
     "jest": "^29.4.2",
     "jest-environment-jsdom": "^29.4.3",
-    "ts-jest": "^29.0.5"
+    "ts-jest": "^29.0.5",
+    "typescript-plugin-css-modules": "^4.2.1"
   }
 }

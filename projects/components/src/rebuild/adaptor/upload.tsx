@@ -4,6 +4,7 @@ import {useRef, useState, useEffect} from "react"
 import {Modal} from "antd"
 import { AdaptorsConfig } from "./config";
 import { GlobalSyncComponents } from "../components/sync";
+import "react-image-crop/dist/ReactCrop.css";
 
 export module AntdUpload {
     interface UseUploadFileProps {

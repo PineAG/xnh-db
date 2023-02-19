@@ -1,14 +1,15 @@
 import {Routes, Route, Navigate} from "react-router"
-import { CharacterEditor, CharacterSearch, CharacterViewer } from "./character"
+import { XnhCreate, XnhEdit, XnhSearch, XnhView } from "./views"
 
-export function XnhRoutes() {
+export function RootRoutes() {
     return <Routes>
         <Route path="" element={<Navigate to="/character/search"/>}/>
-        <Route path="character">
-            <Route path="search" element={<CharacterSearch/>}/>
-            <Route path="view/:id" element={<CharacterViewer/>}/>
-            <Route path="edit/:id" element={<CharacterEditor/>}/>
-            <Route path="create"/>
+        <Route path=":collectionName">
+            <Route path="search" element={<XnhSearch/>}/>
+            <Route path="search/:searchQuery" element={<XnhSearch/>}/>
+            <Route path="view/:itemId" element={<XnhView/>}/>
+            <Route path="edit/:itemId" element={<XnhEdit/>}/>
+            <Route path="create" element={<XnhCreate/>}/>
         </Route>
     </Routes>
 }

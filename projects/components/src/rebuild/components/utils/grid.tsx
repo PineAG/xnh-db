@@ -105,7 +105,6 @@ export function HStack(props: StackProps) {
         display: "grid",
         gridTemplateRows: "1fr",
         gridTemplateColumns: props.layout.join(" "),
-        alignItems: "baseline",
         ...props.style
     }
     return <div style={style} className={props.className}>
@@ -119,8 +118,8 @@ export interface FormItemProps {
 }
 
 export function FormItem(props: FormItemProps) {
-    return <HStack layout={["auto", "1fr"]}>
-        <span>{props.label}:</span>
-        <span>{props.children}</span>
+    return <HStack layout={["auto", "1fr"]} style={{alignItems: "baseline"}}>
+        <div>{props.label}:</div>
+        <div>{props.children}</div>
     </HStack>
 }

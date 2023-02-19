@@ -13,6 +13,8 @@ export module AntdGlobalComponents {
                 width={DialogWidth[props.width]}
                 onOk={props.onOkay}
                 onCancel={props.onCancel}
+                okButtonProps={!props.onOkay ? {style: {display: "none"}} : {}}
+                cancelButtonProps={!props.onCancel ? {style: {display: "none"}} : {}}
             >
                 {props.children}
             </Antd.Modal>
@@ -71,6 +73,9 @@ export module AntdGlobalComponents {
                 onChange={props.onChange}
                 treeData={props.options}
                 style={props.style}
+                allowClear
+                treeDefaultExpandAll
+                showSearch
             />
         },
         RelationList: (props) => {
