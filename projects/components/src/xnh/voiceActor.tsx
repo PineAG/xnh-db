@@ -29,6 +29,12 @@ export module XnhVoiceActor {
         </Flex>
     })
 
+    export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "voiceActor", props => {
+        return <XnhBase.BaseItemWrapper item={props.item}>
+            
+        </XnhBase.BaseItemWrapper>
+    })
+
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "voiceActor", props => {
         return <XnhBase.BaseSearchWrapper item={props.item}>
 

@@ -29,6 +29,12 @@ export module XnhCreator {
         </Flex>
     })
 
+    export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "creator", props => {
+        return <XnhBase.BaseItemWrapper item={props.item}>
+
+        </XnhBase.BaseItemWrapper>
+    })
+
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "creator", props => {
         return <XnhBase.BaseSearchWrapper item={props.item}>
 

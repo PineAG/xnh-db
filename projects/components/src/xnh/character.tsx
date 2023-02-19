@@ -24,9 +24,26 @@ export module XnhCharacter {
     }
     
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "character", props => {
+        const NewPage = newPage
         return <Flex direction="vertical">
             <>
             {/* Item Data */}
+            <NewPage item={props.item}/>
+            {/* Parent */}
+            {props.$parentElement}
+            {/* Relations */}
+            <FormItem label="作品">
+                {props.relations.artwork.$element()}
+            </FormItem>
+            <FormItem label="声优">
+                {props.relations.voiceActor.$element()}
+            </FormItem>
+            </>
+        </Flex>
+    })
+
+    export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "character", props => {
+        return <XnhBase.BaseItemWrapper item={props.item}>
             <XnhBase.BaseItemWrapper item={props.item}>
                 <FormItem label={props.item.appearance.$title}>
                     <FormItem label={props.item.appearance.eyes.$title}>
@@ -47,17 +64,7 @@ export module XnhCharacter {
                     </FormItem>
                     </FormItem>
             </XnhBase.BaseItemWrapper>
-            {/* Parent */}
-            {props.$parentElement}
-            {/* Relations */}
-            <FormItem label="作品">
-                {props.relations.artwork.$element()}
-            </FormItem>
-            <FormItem label="声优">
-                {props.relations.voiceActor.$element()}
-            </FormItem>
-            </>
-        </Flex>
+        </XnhBase.BaseItemWrapper>
     })
 
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "character", props => {

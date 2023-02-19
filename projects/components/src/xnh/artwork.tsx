@@ -29,6 +29,12 @@ export module XnhArtwork {
         </Flex>
     })
 
+    export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "artwork", props => {
+        return <XnhBase.BaseItemWrapper item={props.item}>
+            
+        </XnhBase.BaseItemWrapper>
+    })
+
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "artwork", props => {
         return <XnhBase.BaseSearchWrapper item={props.item}>
 

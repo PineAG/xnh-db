@@ -1,4 +1,4 @@
-import { FieldConfig } from "@xnh-db/protocol"
+import { ConfigFlatten, FieldConfig, IOfflineClient } from "@xnh-db/protocol"
 import { useEffect, useMemo, useState } from "react"
 import { DeepPartial } from "utility-types"
 import { InheritanceUtils } from "../data/inherit"
@@ -99,9 +99,40 @@ export module DBPages {
         }
 
         async function save() {
-            // TODO
-            // diff relation
-            throw new Error("Not Implemented")
+            const collectionClient = clients.collections[collectionName]
+            const inheritClient = clients.inheritance[collectionName]
+
+            await collectionClient.putItem(itemId, entity.value)
+            if(inheritClient) {
+                const parents = await inheritClient.getRelationsByKey("child", itemId)
+                for(const p of parents) {
+                    await inheritClient.deleteRelation(p)
+                }
+                const parentId = parentBinding.value
+                if(parentId) {
+                    const isValid = await InheritanceUtils.isValidateParentId(itemId, parentId, inheritClient)
+                    if(isValid) {
+                        await inheritClient.putRelation({
+                            parent: parentId,
+                            child: itemId
+                        }, {})
+                    } else {
+                        console.error(`Not a valid parent id of ${itemId}: ${parentId}`)
+                    }
+                }
+                
+            }
+
+            const colToRel = globalProps.props.collectionsToRelations[collectionName]
+            for(const [relRef, {relation: relationName}] of Object.entries(colToRel)) {
+                const client = clients.relations[relationName]
+                const newRelations = new Set<string>(relationBinding[relRef].value.map(IOfflineClient.stringifyRelationKey))
+                for(const rel of relations[relRef]) {
+                    if(!newRelations.has(IOfflineClient.stringifyRelationKey(rel))) {
+                        await client.deleteRelation(rel)
+                    }
+                }
+            }
         }
 
         async function remove(){

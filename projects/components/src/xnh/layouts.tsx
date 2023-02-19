@@ -12,21 +12,25 @@ export const layouts = DbUiConfiguration.makeDisplayProps(config, {
         entities: {
             character: {
                 fullPage: XnhCharacter.fullPage,
+                newPage: XnhCharacter.newPage,
                 searchResult: XnhCharacter.searchResult,
                 previewItem: XnhCharacter.previewItem,
             },
             creator: {
                 fullPage: XnhCreator.fullPage,
+                newPage: XnhCreator.newPage,
                 searchResult: XnhCreator.searchResult,
                 previewItem: XnhCreator.previewItem,
             },
             artwork: {
                 fullPage: XnhArtwork.fullPage,
+                newPage: XnhArtwork.newPage,
                 searchResult: XnhArtwork.searchResult,
                 previewItem: XnhArtwork.previewItem,
             },
             voiceActor: {
                 fullPage: XnhVoiceActor.fullPage,
+                newPage: XnhVoiceActor.newPage,
                 searchResult: XnhVoiceActor.searchResult,
                 previewItem: XnhVoiceActor.previewItem,
             }
