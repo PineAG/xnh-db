@@ -2,15 +2,8 @@ import { CollectionSyncComponents, DbContexts, DBPages, DBSearchWrapper, Flex, S
 import {useNavigate, useParams} from "react-router"
 import {Button, Popconfirm} from "antd"
 
-function useCollectionName(): string {
-    const globalProps = DbContexts.useProps()
-    const params = useParams()
-    const collectionName = params["collectionName"]
-    if(collectionName && collectionName in globalProps.props.collections) {
-        return collectionName
-    } else {
-        throw new Error(`Invalid collectionName: ${collectionName}`)
-    }
+interface Props {
+    collectionName: string
 }
 
 function useItemId(): string {
@@ -29,8 +22,7 @@ function useSearchQuery(): string {
     return query ?? ""
 }
 
-export function XnhView() {
-    const collectionName = useCollectionName()
+export function XnhView({collectionName}: Props) {
     const itemId = useItemId()
     const navigate = useNavigate()
     return <Flex direction="vertical">
@@ -41,16 +33,13 @@ export function XnhView() {
     </Flex>
 }
 
-export function XnhEdit() {
-    const collectionName = useCollectionName()
-
+export function XnhEdit({collectionName}: Props) {
     return <CollectionSyncComponents.Provider collection={collectionName}>
-        <EditInternal/>
+        <EditInternal collectionName={collectionName}/>
     </CollectionSyncComponents.Provider>
 }
 
-function EditInternal() {
-    const collectionName = useCollectionName()
+function EditInternal({collectionName}: Props) {
     const navigate = useNavigate()
     const itemId = useItemId()
     const [editor, actions] = DBPages.useEditPage(collectionName, itemId)
@@ -85,17 +74,15 @@ function EditInternal() {
 
 }
 
-export function XnhCreate() {
-    const collectionName = useCollectionName()
+export function XnhCreate({collectionName}: Props) {
 
     return <CollectionSyncComponents.Provider collection={collectionName}>
-        <CreateInternal/>
+        <CreateInternal collectionName={collectionName}/>
     </CollectionSyncComponents.Provider>
 }
 
-function CreateInternal() {
+function CreateInternal({collectionName}: Props) {
     const navigate = useNavigate()
-    const collectionName = useCollectionName()
     const [editor, internalSave] = DBPages.useCreatePage(collectionName)
     const uploadCollection = CollectionSyncComponents.useUploadCollection()
 
@@ -113,8 +100,7 @@ function CreateInternal() {
     }
 }
 
-export function XnhSearch() {
-    const collectionName = useCollectionName()
+export function XnhSearch({collectionName}: Props) {
     const searchQuery = useSearchQuery()
     const navigate = useNavigate()
     

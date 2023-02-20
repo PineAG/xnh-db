@@ -21,12 +21,14 @@ export module DBPages {
     
         const [injection, setInjection] = useState<LayoutInjector.FullPageInjectionProps | null>(null)
         useEffect(() => {
+            setInjection(null)
             initialize()
         }, [props.collectionName, props.itemId])
 
         if(!injection) {
             return <Loading/>
         } else {
+            console.log(props.itemId, props.collectionName, injection)
             return <Layout {...injection}/>
         }
 
