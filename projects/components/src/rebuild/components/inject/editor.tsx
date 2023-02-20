@@ -91,13 +91,16 @@ export module InternalEntityEditors {
         }
 
         return <>
-            <ItemPreviewWrapper onClick={() => setOpenSelect(true)}>
+        <div onClick={() => setOpenSelect(true)}>
+            <ItemPreviewWrapper>
                 {
                     item === "empty" ? <Empty simple/> :
                     <PreviewItem {...item}/>
                 }
             </ItemPreviewWrapper>
-            {dialog}
+            
+        </div>
+        {dialog}
         </>
 
         async function initialize() {
@@ -170,7 +173,9 @@ export module InternalEntityEditors {
             title="编辑关系" 
             width="large"
             open={props.open}
-            onCancel={props.onCancel}
+            onCancel={() => {
+                props.onCancel()
+            }}
             onOkay={onCreate}
         >
             <Flex direction="vertical">

@@ -47,7 +47,7 @@ export module InjectionProps {
                 throw new Error("Title is not string.")
             }
             if(value !== undefined && !FieldConfig.isValidEndpointValue(config, value)) {
-                console.log("Invalid type")
+                console.error("Invalid type")
             }
             const element = renderStaticEndpoint(path, config, value as FieldConfig.Fields.EndpointValueTypes, ctx)
             return {

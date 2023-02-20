@@ -92,11 +92,23 @@ export module RelationInjectionComponents {
                 openItem: () => {},
                 openSearch: () => {}
             })
+            const collections: Record<string, any> = {}
+            for(const [key, data] of Object.entries(relationData.collections)) {
+                const colName =globalProps.props.relations[relationName].collections[key]
+                const titles = globalProps.layout.titles.entityTitles[colName]
+                const conf = globalProps.props.collections[colName].config
+                collections[key] = InjectionProps.renderStaticPropTree(conf, data, titles, {
+                    components: comp,
+                    openItem: () => {},
+                    openSearch: () => {}
+                })
+            }
+
             return <InternalTag
                     selfKey={selfKey as any}
                     targetKey={targetKey as any}
                     payload={payloadProps}
-                    collections={relationData.collections}
+                    collections={collections}
                 />
         }
     }
@@ -162,7 +174,7 @@ export module RelationInjectionComponents {
         const {selfKey, relationName, client} = useRelationUtils(props.collectionName, props.colToRelName)
         const isValidKey = useIsValidKey(relationName)
 
-        const {RelationList, RelationTag, AddRelationButton} = DbContexts.useComponents()
+        const {RelationList, AddRelationButton} = DbContexts.useComponents()
         return <RelationList>
             {bindingItems.map(item => (
                 <RelationEditorItem 
@@ -181,7 +193,10 @@ export module RelationInjectionComponents {
                 initialPayload={{}}
                 initialKeys={{}}
                 relationName={relationName}
-                onCancel={() => setShowCreateDialog(false)}
+                onCancel={() => {
+                    setShowCreateDialog(false)
+
+                }}
                 onOk={onRelationCreate}
             />
         </RelationList>
@@ -238,14 +253,27 @@ export module RelationInjectionComponents {
                 openItem: () => {},
                 openSearch: () => {}
             })
+            const collections: Record<string, any> = {}
+            for(const [key, data] of Object.entries(relationData.collections)) {
+                const colName =globalProps.props.relations[relationName].collections[key]
+                const titles = globalProps.layout.titles.entityTitles[colName]
+                const conf = globalProps.props.collections[colName].config
+                collections[key] = InjectionProps.renderStaticPropTree(conf, data, titles, {
+                    components: comp,
+                    openItem: () => {},
+                    openSearch: () => {}
+                })
+            }
+
             return <>
-            <RelationTag onClick={() => setShowDialog(true)} onClose={props.onRemove}>
-                <InternalTag
-                    selfKey={selfKey as any}
-                    targetKey={targetKey as any}
-                    collections={relationData.collections}
-                    payload={payloadProps}
-                />
+                <RelationTag onClick={() => setShowDialog(true)} onClose={props.onRemove}>
+                    <InternalTag
+                        selfKey={selfKey as any}
+                        targetKey={targetKey as any}
+                        collections={collections}
+                        payload={payloadProps}
+                    />
+                </RelationTag>
                 <InternalEntityEditors.RelationEditDialog
                     open={showDialog}
                     fixedKeys={{[selfKey]: props.itemId}}
@@ -261,8 +289,7 @@ export module RelationInjectionComponents {
                         setShowDialog(false)
                     }}
                 />
-            </RelationTag>
-        </>
+            </>
         }
     }
 }

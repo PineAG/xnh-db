@@ -38,7 +38,7 @@ export module SearchResultComponents {
                         if(it === props.binding.value) {
                             return <></>
                         }
-                        return <HStack layout={["1fr", "auto"]}>
+                        return <HStack key={it} layout={["1fr", "auto"]}>
                             <ResultItem itemId={it}/>
                             <Button type="primary" onClick={() => props.binding.update(it)} style={{maxWidth: "50px"}}>选择</Button>
                         </HStack>

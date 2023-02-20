@@ -87,7 +87,6 @@ export module AuthorizationComponents {
                 </div>)
                 break
             case "selectRepo":
-                console.log(step.payload.repoList)
                 content = (<div>
                     <p>
                         选择您要编辑的项目

@@ -53,12 +53,14 @@ export module DBPages {
         // fetched data
         const [entity, setEntity] = useState<DeepPartial<FieldConfig.EntityBase>>({})
         const [parent, setParent] = useState<string | null>(null)
-        const [relations, setRelations] = useState(useEmptyRelations(collectionName))
+        const emptyRelations = useEmptyRelations(collectionName)
+        const [relations, setRelations] = useState(emptyRelations)
 
         // editable data
         const entityBinding = XBinding.useBinding(entity)
         const parentBinding = XBinding.useBinding<string | null>(parent)
-        const relationBinding = useRelationBindingGroup(relations)
+        const newRelationsBinding = XBinding.useBinding(emptyRelations)
+        const relationBindingGroup = getRelationBindingGroup(newRelationsBinding)
 
         const getFullPageInjection = LayoutInjector.useGetFullPagePropsFromBinding(collectionName)
 
@@ -70,7 +72,7 @@ export module DBPages {
         if(pending) {
             component = <Loading/>
         } else {
-            const injection = getFullPageInjection(itemId, entityBinding, parentBinding, relationBinding)
+            const injection = getFullPageInjection(itemId, entityBinding, parentBinding, relationBindingGroup)
             component = <Layout {...injection}/>
         }
 
@@ -96,9 +98,7 @@ export module DBPages {
                 relations[relRef] = await clients.relations[relationName].getRelationsByKey(selfKey, itemId)
             }
             setRelations(relations)
-            for(const k of Object.keys(relations)) {
-                relationBinding[k].update(relations[k])
-            }
+            newRelationsBinding.update(relations)
             
             setPending(false)
         }
@@ -131,7 +131,7 @@ export module DBPages {
             const colToRel = globalProps.props.collectionsToRelations[collectionName]
             for(const [relRef, {relation: relationName}] of Object.entries(colToRel)) {
                 const client = clients.relations[relationName]
-                const newRelations = new Set<string>(relationBinding[relRef].value.map(IOfflineClient.stringifyRelationKey))
+                const newRelations = new Set<string>(newRelationsBinding.value[relRef].map(IOfflineClient.stringifyRelationKey))
                 for(const rel of relations[relRef]) {
                     if(!newRelations.has(IOfflineClient.stringifyRelationKey(rel))) {
                         await client.deleteRelation(rel)
@@ -180,8 +180,7 @@ export module DBPages {
         return emptyArrays
     }
 
-    function useRelationBindingGroup(emptyArrays: Record<string, Record<string, string>[]>): LayoutInjector.RelationBindingGroup {
-        const binding = XBinding.useBinding(emptyArrays)
+    function getRelationBindingGroup(binding: XBinding.Binding<Record<string, Record<string, string>[]>>): LayoutInjector.RelationBindingGroup {
         const bindingGroup: Record<string, XBinding.Binding<Record<string, string>[]>> = {}
         for(const key in binding.value) {
             bindingGroup[key] = XBinding.propertyOf(binding).join(key)

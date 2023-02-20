@@ -57,6 +57,8 @@ export module AntdUpload {
         const [crop, setCrop] = useState<Crop>({x: 0, y: 0, width: 0, height: 0, unit: "px"})
         const clients = GlobalSyncComponents.useQueryClients()
 
+        const [imageUploader, onPaste] = useImageUpload(onUpload)
+
         useEffect(() => {
             return () => {
                 if(state.state === "uploaded") {
@@ -67,9 +69,7 @@ export module AntdUpload {
 
         let content: JSX.Element
         if(state.state === "empty") {
-            content = <ImageUpload
-                onChange={onUpload}
-            />
+            content = imageUploader
         } else {
             content = <ReactCrop crop={crop} onChange={setCrop}>
                 <img src={state.displayURL}/>
@@ -82,6 +82,11 @@ export module AntdUpload {
             onCancel={props.onCancel}
             onOk={finalize}
             okButtonProps={{disabled: state.state === "empty"}}
+            wrapProps={{
+                onPaste: (evt) => {
+                    onPaste(evt)
+                }
+            }}
             >
                 {content}
         </Modal>
@@ -137,15 +142,14 @@ export module AntdUpload {
         
     }
     
-    type ImageUploadProps = {onChange: (file: File) => void}
-    export function ImageUpload(props: ImageUploadProps) {
+    export function useImageUpload(onChange: (file: File) => void): [JSX.Element, React.ClipboardEventHandler<HTMLElement>] {
         const [startUpload, uploadFilePlaceholder] = useUploadFile({
             accept: "image/*",
             multiple: false,
             onUpload: onUploadByFileList
         })
-        return <div 
-            onPaste={evt => onPaste(evt.clipboardData.items)}
+        const component = <div 
+            onPaste={wrappedOnPaste}
             onClick={startUpload}
             onDragOverCapture={evt => {
                 evt.preventDefault()
@@ -164,6 +168,12 @@ export module AntdUpload {
             <div>点击上传、拖拽或粘贴到此处</div>
             {uploadFilePlaceholder}
         </div>
+        return [component, wrappedOnPaste] 
+
+        function wrappedOnPaste(evt: React.ClipboardEvent<HTMLDivElement>) {
+            return onPaste(evt.clipboardData.items)
+        }
+
         async function onPaste(items: DataTransferItemList) {
             const imageItems = Array.from(items).filter(it => it.type.includes("image"))
             if(imageItems.length === 0) {
@@ -172,7 +182,7 @@ export module AntdUpload {
             const item = items[0]
             const file = item.getAsFile()
             if(file) {
-                props.onChange(file)
+                onChange(file)
             }
         }
 
@@ -181,7 +191,7 @@ export module AntdUpload {
                 return
             }
             const file = files[0]
-            props.onChange(file)
+            onChange(file)
         }
     }
     
