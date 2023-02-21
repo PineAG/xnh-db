@@ -6,14 +6,14 @@ import { RootRoutes } from './routes';
 function useOpenSearch(collectionName: string) {
   const navigate = useNavigate()
   return (query: DBSearch.IQuery) => {
-    navigate(`/${collectionName}/search/${DBSearchWrapper.stringifyQuery(query)}`)
+    navigate(`/collection/${collectionName}/search/${DBSearchWrapper.stringifyQuery(query)}`)
   }
 }
 
 function useOpenItem(collectionName: string) {
   const navigate = useNavigate()
   return (itemId: string) => {
-    navigate(`/${collectionName}/view/${itemId}`)
+    navigate(`/collection/${collectionName}/view/${itemId}`)
   }
 }
 

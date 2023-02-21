@@ -5,7 +5,7 @@ import { config } from "./config";
 
 export module XnhVoiceActor {
     export const VoiceActorTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.IVoiceActor> = {
-        $title: "角色",
+        $title: "声优",
         ...XnhBase.titles,
     }
 

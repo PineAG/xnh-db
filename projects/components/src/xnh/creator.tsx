@@ -5,7 +5,7 @@ import { config } from "./config";
 
 export module XnhCreator {
     export const CreatorTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.ICreator> = {
-        $title: "作品",
+        $title: "创作者",
         ...XnhBase.titles,
     }
 

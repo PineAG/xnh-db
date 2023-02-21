@@ -1,5 +1,4 @@
 ## TODOs
-
 * Select Parent (patch "exclude" query)
 * remove async operations from relation editor: make payload a binding
 * Gallery editor !
