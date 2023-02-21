@@ -21,26 +21,7 @@ export module AntdEndpointViewers {
             return <span>还没做</span>
         },
         gallery: (props) => {
-            const [showList, setShowList] = useState(false)
-
-            if(!props.value?.length) {
-                return <Empty/>
-            }
-            return <div>
-            <div style={{width: "100%", height: "100%"}} onClick={() => setShowList(true)}>
-                <AntdWrapperUtils.AsyncImage
-                    fileName={props.value[0]}
-                    imageProps={{
-                        width: "100%"
-                    }}
-                />
-            </div>
-            <div style={{display: "none"}}>
-                <Image.PreviewGroup preview={{visible: showList, onVisibleChange: (vis) => setShowList(vis)}}>
-                    {props.value.map((f) => (<AntdWrapperUtils.AsyncImage key={f} fileName={f} imageProps={{}}/>))}
-                </Image.PreviewGroup>
-            </div>
-        </div>
+            return <AntdWrapperUtils.GalleryView fileNames={props.value}/>
         },
         id: (props) => {
             return <></>

@@ -126,7 +126,7 @@ export module AuthorizationComponents {
                 break
             case "complete":
                 content = (<div>
-                    <p>准备开始编辑了，请继续吧！</p>
+                    <p>已经成功登录</p>
                 </div>)
                 break
         }
@@ -192,6 +192,66 @@ export module AuthorizationComponents {
         }
     }
 
+    export type AuthState = {
+        state: "online"
+        logout(): void
+    } | {
+        state: "offline"
+        login(): void
+    } | {
+        state: "pending"
+    }
+
+    export function useAuth(refresh?: () => void): [JSX.Element, AuthState] {
+        const [state, setState] = useState<AuthState["state"]>("offline")
+        const destroyLocalStorage = DbContexts.useDestroyLocalStorage()
+        useEffect(() => {
+            setState(getCurrentMode())
+        }, [])
+
+        if(state === "pending") {
+            const comp = <GithubAuthDialog
+                onClose={cert => {
+                    if(cert) {
+                        OctokitCertificationStore.cert.set(cert)
+                        setState("online")
+                    } else {
+                        setState("offline")
+                    }
+                    if(refresh) {
+                        refresh()
+                    }
+                }}
+            />
+            return [comp, {
+                state: "pending"
+            }]
+        } else if (state === "online") {
+            return [<></>, {
+                state: "online",
+                logout
+            }]
+        } else {
+            return [<></>, {
+                state: "offline",
+                login
+            }]
+        }
+
+        function login() {
+            setState("pending")
+        }
+
+        async function logout() {
+            OctokitCertificationStore.cert.clear()
+            setState("offline")
+            await destroyLocalStorage()
+            if(refresh) {
+                refresh()
+            }
+        }
+    }
+
     export function DBLoginButton() {
         const [state, setState] = useState<"online" | "offline" | "login">("offline")
         const {Button} = DbContexts.useComponents()
@@ -207,16 +267,7 @@ export module AuthorizationComponents {
                 setState("offline")
             }}>退出</Button>
         } else {
-            return <GithubAuthDialog
-                onClose={cert => {
-                    if(cert) {
-                        OctokitCertificationStore.cert.set(cert)
-                        setState("online")
-                    } else {
-                        setState("offline")
-                    }
-                }}
-            />
+            return 
         }
     }
 

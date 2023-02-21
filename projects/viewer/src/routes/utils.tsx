@@ -1,8 +1,9 @@
-import { XnhUiConfiguration } from "@xnh-db/components"
+import { AuthorizationComponents, XnhUiConfiguration } from "@xnh-db/components"
 import {Layout, Menu} from "antd"
 import { useNavigate, useParams } from "react-router-dom"
 
-export const collections: (keyof typeof XnhUiConfiguration.config.collections)[] = ["character", "artwork", "voiceActor", "creator"]
+type CollectionName = keyof typeof XnhUiConfiguration.config.collections
+export const collections: CollectionName[] = ["character", "artwork", "voiceActor", "creator"]
 
 export function NotFound() {
     return <p>该页面不存在</p>
@@ -18,18 +19,23 @@ function useCollectionNameUnsafe(): string | null {
     }
 }
 
-export function useCollectionName(): string {
+export function useCollectionName(): CollectionName {
     const collectionName = useCollectionNameUnsafe()
     if(collections.some(it => it === collectionName)) {
-        return collectionName as string
+        return collectionName as CollectionName
     } else {
         throw new Error(`Invalid collection: ${collectionName}`)
     }
 }
 
-export function useItemId(): string {
+export function useItemIdUnsafe(): string | null {
     const params = useParams()
     const itemId = params["itemId"]
+    return itemId ?? null
+}
+
+export function useItemId(): string {
+    const itemId = useItemIdUnsafe()
     if(itemId) {
         return itemId
     } else {
@@ -46,24 +52,43 @@ export function useSearchQuery(): string {
 export function PageWrapper(props: {children: React.ReactNode}) {
     const navigate = useNavigate()
     const collectionName = useCollectionNameUnsafe()
+    const [authPlaceholder, authState] = AuthorizationComponents.useAuth(() => {window.location.reload()})
     return <Layout>
         <Layout.Header>
             <Menu
                 theme="dark"
                 mode="horizontal"
                 selectedKeys={[collectionName ?? ""]}
-                items={collections.map(colName => {
-                    const title = XnhUiConfiguration.layouts.titles.entityTitles[colName].$title
-                    return {
-                        label: title,
-                        key: colName,
-                        onClick: () => navigate(`/collection/${colName}`)
-                    }
-                })}
+                items={[
+                    ...collections.map(colName => {
+                        const title = XnhUiConfiguration.layouts.titles.entityTitles[colName].$title
+                        return {
+                            label: title,
+                            key: colName,
+                            onClick: () => navigate(`/collection/${colName}`)
+                        }
+                    }), (
+                        authState.state === "online" ? {
+                            label: "退出编辑模式",
+                            onClick: authState.logout,
+                            key: "login"
+                        } :
+                        authState.state === "offline" ? {
+                            label: "进入编辑模式",
+                            onClick: authState.login,
+                            key: "login"
+                        } : {
+                            label: "登陆中",
+                            key: "login"
+                        }
+                    )
+
+                ]}
             />
         </Layout.Header>
         <Layout.Content>
             {props.children}
+            {authPlaceholder}
         </Layout.Content>
     </Layout>
 }

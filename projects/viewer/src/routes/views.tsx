@@ -1,4 +1,4 @@
-import { CollectionSyncComponents, DbContexts, DBPages, DBSearchWrapper, Flex, SearchInputComponents, SearchResultComponents } from "@xnh-db/components"
+import { CollectionSyncComponents, DbContexts, DBPages, DBSearchWrapper, Flex, GlobalSyncComponents, SearchInputComponents, SearchResultComponents, XnhUiConfiguration } from "@xnh-db/components"
 import {useNavigate, useParams} from "react-router"
 import {Button, Popconfirm} from "antd"
 import {useItemId, useCollectionName, useSearchQuery} from "./utils"
@@ -15,6 +15,7 @@ export function XnhView() {
     const navigate = useNavigate()
     return <Flex direction="vertical">
         <Flex direction="horizontal">
+            <ItemPageTitle prefix=""/>
             <Button onClick={() => navigate(`/collection/${collectionName}/edit/${itemId}`)}>编辑</Button>
         </Flex>
         <DBPages.View collectionName={collectionName} itemId={itemId}/>
@@ -24,6 +25,7 @@ export function XnhView() {
 export function XnhEdit() {
     const collectionName = useCollectionName()
     return <CollectionSyncComponents.Provider collection={collectionName}>
+        <ItemPageTitle prefix="搜索"/>
         <EditInternal collectionName={collectionName}/>
     </CollectionSyncComponents.Provider>
 }
@@ -66,6 +68,7 @@ function EditInternal({collectionName}: Props) {
 export function XnhCreate() {
     const collectionName = useCollectionName()
     return <CollectionSyncComponents.Provider collection={collectionName}>
+        <ItemPageTitle prefix="创建"/>
         <CreateInternal collectionName={collectionName}/>
     </CollectionSyncComponents.Provider>
 }
@@ -99,9 +102,14 @@ export function XnhSearch() {
         searchQuery={searchQuery}
         onChange={q => navigate(`/collection/${collectionName}/search/${q}`)}
     >
+        <ItemPageTitle prefix="搜索"/>
         <Flex direction="vertical">
             <SearchInputComponents.DBSearchInput/>
             <SearchResultComponents.ResultList/>
         </Flex>
     </DBSearchWrapper.SearchProvider>
+}
+
+function ItemPageTitle(props: {prefix: string}) {
+    return <></>
 }

@@ -38,7 +38,7 @@ export module AntdEndpointEditors {
             return <div>还没做</div>
         },
         gallery: (props) => {
-            return <div>还没做</div>
+            return <AntdWrapperUtils.GalleryEditor binding={props.binding}/>
         },
         id: (props) => {
             return <></>

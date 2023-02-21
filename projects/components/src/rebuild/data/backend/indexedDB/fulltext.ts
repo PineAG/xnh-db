@@ -16,7 +16,9 @@ export function* tokenizeStringByLength(s: string, length: number): Generator<st
 export function* tokenizeString(s: string): Generator<string> {
     const maxLength = Math.min(MAX_TOKEN_LENGTH, s.length)
     for(let i=1; i<=maxLength; i++) {
-        yield* tokenizeStringByLength(s, i)
+        for(const t of s.split(/\s+/)) {
+            yield* tokenizeStringByLength(t, i)
+        }
     }
 }
 

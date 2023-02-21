@@ -79,7 +79,10 @@ export module AntdUpload {
         return <Modal
             title="上传图片"
             open={props.open}
-            onCancel={props.onCancel}
+            onCancel={() => {
+                props.onCancel()
+                setState({state: "empty"})
+            }}
             onOk={finalize}
             okButtonProps={{disabled: state.state === "empty"}}
             wrapProps={{
@@ -138,6 +141,7 @@ export module AntdUpload {
             const newId = crypto.randomUUID()
             await clients.files.write(newId, blob)
             props.onUpload(newId)
+            setState({state: "empty"})
         }
         
     }
