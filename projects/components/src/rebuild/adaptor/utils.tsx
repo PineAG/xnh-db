@@ -90,10 +90,11 @@ export module AntdWrapperUtils {
         </>
     }
 
+    const tileWidth = 100
+    const tileHeight = 100
+    
     type GalleryEditorProps = {binding: XBinding.Binding<string[] | undefined>, imageProps?: ImageProps}
     export function GalleryEditor(props: GalleryEditorProps) {
-        const tileWidth = 100
-        const tileHeight = 100
         const [uploadDialog, setUploadDialog] = useState(false)
         const arrayBinding = XBinding.fromArray(XBinding.defaultValue(props.binding, () => []))
         return <>
