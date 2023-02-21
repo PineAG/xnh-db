@@ -1,5 +1,6 @@
 ## TODOs
 * Select Parent (patch "exclude" query)
+* Search random result placeholder
 * remove async operations from relation editor: make payload a binding
 * Gallery editor !
 * Form item boundary inside entity layout
