@@ -18,14 +18,16 @@ export module DBPages {
         const {Loading} = DbContexts.useComponents()
         const Layout = globalProps.layout.layouts.entities[props.collectionName].fullPage
         const createInjection = LayoutInjector.useCreateFullPageProps(props.collectionName)
+        const [currentCollection, setCurrentCollection] = useState(props.collectionName)
     
         const [injection, setInjection] = useState<LayoutInjector.FullPageInjectionProps | null>(null)
         useEffect(() => {
+            console.log("Triggered")
             setInjection(null)
             initialize()
         }, [props.collectionName, props.itemId])
 
-        if(!injection) {
+        if(!injection || props.collectionName !== currentCollection) {
             return <Loading/>
         } else {
             console.log(props.itemId, props.collectionName, injection)
@@ -35,6 +37,7 @@ export module DBPages {
         async function initialize() {
             const injection = await createInjection(props.itemId)
             setInjection(injection)
+            setCurrentCollection(props.collectionName)
         }
 
     }
