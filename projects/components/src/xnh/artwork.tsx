@@ -10,12 +10,8 @@ export module XnhArtwork {
     }
 
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "artwork", props => {
-        return <Flex direction="vertical">
-            <>
-            {/* Item Data */}
-            <XnhBase.BaseItemWrapper item={props.item}>
-                
-            </XnhBase.BaseItemWrapper>
+        return <XnhBase.BaseFramework item={props.item}>
+            <XnhBase.BaseContent item={props.item}/>
             {/* Parent */}
             {props.$parentElement()}
             {/* Relations */}
@@ -25,14 +21,13 @@ export module XnhArtwork {
             <FormItem label="创作者">
                 {props.relations.creator.$element()}
             </FormItem>
-            </>
-        </Flex>
+        </XnhBase.BaseFramework>
     })
 
     export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "artwork", props => {
-        return <XnhBase.BaseItemWrapper item={props.item}>
-            
-        </XnhBase.BaseItemWrapper>
+        return <XnhBase.BaseFramework item={props.item}>
+            <XnhBase.BaseContent item={props.item}/>
+        </XnhBase.BaseFramework>
     })
 
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "artwork", props => {

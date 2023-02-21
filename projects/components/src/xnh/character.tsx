@@ -24,26 +24,27 @@ export module XnhCharacter {
     }
     
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "character", props => {
-        const NewPage = newPage
-        return <Flex direction="vertical">
-            <>
-            {/* Item Data */}
-            <NewPage item={props.item}/>
-            {/* Parent */}
-            {props.$parentElement()}
-            {/* Relations */}
-            <FormItem label="作品">
-                {props.relations.artwork.$element()}
-            </FormItem>
-            <FormItem label="声优">
-                {props.relations.voiceActor.$element()}
-            </FormItem>
-            </>
-        </Flex>
+        return <XnhBase.BaseFramework item={props.item}>
+            <XnhBase.BaseContent item={props.item}/>
+            <ExtInfo item={props.item}/>
+            <Flex direction="vertical">
+                {/* Parent */}
+                <FormItem label="继承自">
+                    {props.$parentElement()}
+                </FormItem>
+                {/* Relations */}
+                <FormItem label="作品">
+                    {props.relations.artwork.$element()}
+                </FormItem>
+                <FormItem label="声优">
+                    {props.relations.voiceActor.$element()}
+                </FormItem>
+            </Flex>
+        </XnhBase.BaseFramework>
     })
 
-    export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "character", props => {
-        return <XnhBase.BaseItemWrapper item={props.item}>
+    const ExtInfo = DbUiConfiguration.wrapLayout.newPage(config, "character", props => {
+        return <Flex direction="vertical">
             <FormItem label={props.item.appearance.$title}>
                 <FormItem label={props.item.appearance.eyes.$title}>
                     <FormItem label={props.item.appearance.eyes.color.$title}>
@@ -62,7 +63,14 @@ export module XnhCharacter {
                     </FormItem>
                 </FormItem>
             </FormItem>
-        </XnhBase.BaseItemWrapper>
+        </Flex>
+    })
+
+    export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "character", props => {
+        return <XnhBase.BaseFramework item={props.item}>
+            <XnhBase.BaseContent item={props.item}/>
+            <ExtInfo item={props.item}/>
+        </XnhBase.BaseFramework>
     })
 
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "character", props => {

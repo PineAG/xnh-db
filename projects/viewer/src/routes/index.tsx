@@ -12,9 +12,7 @@ function InternalRoutes() {
         <Route path="" element={<Navigate to="/collection/character/search"/>}/>
         <Route path="collection/:collectionName">
             <Route path="" element={
-                <PageWrapper>
-                    <Navigate to="search"/>
-                </PageWrapper>
+                <Navigate to="search"/>
             }/>
             <Route path="search" element={
                 <PageWrapper>

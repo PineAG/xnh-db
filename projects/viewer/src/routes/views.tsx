@@ -1,6 +1,6 @@
 import { CollectionSyncComponents, DbContexts, DBPages, DBSearchWrapper, Flex, GlobalSyncComponents, SearchInputComponents, SearchResultComponents, XnhUiConfiguration } from "@xnh-db/components"
 import {useNavigate, useParams} from "react-router"
-import {Button, Popconfirm} from "antd"
+import {Button, Card, Popconfirm} from "antd"
 import {useItemId, useCollectionName, useSearchQuery} from "./utils"
 
 interface Props {
@@ -12,12 +12,15 @@ interface Props {
 export function XnhView() {
     const itemId = useItemId()
     const collectionName = useCollectionName()
+    const {mode} = GlobalSyncComponents.useClients()
     const navigate = useNavigate()
     return <Flex direction="vertical">
-        <Flex direction="horizontal">
-            <ItemPageTitle prefix=""/>
-            <Button onClick={() => navigate(`/collection/${collectionName}/edit/${itemId}`)}>编辑</Button>
-        </Flex>
+        <Card style={{margin: 8, display: mode === "online" ? "block" : "none"}}>
+            <Flex direction="horizontal">
+                <ItemPageTitle prefix=""/>
+                <Button onClick={() => navigate(`/collection/${collectionName}/edit/${itemId}`)}>编辑</Button>
+            </Flex>
+        </Card>
         <DBPages.View collectionName={collectionName} itemId={itemId}/>
     </Flex>
 }
@@ -36,18 +39,18 @@ function EditInternal({collectionName}: Props) {
     const [editor, actions] = DBPages.useEditPage(collectionName, itemId)
     const uploadCollection = CollectionSyncComponents.useUploadCollection()
 
-    DBPages.useEditPage(collectionName, itemId)
-
     return <Flex direction="vertical">
-        <Flex direction="horizontal">
-            <Button onClick={() => navigate(`/collection/${collectionName}/view/${itemId}`)}>取消</Button>
-            <Button onClick={save}>保存</Button>
-                <Flex direction="horizontal">
-                    <Popconfirm title="确认删除" onConfirm={remove} placement="bottom">
-                        <Button danger type="default">删除</Button>
-                    </Popconfirm>
-                </Flex>
-        </Flex>
+        <Card style={{margin: 8}}>
+            <Flex direction="horizontal">
+                <Button onClick={() => navigate(`/collection/${collectionName}/view/${itemId}`)}>取消</Button>
+                <Button onClick={save}>保存</Button>
+                    <Flex direction="horizontal">
+                        <Popconfirm title="确认删除" onConfirm={remove} placement="bottom">
+                            <Button danger type="default">删除</Button>
+                        </Popconfirm>
+                    </Flex>
+            </Flex>
+        </Card>
         <div>{editor}</div>
     </Flex>
 

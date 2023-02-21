@@ -10,14 +10,8 @@ export module XnhVoiceActor {
     }
 
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "voiceActor", props => {
-        return <Flex direction="vertical">
-            <>
-            {/* Item Data */}
-            <XnhBase.BaseItemWrapper item={props.item}>
-                
-            </XnhBase.BaseItemWrapper>
-            {/* Parent */}
-            {props.$parentElement}
+        return <XnhBase.BaseFramework item={props.item}>
+            <XnhBase.BaseContent item={props.item}/>
             {/* Relations */}
             <FormItem label="角色">
                 {props.relations.character.$element()}
@@ -25,14 +19,13 @@ export module XnhVoiceActor {
             <FormItem label="创作者">
                 {props.relations.creator.$element()}
             </FormItem>
-            </>
-        </Flex>
+        </XnhBase.BaseFramework>
     })
 
     export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "voiceActor", props => {
-        return <XnhBase.BaseItemWrapper item={props.item}>
-            
-        </XnhBase.BaseItemWrapper>
+        return <XnhBase.BaseFramework item={props.item}>
+            <XnhBase.BaseContent item={props.item}/>
+        </XnhBase.BaseFramework>
     })
 
     export const searchResult = DbUiConfiguration.wrapLayout.searchResult(config, "voiceActor", props => {

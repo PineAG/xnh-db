@@ -66,39 +66,39 @@ export module AntdWrapperUtils {
 
     type GalleryViewProps = {fileNames: string[] | undefined, imageProps?: ImageProps}
     export function GalleryView(props: GalleryViewProps) {
-        const [visible, setVisible] = useState(false)
         if(!props.fileNames || props.fileNames.length === 0) {
             return <Empty/>
         }
-        return <>
-            <AsyncImage
-                fileName={props.fileNames[0]}
-                imageProps={{
-                    preview: { visible: false },
-                    width: "100%",
-                    onClick: () => setVisible(true),
-                    ...props.imageProps
-                }}
-            />
-            <div style={{ display: 'none' }}>
-            <AntdImage.PreviewGroup preview={{ visible, onVisibleChange: (vis) => setVisible(vis) }}>
-                {props.fileNames.map(fp => (
-                    <AsyncImage fileName={fp} key={fp} imageProps={{}}/>
-                ))}
+        return <Flex direction="vertical" style={{maxWidth: imageViewWidth}}>
+            <AntdImage.PreviewGroup>
+                <AsyncImage
+                    fileName={props.fileNames[0]}
+                    imageProps={{
+                        width: "100%",
+                        ...props.imageProps
+                    }}
+                />
+                <Flex direction="horizontal" spacing={8} style={{maxWidth: "100%"}}>    
+                    {props.fileNames.slice(1).map(fp => (
+                        <div key={fp} style={{overflow: "hidden", display: "grid", width: tileWidth, height: tileHeight, placeItems: "center"}}>
+                            <AsyncImage fileName={fp} imageProps={{}}/>
+                        </div>
+                    ))}
+                </Flex>
             </AntdImage.PreviewGroup>
-            </div>
-        </>
+        </Flex>
     }
 
-    const tileWidth = 100
-    const tileHeight = 100
-    
+    const imageViewWidth = 512
+    const tileWidth = (imageViewWidth - 3*8)/4
+    const tileHeight = tileWidth
+
     type GalleryEditorProps = {binding: XBinding.Binding<string[] | undefined>, imageProps?: ImageProps}
     export function GalleryEditor(props: GalleryEditorProps) {
         const [uploadDialog, setUploadDialog] = useState(false)
         const arrayBinding = XBinding.fromArray(XBinding.defaultValue(props.binding, () => []))
         return <>
-        <Flex direction="horizontal" spacing={8} style={{maxWidth: 500}}>
+        <Flex direction="horizontal" spacing={8} style={{maxWidth: imageViewWidth}}>
             <div style={{width: tileWidth, height: tileHeight, display: "grid", placeItems: "center"}}>
                 <Button icon={<PlusOutlined/>} onClick={() => setUploadDialog(true)}/>
             </div>
