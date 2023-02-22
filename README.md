@@ -1,6 +1,7 @@
 ## TODOs
 * Parent editor is finding parent of the parent.
 * +Inherited children
+* +Delete Avatar
 * Fix relation inherit
 * Select Parent (patch "exclude" query)
 * Search random result placeholder
