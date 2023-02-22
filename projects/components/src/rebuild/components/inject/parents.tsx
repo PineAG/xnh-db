@@ -8,7 +8,7 @@ import CollNames = DbUiConfiguration.InternalUtils.CollNames
 import { BackendBase } from "../../data"
 import { FieldConfig } from "@xnh-db/protocol"
 import { XBinding } from "../binding"
-import { SearchResultComponents } from "../search"
+import { DBSearchWrapper, SearchInputComponents, SearchResultComponents } from "../search"
 import { DbContexts } from "../context";
 import { GlobalSyncComponents } from "../sync";
 
@@ -32,6 +32,7 @@ export module InjectionParentComponents {
         const titles = globalProps.layout.titles.entityTitles[props.collectionName]
 
         const {Empty, Loading, ItemPreviewWrapper} = DbContexts.useComponents()
+        const openItem = globalProps.actions.useOpenItem(props.collectionName)
 
         const renderTree = InjectionProps.useRenderStaticPropTree(props.collectionName)
 
@@ -51,13 +52,18 @@ export module InjectionParentComponents {
             return <Loading/>
         }
         const injectProps = renderTree(colConf, parentItem, titles as any)
-        return <ItemPreviewWrapper>
+        return <ItemPreviewWrapper onClick={() => {
+            if(parentId){
+                openItem(parentId)
+            }
+        }}>
             <RichLayout item={injectProps}/>
         </ItemPreviewWrapper>
 
         async function initialize() {
             if(!inheritClient) {
-                return <>Not inheritable</>
+                console.warn(`Not inheritable: ${props.collectionName}`)
+                return;
             }
             const parentId = await InheritanceUtils.getParentId(props.itemId, inheritClient)
             setParentId(parentId)
@@ -74,16 +80,26 @@ export module InjectionParentComponents {
         config: GP,
         clients: BackendBase.OnlineClientSet<GP["props"]>,
         collectionName: CollectionName,
-        binding: XBinding.Binding<string | null>
+        binding: XBinding.Binding<string | null>,
+        itemId: string
     }
-    export function ParentEditorElementProps<
+    export function ParentEditorElement<
         GP extends GPBase, 
         CollectionName extends CollNames<GP>
     >(props: ParentEditorElementProps<GP, CollectionName>) {
         const [showEditDialog, setShowEditDialog] = useState(false)
         const selectedParentBinding = XBinding.useBinding(props.binding.value)
         const {Empty, Dialog} = DbContexts.useComponents()
+        const clients = GlobalSyncComponents.useQueryClients()
+        const inheritClient = clients.inheritance[props.collectionName]
 
+        if(!inheritClient) {
+            return <></>
+        }
+
+        const [query, setQuery] = useState("")
+
+        console.log("WTF??", props.binding.value)
         const internalComponent = props.binding.value ? 
             <StaticParentElement
                 collectionName={props.collectionName}
@@ -91,7 +107,9 @@ export module InjectionParentComponents {
             /> : <Empty simple/>
 
         return <>
-            {internalComponent}
+            <div onClick={() => setShowEditDialog(true)}>
+                {internalComponent}
+            </div>
             <Dialog 
                 open={showEditDialog}
                 title="选择上级页面"
@@ -99,16 +117,30 @@ export module InjectionParentComponents {
                 onCancel={() => {
                     selectedParentBinding.update(props.binding.value)
                     setShowEditDialog(false)
+                    setQuery("")
                 }} 
-                onOkay={() => {
+                onOkay={async () => {
+                    if(selectedParentBinding.value) {
+                        if(selectedParentBinding.value === props.itemId) {
+                            return
+                        }
+                        const isValidParent = await InheritanceUtils.isValidateParentId(props.itemId, selectedParentBinding.value, inheritClient)
+                        if(!isValidParent) {
+                            return
+                        }
+                    }
                     props.binding.update(selectedParentBinding.value)
                     setShowEditDialog(false)
+                    setQuery("")
                 }}
                 >
-                <SearchResultComponents.CollectionItemSelector 
-                    collectionName={props.collectionName}
-                    binding={selectedParentBinding}
-                />
+                <DBSearchWrapper.SearchProvider collection={props.collectionName} searchQuery={query} onChange={setQuery}>
+                    <SearchInputComponents.DBSearchInput />
+                    <SearchResultComponents.CollectionItemSelector 
+                        collectionName={props.collectionName}
+                        binding={selectedParentBinding}
+                    />
+                </DBSearchWrapper.SearchProvider>
             </Dialog>
         </>
     }

@@ -70,19 +70,32 @@ export module InheritanceUtils {
     }
 
     export function mergeEntities<T extends FieldConfig.EntityBase | FieldConfig.Fields.EndpointValueTypes>(parent: DeepPartial<T> | undefined, child: DeepPartial<T> | undefined, config: FieldConfig.ConfigFromDeclaration<T>): DeepPartial<T> | undefined {
-        if(parent === undefined && child === undefined) {
-            return undefined
-        }else if(parent === undefined) {
-            return child
-        }else if(child === undefined) {
-            return parent
-        }else if(FieldConfig.Fields.isEndpointType(config)) {
-            return child
+        if(FieldConfig.Fields.isEndpointType(config)) {
+            return isEmpty(child) ? parent : child
         } else {
-            const result: {[K in keyof T]?: DeepPartial<T[K]>} = {}
-            for(const key in config) {
-                result[key as string] = mergeEntities(parent[key as string], child[key as string], config[key])
+            if(isEmpty(child)) {
+                return parent
+            }else if(parent && child) {    
+                const result: {[K in keyof T]?: DeepPartial<T[K]>} = {}
+                for(const key in config) {
+                    result[key as string] = mergeEntities(parent[key as string], child[key as string], config[key])
+                }
+                return result as any
+            } else {
+                return child
             }
+        }
+    }
+
+    function isEmpty(c: any): c is Exclude<any, undefined | null> {
+        if(c === undefined || c === null) {
+            return true
+        }else if (typeof c === "string") {
+            return c.length === 0
+        }else if (Array.isArray(c)) {
+            return c.length === 0
+        } else {
+            return false
         }
     }
 
@@ -99,6 +112,7 @@ export module InheritanceUtils {
         for(const e of items) {
             result = mergeEntities(result, e, config)
         }
+        console.log("INT", itemId, result)
         return result ?? {} as DeepPartial<T>
     }
 

@@ -30,7 +30,6 @@ export module DBPages {
         if(!injection || props.collectionName !== currentCollection) {
             return <Loading/>
         } else {
-            console.log(props.itemId, props.collectionName, injection)
             return <Layout {...injection}/>
         }
 

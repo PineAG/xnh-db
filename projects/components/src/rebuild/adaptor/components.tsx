@@ -99,7 +99,7 @@ export module AntdGlobalComponents {
                 >{props.children}</Antd.Tag>
         },
         ItemPreviewWrapper: (props) => {
-            return <Antd.Card style={props.style}>{props.children}</Antd.Card>
+            return <Antd.Card style={props.style} onClick={props.onClick}>{props.children}</Antd.Card>
         },
         Steps: (props) => {
             return <Antd.Steps

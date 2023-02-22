@@ -22,8 +22,10 @@ export module SearchResultComponents {
 
         return <Flex direction="vertical">
             {!props.binding.value ? <></> : (
-                <HStack layout={["auto", "1fr"]}>
-                    <ResultItem itemId={props.binding.value}/>
+                <HStack layout={["1fr", "auto"]}>
+                    <>
+                        <ResultItem itemId={props.binding.value}/>
+                    </>
                     <Button type="primary" onClick={() => props.binding.update(null)} style={{maxWidth: "50px"}}>取消选择</Button>
                 </HStack>
             )}
