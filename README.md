@@ -1,4 +1,7 @@
 ## TODOs
+* Parent editor is finding parent of the parent.
+* +Inherited children
+* Fix relation inherit
 * Select Parent (patch "exclude" query)
 * Search random result placeholder
 * remove async operations from relation editor: make payload a binding
