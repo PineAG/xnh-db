@@ -1,24 +1,33 @@
 import { InternalGlobalLayouts } from "../config";
 import {AdaptorsConfig as Conf} from "./config"
 import {Input, InputNumber, Button, Tag} from "antd"
-import {PlusOutlined} from "@ant-design/icons"
+import {CloseOutlined, PlusOutlined} from "@ant-design/icons"
 import {useState} from "react"
 import { AntdWrapperUtils } from "./utils";
 import { AntdUpload } from "./upload";
 import { XBinding } from "../components/binding";
-import { Flex } from "../components/utils";
+import { Flex, HStack } from "../components/utils";
 
 export module AntdEndpointEditors {
     export const editors: InternalGlobalLayouts.EndpointEditors = {
         avatar: (props) => {
             const [showUpload, setShowUpload] = useState(false)
             return <>
-                <AntdWrapperUtils.AsyncAvatar 
-                    fileName={props.binding.value}
-                    avatarProps={{
-                        onClick: () => setShowUpload(true)
-                    }}
-                />
+                <div style={{position: "relative"}}>
+                    <AntdWrapperUtils.AsyncAvatar 
+                        fileName={props.binding.value}
+                        avatarProps={{
+                            onClick: () => setShowUpload(true)
+                        }}
+                    />
+                    <Flex direction="horizontal">
+                        <Button
+                            onClick={() => props.binding.update(undefined)}
+                            type="text"
+                            icon={<CloseOutlined/>}
+                        />
+                    </Flex>
+                </div>
                 <AntdUpload.ImageUploadDialog
                     open={showUpload}
                     onCancel={() => setShowUpload(false)}
@@ -44,13 +53,20 @@ export module AntdEndpointEditors {
             return <></>
         },
         number: (props) => {
-            return <InputNumber
-                value={props.binding.value ?? props.config.options.default ?? 0}
-                onChange={value => props.binding.update(value ?? undefined)}
-                min={props.config.options.min}
-                max={props.config.options.max}
-                step={props.config.options.step}
-            />
+            return <HStack layout={["1fr", "auto"]}>
+                <InputNumber
+                    value={props.binding.value ?? props.config.options.default ?? 0}
+                    onChange={value => props.binding.update(value ?? undefined)}
+                    min={props.config.options.min}
+                    max={props.config.options.max}
+                    step={props.config.options.step}
+                />
+                <Button
+                    onClick={() => props.binding.update(undefined)}
+                    type="text"
+                    icon={<CloseOutlined/>}
+                />
+            </HStack>
         },
         tag: (props) => {
             return <AntdWrapperUtils.TagInput binding={props.binding} tagCollection={props.config.options.collection}/>

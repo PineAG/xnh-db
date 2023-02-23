@@ -73,7 +73,9 @@ export module FieldConfig {
             }
             fullText: {
                 data: string
-                options: Options.FullText
+                options: Options.FullText & {
+                    richText: boolean
+                }
             }
             fullTextList: {
                 data: string[]
@@ -140,11 +142,11 @@ export module FieldConfig {
             }
         }
 
-        export function fullText(weight: number): FieldTypes["fullText"] {
+        export function fullText(weight: number, richText?: boolean): FieldTypes["fullText"] {
             return {
                 $isField: ConfigEndpointIdentifier,
                 type: "fullText",
-                options: {weight}
+                options: {weight, richText: !!richText}
             }
         }
 

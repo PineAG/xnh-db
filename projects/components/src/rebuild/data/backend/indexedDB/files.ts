@@ -7,11 +7,13 @@ export module IdbFileClientWrapper {
     const blobWrapper = new IdbStoreWrapper<Blob, never>("_files:blob", {})
     const existWrapper = new IdbStoreWrapper<boolean, never>("_files:exists", {})
     const timeWrapper = new IdbStoreWrapper<number, never>("_files:updatedAt", {})
+    const dirtyWrapper = new IdbStoreWrapper<boolean, never>("_files:isDirty", {})
 
     export function initialize(db: idb.IDBPDatabase) {
         blobWrapper.initialize(db)
         timeWrapper.initialize(db)
         existWrapper.initialize(db)
+        dirtyWrapper.initialize(db)
     }
 
     export async function exists(db: idb.IDBPDatabase, name: string): Promise<boolean> {
@@ -34,6 +36,8 @@ export module IdbFileClientWrapper {
     export async function remove(db: idb.IDBPDatabase, name: string): Promise<void> {
         await blobWrapper.delete(db, name)
         await existWrapper.delete(db, name)
+        await dirtyWrapper.delete(db, name)
+        await timeWrapper.delete(db, name)
     }
 
     export async function list(db: idb.IDBPDatabase): Promise<string[]> {
@@ -59,7 +63,7 @@ export module IdbFileClientWrapper {
     }
 
     export async function setIndex(db: idb.IDBPDatabase, name: string, updatedAt: Date): Promise<void> {
-        await timeWrapper.put(db, name, updatedAt.getDate())
+        await timeWrapper.put(db, name, updatedAt.getTime())
     }
 
     
@@ -69,6 +73,21 @@ export module IdbFileClientWrapper {
 
     export async function getCollectionStatus(db: idb.IDBPDatabase): Promise<IOfflineClient.LatestStatus> {
         return GlobalStatusWrapper.getCollectionStatus(db, "__files")
+    }
+
+    export async function markDirtyFile(db: idb.IDBPDatabase, name: string, isDirty: boolean) {
+        if(isDirty) {
+            await dirtyWrapper.put(db, name, true)
+        } else {
+            await dirtyWrapper.delete(db, name)
+        }
+    }
+
+    export async function clearDirtyFiles(db: idb.IDBPDatabase) {
+        const files = await dirtyWrapper.getAllKeys(db)
+        for(const f of files) {
+            await remove(db, f)
+        }
     }
 }
 
@@ -109,7 +128,18 @@ export class IdbFileOnlineClient implements IOnlineClient.Files {
     }
     delete(name: string): Promise<void> {
         return this.withDB(async db => {
-            return IdbFileClientWrapper.remove(db, name)
+            await IdbFileClientWrapper.remove(db, name)
+        })
+    }
+
+    markDirtyFile(name: string, isDirty: boolean): Promise<void> {
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.markDirtyFile(db, name, isDirty)
+        })
+    }
+    clearDirtyFiles(): Promise<void> {
+        return this.withDB(async db => {
+            return IdbFileClientWrapper.clearDirtyFiles(db)
         })
     }
     

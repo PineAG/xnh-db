@@ -30,11 +30,20 @@ export module XnhDBProtocol {
         name: createInternationalNameDefinition(),
         profile: F.avatar(),
         photos: F.gallery(),
-        description: F.fullText(0.1),
+        description: F.fullText(0.1, true),
     })
 
     export type ICharacter = FieldConfig.AsEntity<IBase & {
+        gender: string[],
+        personality: {
+            features: string[],
+        },
         appearance: {
+            age: string[],
+            body: {
+                height: string[],
+                features: string[],
+            }
             eyes: {
                 color: string[],
                 features: string[]
@@ -43,13 +52,33 @@ export module XnhDBProtocol {
                 color: string[],
                 shape: string[],
                 features: string[]
+            },
+            wearing: {
+                cloths: string[]
+                mainColor: string[]
+                detailedColor: string[]
+                attachments: string[]
             }
+            attachments: string[]
+        },
+        voice: {
+            age: string[],
+            features: string[],
         }
     }>
 
     export const CharacterDefinition = FieldConfig.makeConfig.for<ICharacter>().as({
         ...BaseConfig,
+        gender: F.tagList("character.gender"),
+        personality: {
+            features: F.tagList("character.personality.features"),
+        },
         appearance: {
+            age: F.tagList("character.age"),
+            body: {
+                height: F.tagList("character.body.height"),
+                features: F.tagList("character.body.features"),
+            },
             eyes: {
                 color: F.tagList("color"),
                 features: F.tagList("eyes.features")
@@ -58,8 +87,19 @@ export module XnhDBProtocol {
                 color: F.tagList("color"),
                 shape: F.tagList("hair.shape"),
                 features: F.tagList("hair.features")
-            }
+            },
+            wearing: {
+                cloths: F.tagList("cloths"),
+                mainColor: F.tagList("color"),
+                detailedColor: F.tagList("color"),
+                attachments: F.tagList("cloth.attachments")
+            },
+            attachments: F.tagList("body.attachments")
         },
+        voice: {
+            age: F.tagList("character.age"),
+            features: F.tagList("character.voice.features"),
+        }
     })
 
     export type IArtwork = FieldConfig.AsEntity<IBase & {
@@ -92,10 +132,12 @@ export module XnhDBProtocol {
         name: InternationalName
         photos: string[]
         description: string
+        gender: string[]
     }> 
 
     export const VoiceActorDefinition = FieldConfig.makeConfig.for<IVoiceActor>().as({
         ...BaseConfig,
+        gender: F.tagList("voiceActor.gender")
     })
 
     /**

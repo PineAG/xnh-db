@@ -6,7 +6,7 @@ import { config } from "./config";
 export module XnhCreator {
     export const CreatorTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.ICreator> = {
         $title: "创作者",
-        ...XnhBase.titles,
+        ...XnhBase.titles
     }
 
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "creator", props => {

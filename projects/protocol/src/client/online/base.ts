@@ -28,6 +28,8 @@ export module IOnlineClient {
         available(name: string): Promise<boolean>
         write(name: string, value: Blob): Promise<void>
         delete(name: string): Promise<void>
+        markDirtyFile(name: string, isDirty: boolean): Promise<void>
+        clearDirtyFiles(): Promise<void>
     }
 
     export interface Tags {

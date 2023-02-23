@@ -151,6 +151,10 @@ export module OfflineClientSynchronization {
             const sourceIndex = await localClient.getIndex()
             const destinationIndex = await remoteClient.getIndex()
             const [newIndex, diffResult] = diffCollectionIndices(sourceIndex, destinationIndex, it => it)
+            console.log("src", sourceIndex)
+            console.log("dst", destinationIndex)
+            console.log("diff", diffResult)
+            console.log("new", newIndex)
             let counter = 0
             for(const action of diffResult) {
                 yield {
@@ -164,10 +168,9 @@ export module OfflineClientSynchronization {
                         }
                     }
                 }
-                if(action.type === "create" || "update") {
+                if(action.type === "create" || action.type === "update") {
                     const data = await localClient.read(action.key)
                     await remoteClient.write(action.key, data)
-                    console.log("上传文件", action.key)
                 } else if(action.type === "delete") {
                     await remoteClient.delete(action.key)
                 }

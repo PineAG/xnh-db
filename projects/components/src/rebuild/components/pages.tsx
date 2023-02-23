@@ -5,7 +5,7 @@ import { InheritanceUtils } from "../data/inherit"
 import { XBinding } from "./binding"
 import { DbContexts } from "./context"
 import { LayoutInjector } from "./inject"
-import { GlobalSyncComponents } from "./sync"
+import { GlobalSyncComponents, SyncFileUtils } from "./sync"
 
 export module DBPages {
     interface Props {
@@ -59,9 +59,11 @@ export module DBPages {
         const [parent, setParent] = useState<string | null>(null)
         const emptyRelations = useEmptyRelations(collectionName)
         const [relations, setRelations] = useState(emptyRelations)
+        const markCollectionDirtyFiles = SyncFileUtils.useMarkCollectionDirtyFiles(collectionName)
+        const clearDirtyFiles = SyncFileUtils.useClearDirtyFiles()
 
         // editable data
-        const entityBinding = XBinding.useBinding(entity)
+        const entityBinding = XBinding.useBinding<DeepPartial<FieldConfig.EntityBase>>({})
         const parentBinding = XBinding.useBinding<string | null>(parent)
         const newRelationsBinding = XBinding.useBinding(emptyRelations)
         const relationBindingGroup = getRelationBindingGroup(newRelationsBinding)
@@ -112,6 +114,9 @@ export module DBPages {
             const inheritClient = clients.inheritance[collectionName]
 
             await collectionClient.putItem(itemId, entityBinding.value)
+            await markCollectionDirtyFiles(entity, true)
+            await markCollectionDirtyFiles(entityBinding.value, false)
+
             if(inheritClient) {
                 const parents = await inheritClient.getRelationsByKey("child", itemId)
                 for(const p of parents) {
@@ -142,11 +147,15 @@ export module DBPages {
                     }
                 }
             }
+
+            await clearDirtyFiles()
         }
 
         async function remove(){
             const client = clients.collections[collectionName]
             await client.deleteItem(itemId)
+            await markCollectionDirtyFiles(entity, true)
+            await clearDirtyFiles()
         }
     }
 

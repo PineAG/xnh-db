@@ -5,7 +5,7 @@ export const config = DbUiConfiguration.makeConfig.withCollections(b => ({
     character: b.createCollectionOfEntity<P.ICharacter>(true).withConfig(P.CharacterDefinition),
     artwork: b.createCollectionOfEntity<P.IArtwork>(true).withConfig(P.ArtworkDefinition),
     voiceActor: b.createCollectionOfEntity<P.IVoiceActor>().withConfig(P.VoiceActorDefinition),
-    creator: b.createCollectionOfEntity<P.ICreator>().withConfig(P.VoiceActorDefinition)
+    creator: b.createCollectionOfEntity<P.ICreator>().withConfig(P.CreatorDefinition)
 })).withRelations(b => ({
     interpersonal: b.createRelation().ofCollections({
         left: "character",

@@ -1,6 +1,6 @@
 
 import ReactCrop, {Crop} from "react-image-crop";
-import {useRef, useState, useEffect} from "react"
+import {useRef, useState, useEffect, ClipboardEvent} from "react"
 import {Modal} from "antd"
 import { AdaptorsConfig } from "./config";
 import { GlobalSyncComponents } from "../components/sync";
@@ -86,7 +86,7 @@ export module AntdUpload {
             onOk={finalize}
             okButtonProps={{disabled: state.state === "empty"}}
             wrapProps={{
-                onPaste: (evt) => {
+                onPaste: (evt: ClipboardEvent<HTMLElement>) => {
                     onPaste(evt)
                 }
             }}
@@ -140,6 +140,7 @@ export module AntdUpload {
             })
             const newId = crypto.randomUUID()
             await clients.files.write(newId, blob)
+            await clients.files.markDirtyFile(newId, true)
             props.onUpload(newId)
             setState({state: "empty"})
         }
