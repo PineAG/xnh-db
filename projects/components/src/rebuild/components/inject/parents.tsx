@@ -11,8 +11,42 @@ import { XBinding } from "../binding"
 import { DBSearchWrapper, SearchInputComponents, SearchResultComponents } from "../search"
 import { DbContexts } from "../context";
 import { GlobalSyncComponents } from "../sync";
+import { LayoutInjector } from "./inject";
 
 export module InjectionParentComponents {
+    type SimpleInjection = DbUiConfiguration.InternalUtils.Injection.SimplePageInjectionProps<GPBase, string>
+    interface ItemViewProps {
+        itemId: string
+        collectionName: string
+        onClick?: () => void
+    }
+    export function ItemView(props: ItemViewProps) {
+        const [injectionProps, setInjection] = useState<SimpleInjection | null>(null)
+        const config = DbContexts.useProps()
+        const {Card, Loading} = DbContexts.useComponents()
+        const ResultLayout = config.layout.layouts.entities[props.collectionName].searchResult
+
+        const createSimpleProps = LayoutInjector.useCreateSimpleProps(props.collectionName)
+
+        useEffect(() => {
+            initialize()
+        }, [props.collectionName, props.itemId])
+
+        if(injectionProps === null) {
+            return <Loading/>
+        } else {
+            return <Card onClick={props.onClick}>
+                <ResultLayout {...injectionProps}/>
+            </Card>
+        }
+
+        async function initialize() {
+            const injection = await createSimpleProps(props.itemId)
+            setInjection(injection)
+        }
+        
+    }
+
     interface StaticParentElementProps {
         collectionName: string,
         itemId: string
@@ -101,7 +135,7 @@ export module InjectionParentComponents {
 
         console.log("WTF??", props.binding.value)
         const internalComponent = props.binding.value ? 
-            <StaticParentElement
+            <ItemView
                 collectionName={props.collectionName}
                 itemId={props.binding.value}
             /> : <Empty simple/>
