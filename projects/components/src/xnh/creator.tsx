@@ -12,12 +12,14 @@ export module XnhCreator {
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "creator", props => {
         return <XnhBase.BaseFramework item={props.item}>
             <XnhBase.BaseContent item={props.item}/>
-            {/* Relations */}
-            <FormItem label="角色">
-                {props.relations.character.$element()}
-            </FormItem>
-            <FormItem label="创作者">
-                {props.relations.creator.$element()}
+            <FormItem label="关系">
+                {/* Relations */}
+                <FormItem label="角色">
+                    {props.relations.character.$element()}
+                </FormItem>
+                <FormItem label="创作者">
+                    {props.relations.creator.$element()}
+                </FormItem>
             </FormItem>
         </XnhBase.BaseFramework>
     })

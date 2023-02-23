@@ -28,16 +28,18 @@ export module XnhCharacter {
             <XnhBase.BaseContent item={props.item}/>
             <ExtInfo item={props.item}/>
             <Flex direction="vertical">
+                <FormItem label="关系">
+                    {/* Relations */}
+                    <FormItem label="作品">
+                        {props.relations.artwork.$element()}
+                    </FormItem>
+                    <FormItem label="声优">
+                        {props.relations.voiceActor.$element()}
+                    </FormItem>
+                </FormItem>
                 {/* Parent */}
                 <FormItem label="继承自">
                     {props.$parentElement()}
-                </FormItem>
-                {/* Relations */}
-                <FormItem label="作品">
-                    {props.relations.artwork.$element()}
-                </FormItem>
-                <FormItem label="声优">
-                    {props.relations.voiceActor.$element()}
                 </FormItem>
             </Flex>
         </XnhBase.BaseFramework>

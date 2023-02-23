@@ -12,15 +12,17 @@ export module XnhArtwork {
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "artwork", props => {
         return <XnhBase.BaseFramework item={props.item}>
             <XnhBase.BaseContent item={props.item}/>
+            <FormItem label="关系">
+                {/* Relations */}
+                <FormItem label="角色">
+                    {props.relations.character.$element()}
+                </FormItem>
+                <FormItem label="创作者">
+                    {props.relations.creator.$element()}
+                </FormItem>
+            </FormItem>
             {/* Parent */}
             {props.$parentElement()}
-            {/* Relations */}
-            <FormItem label="角色">
-                {props.relations.character.$element()}
-            </FormItem>
-            <FormItem label="创作者">
-                {props.relations.creator.$element()}
-            </FormItem>
         </XnhBase.BaseFramework>
     })
 

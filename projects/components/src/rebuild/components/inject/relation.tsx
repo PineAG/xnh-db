@@ -48,6 +48,8 @@ export module RelationInjectionComponents {
         const openItem = globalProps.actions.useOpenItem(targetCollection)
 
         const {RelationList, Loading, RelationTag} = DbContexts.useComponents()
+        const clients = GlobalSyncComponents.useQueryClients()
+
         if(relations === null) {
             return <Loading/>
         }else {
@@ -66,8 +68,20 @@ export module RelationInjectionComponents {
         }
 
         async function initialize() {
-            const keys = await client.getRelationsByKey(selfKey, props.itemId)
-            setRelations(keys)
+            const result: Record<string, Record<string, string>> = {}
+            const targets: string[] = [props.itemId]
+            const inheritClient = clients.inheritance[props.collectionName]
+            if(inheritClient) {
+                const parents = await InheritanceUtils.getParents(props.itemId, inheritClient)
+                targets.push(...parents)
+            }
+            for(const id of targets) {
+                const keys = await client.getRelationsByKey(selfKey, id)
+                for(const key of keys) {
+                    result[IOfflineClient.stringifyRelationKey(key)] = key
+                }
+            }
+            setRelations(Object.values(result))
         }
     }
 
