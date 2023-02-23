@@ -55,6 +55,7 @@ export module LayoutInjector {
             return {
                 item: await createItemInjection(itemId),
                 $parentElement: () => <InjectionParentComponents.StaticParentElement collectionName={collectionName} itemId={itemId} />,
+                $childrenElement: () => <InjectionParentComponents.StaticChildrenElement collectionName={collectionName} itemId={itemId} enableOpenItem/>,
                 relations: await createRelationsInjection(itemId)
             }
         }
@@ -98,6 +99,7 @@ export module LayoutInjector {
                     binding={parentBinding}
                     itemId={itemId}
                 />,
+                $childrenElement: () => <InjectionParentComponents.StaticChildrenElement collectionName={collectionName} itemId={itemId}/>,
                 relations: createRelationsEditableInjection(itemId, relationBindings)
             }
         }

@@ -12,6 +12,7 @@ import { DBSearchWrapper, SearchInputComponents, SearchResultComponents } from "
 import { DbContexts } from "../context";
 import { GlobalSyncComponents } from "../sync";
 import { LayoutInjector } from "./inject";
+import { Flex } from "../utils";
 
 export module InjectionParentComponents {
     type SimpleInjection = DbUiConfiguration.InternalUtils.Injection.SimplePageInjectionProps<GPBase, string>
@@ -133,7 +134,6 @@ export module InjectionParentComponents {
 
         const [query, setQuery] = useState("")
 
-        console.log("WTF??", props.binding.value)
         const internalComponent = props.binding.value ? 
             <ItemView
                 collectionName={props.collectionName}
@@ -178,4 +178,42 @@ export module InjectionParentComponents {
             </Dialog>
         </>
     }
+
+    interface StaticChildrenElementProps {
+        collectionName: string,
+        itemId: string,
+        enableOpenItem?: boolean
+    }
+    export function StaticChildrenElement(props: StaticChildrenElementProps) {
+        const globalProps = DbContexts.useProps()
+        const clients = GlobalSyncComponents.useQueryClients()
+        const [children, setChildren] = useState<string[]>([])
+        const openItem = globalProps.actions.useOpenItem(props.collectionName)
+
+        useEffect(() => {
+            initialize()
+        }, [props.collectionName, props.itemId])
+
+        return <Flex direction="vertical">
+            {children.map(id => (
+                <ItemView
+                    key={id}
+                    itemId={id}
+                    collectionName={props.collectionName}
+                    onClick={() => {
+                        if(props.enableOpenItem) {
+                            openItem(id)
+                        }
+                    }}
+                />
+            ))}
+        </Flex>
+
+        async function initialize() {
+            const inheritClient = clients.inheritance[props.collectionName]
+            if(!inheritClient) return;
+            const children = await InheritanceUtils.getChildren(props.itemId, inheritClient)
+            setChildren(children)
+        }
+    } 
 }

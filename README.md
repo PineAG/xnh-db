@@ -1,5 +1,6 @@
 ## TODOs
 * +Delete Avatar Button
+* +Clear Number Button
 * Fix relation inherit
 * Select Parent (patch "exclude" query)
 * Search random result placeholder

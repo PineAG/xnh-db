@@ -22,7 +22,13 @@ export module XnhArtwork {
                 </FormItem>
             </FormItem>
             {/* Parent */}
-            {props.$parentElement()}
+            <FormItem label="继承自">
+                {props.$parentElement()}
+            </FormItem>
+            {/* Children */}
+            <FormItem label="扩展至">
+                {props.$childrenElement()}
+            </FormItem>
         </XnhBase.BaseFramework>
     })
 

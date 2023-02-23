@@ -41,6 +41,10 @@ export module XnhCharacter {
                 <FormItem label="继承自">
                     {props.$parentElement()}
                 </FormItem>
+                {/* Children */}
+                <FormItem label="扩展至">
+                    {props.$childrenElement()}
+                </FormItem>
             </Flex>
         </XnhBase.BaseFramework>
     })

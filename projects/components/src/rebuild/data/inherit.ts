@@ -40,17 +40,17 @@ export module InheritanceUtils {
     }
 
     export async function* walkAllChildren(initialId: string, client: InheritanceClient): AsyncGenerator<string> {
-        const queue = await getChildrenInternal(initialId, client)
+        const queue = await getChildren(initialId, client)
         while(queue.length > 0) {
             const id = queue.shift()
             if(!id) break;
             yield id
-            const children = await getChildrenInternal(id, client)
+            const children = await getChildren(id, client)
             queue.push(...children)
         }
     }
 
-    async function getChildrenInternal(id: string, client: InheritanceClient): Promise<string[]> {
+    export async function getChildren(id: string, client: InheritanceClient): Promise<string[]> {
         const results = await client.getRelationsByKey("parent", id)
         return results.map(it => it.child)
     }
