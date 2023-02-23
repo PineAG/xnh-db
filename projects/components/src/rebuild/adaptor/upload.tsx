@@ -159,9 +159,9 @@ export module AntdUpload {
             onDragOverCapture={evt => {
                 evt.preventDefault()
             }}
-            onDrop={evt => {
+            onDrop={async evt => {
                 evt.preventDefault()
-                onUploadByFileList(evt.dataTransfer.files)
+                await onUploadByFileList(evt.dataTransfer.files)
             }}
             style={{
                 display: "grid",

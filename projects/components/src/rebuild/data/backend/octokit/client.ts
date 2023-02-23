@@ -113,7 +113,7 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
 
     async getSHA(path: string): Promise<undefined | string> {
         try {
-            const {data: shaResult} = await this.octokit.repos.getContent({
+            const res = await this.octokit.repos.getContent({
                 owner: this.branch.owner,
                 repo: this.branch.repo,
                 path: this.patchPath(path),
@@ -121,13 +121,17 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
                     format: "sha"
                 }
             })
+            const {data: shaResult} = res
             if(Array.isArray(shaResult) || shaResult.type !== "file") {
+                console.error(res)
                 throw new Error(`Cannot delete ${path}`)
             }
             return shaResult.sha
         }catch(e) {
             if(e["message"] === "Not Found") {
                 return undefined
+            } else {
+                throw e
             }
         }
     }
@@ -135,7 +139,8 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
     async delete(path: string): Promise<void> {
         const sha = await this.getSHA(path)
         if(!sha) {
-            throw new Error("sha == undefined")
+            console.warn("sha == undefined: " + path)
+            return
         }
         await this.octokit.repos.deleteFile({
             owner: this.branch.owner,

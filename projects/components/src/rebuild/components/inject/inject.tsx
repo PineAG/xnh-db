@@ -32,12 +32,9 @@ export module LayoutInjector {
         const openSearch = useOpenSearch(collectionName)
 
         return async (itemId: string): Promise<ItemDisplayInjection> => {
-            console.log("BEFORE", itemId)
             const item = inheritClient ?
                 await InheritanceUtils.getEntityPatchingParents(itemId, collectionConfig, collectionClient, inheritClient) :
                 await collectionClient.getItemById(itemId)
-                console.log("AFTER", itemId)
-                console.log(collectionName, itemId, item)
             const injectProps = InjectionProps.renderStaticPropTree<FieldConfig.EntityBase>(collectionConfig, item, titles, {
                 components: config.layout.global.endpoint.viewers,
                 openItem, openSearch

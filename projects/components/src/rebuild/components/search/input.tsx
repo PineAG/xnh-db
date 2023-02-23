@@ -110,9 +110,9 @@ export module SearchInputComponents {
         return <HStack layout={["1fr", "1fr", "auto"]} spacing={8}>
             <TreeSelect
                 value={propertyPath}
-                onChange={value => {
+                onChange={async value => {
                     setPropertyPath(value)
-                    loadTags(value)
+                    await loadTags(value)
                 }}
                 options={propertyTree}
             />

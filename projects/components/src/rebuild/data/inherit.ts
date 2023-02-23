@@ -112,7 +112,6 @@ export module InheritanceUtils {
         for(const e of items) {
             result = mergeEntities(result, e, config)
         }
-        console.log("INT", itemId, result)
         return result ?? {} as DeepPartial<T>
     }
 
