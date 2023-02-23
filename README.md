@@ -5,7 +5,7 @@
 * Select Parent (patch "exclude" query)
 * Search random result placeholder
 * remove async operations from relation editor: make payload a binding
-* Gallery editor !
+* Gallery editor: + Move
 * Form item boundary inside entity layout
 * Collect file changes
 * Create Entity Dialog

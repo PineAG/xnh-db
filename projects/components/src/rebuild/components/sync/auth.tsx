@@ -203,13 +203,14 @@ export module AuthorizationComponents {
     }
 
     export function useAuth(refresh?: () => void): [JSX.Element, AuthState] {
-        const [state, setState] = useState<AuthState["state"]>("offline")
+        const [state, setState] = useState<"online" | "offline" | "pending_login" | "pending_logout">("offline")
         const destroyLocalStorage = DbContexts.useDestroyLocalStorage()
+        const {Dialog} = DbContexts.useComponents()
         useEffect(() => {
             setState(getCurrentMode())
         }, [])
 
-        if(state === "pending") {
+        if(state === "pending_login") {
             const comp = <GithubAuthDialog
                 onClose={cert => {
                     if(cert) {
@@ -226,10 +227,23 @@ export module AuthorizationComponents {
             return [comp, {
                 state: "pending"
             }]
+        } else if (state === "pending_logout"){
+            const comp = <Dialog
+                open={true}
+                width="small"
+                title="警告"
+                onCancel={() => setState("online")}
+                onOkay={logout}
+            >
+                <p>退出编辑模式将清除所有本地内容，未同步的内容可能会丢失，确定要退出吗？</p>
+            </Dialog>
+            return [comp, {
+                state: "pending"
+            }]
         } else if (state === "online") {
             return [<></>, {
                 state: "online",
-                logout
+                logout: start_logout
             }]
         } else {
             return [<></>, {
@@ -239,7 +253,11 @@ export module AuthorizationComponents {
         }
 
         function login() {
-            setState("pending")
+            setState("pending_login")
+        }
+
+        function start_logout() {
+            setState("pending_logout")
         }
 
         async function logout() {

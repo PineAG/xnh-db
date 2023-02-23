@@ -1,7 +1,8 @@
 import { CollectionSyncComponents, DbContexts, DBPages, DBSearchWrapper, Flex, GlobalSyncComponents, SearchInputComponents, SearchResultComponents, XnhUiConfiguration } from "@xnh-db/components"
 import {useNavigate, useParams} from "react-router"
 import {Button, Card, Popconfirm} from "antd"
-import {useItemId, useCollectionName, useSearchQuery} from "./utils"
+import {useItemId, useCollectionName, useSearchQuery, EditModeToolbar} from "./utils"
+import { PlusOutlined } from "@ant-design/icons"
 
 interface Props {
     collectionName: string
@@ -12,15 +13,14 @@ interface Props {
 export function XnhView() {
     const itemId = useItemId()
     const collectionName = useCollectionName()
-    const {mode} = GlobalSyncComponents.useClients()
     const navigate = useNavigate()
     return <Flex direction="vertical">
-        <Card style={{margin: 8, display: mode === "online" ? "block" : "none"}}>
+        <EditModeToolbar>
             <Flex direction="horizontal">
                 <ItemPageTitle prefix=""/>
                 <Button onClick={() => navigate(`/collection/${collectionName}/edit/${itemId}`)}>编辑</Button>
             </Flex>
-        </Card>
+        </EditModeToolbar>
         <DBPages.View collectionName={collectionName} itemId={itemId}/>
     </Flex>
 }
@@ -107,6 +107,12 @@ export function XnhSearch() {
     >
         <ItemPageTitle prefix="搜索"/>
         <Flex direction="vertical">
+            <EditModeToolbar>
+                <Button 
+                    icon={<PlusOutlined/>}
+                    onClick={() => navigate(`/collection/${collectionName}/create`)}
+                >创建</Button>
+            </EditModeToolbar>
             <SearchInputComponents.DBSearchInput/>
             <SearchResultComponents.ResultList/>
         </Flex>

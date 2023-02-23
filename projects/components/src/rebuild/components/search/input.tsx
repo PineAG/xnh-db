@@ -219,7 +219,7 @@ export module SearchInputComponents {
 
         function onComplete() {
             if(!inputText) return;
-            const queries = inputText.split(/\s+/).map<DBSearch.IQueryDef["fullText"]>(it => ({
+            const queries = inputText.split(/\s+/).filter(it => !!it).map<DBSearch.IQueryDef["fullText"]>(it => ({
                 type: "fullText",
                 keyword: it
             }))

@@ -1,5 +1,5 @@
-import { AuthorizationComponents, XnhUiConfiguration } from "@xnh-db/components"
-import {Layout, Menu} from "antd"
+import { AuthorizationComponents, Flex, GlobalSyncComponents, XnhUiConfiguration } from "@xnh-db/components"
+import {Card, Layout, Menu} from "antd"
 import { useNavigate, useParams } from "react-router-dom"
 
 type CollectionName = keyof typeof XnhUiConfiguration.config.collections
@@ -78,7 +78,7 @@ export function PageWrapper(props: {children: React.ReactNode}) {
                             onClick: authState.login,
                             key: "login"
                         } : {
-                            label: "登陆中",
+                            label: "等待中",
                             key: "login"
                         }
                     )
@@ -91,4 +91,13 @@ export function PageWrapper(props: {children: React.ReactNode}) {
             {authPlaceholder}
         </Layout.Content>
     </Layout>
+}
+
+export function EditModeToolbar(props: {children: React.ReactNode}) {
+    const {mode} = GlobalSyncComponents.useClients()
+    return <Card style={{margin: 8, display: mode === "online" ? "block" : "none"}}>
+        <Flex direction="horizontal">
+            {props.children}
+        </Flex>
+    </Card>
 }

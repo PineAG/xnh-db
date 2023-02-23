@@ -316,7 +316,7 @@ export module GlobalSyncComponents {
             </MessageDialog>
         } else if (syncState.type === "online" || syncState.type === "offline") {
             const clients: IGlobalClients = {
-                mode: "online",
+                mode: syncState.type,
                 clients: syncState.actions
             }
             return <GlobalClientsContext.Provider value={clients}>
