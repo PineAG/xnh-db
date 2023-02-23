@@ -1,9 +1,10 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
-import { DbUiConfiguration, Flex, FormItem } from "../rebuild";
+import { DbUiConfiguration} from "../rebuild";
 import { XnhBase } from "./base";
 import { config } from "./config";
 
 export module XnhCreator {
+    import XnhFormItem = XnhBase.XnhFormItem
     export const CreatorTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.ICreator> = {
         $title: "创作者",
         ...XnhBase.titles
@@ -12,15 +13,12 @@ export module XnhCreator {
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "creator", props => {
         return <XnhBase.BaseFramework item={props.item}>
             <XnhBase.BaseContent item={props.item}/>
-            <FormItem label="关系">
+            <XnhFormItem label="关系">
                 {/* Relations */}
-                <FormItem label="角色">
-                    {props.relations.character.$element()}
-                </FormItem>
-                <FormItem label="创作者">
-                    {props.relations.creator.$element()}
-                </FormItem>
-            </FormItem>
+                <XnhFormItem label="作品">
+                    {props.relations.artwork.$element()}
+                </XnhFormItem>
+            </XnhFormItem>
         </XnhBase.BaseFramework>
     })
 

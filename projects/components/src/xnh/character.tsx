@@ -1,9 +1,11 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
-import { DbUiConfiguration, Flex, FormItem } from "../rebuild";
+import { DbUiConfiguration, Flex } from "../rebuild";
 import { XnhBase } from "./base";
 import { config } from "./config";
 
 export module XnhCharacter {
+    import XnhFormItem = XnhBase.XnhFormItem
+
     export const CharacterTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.ICharacter> = {
         $title: "角色",
         ...XnhBase.titles,
@@ -52,78 +54,78 @@ export module XnhCharacter {
             <XnhBase.BaseContent item={props.item}/>
             <ExtInfo item={props.item}/>
             <Flex direction="vertical">
-                <FormItem label="关系">
+                <XnhFormItem label="关系">
                     {/* Relations */}
-                    <FormItem label="作品">
+                    <XnhFormItem label="作品">
                         {props.relations.artwork.$element()}
-                    </FormItem>
-                    <FormItem label="声优">
+                    </XnhFormItem>
+                    <XnhFormItem label="声优">
                         {props.relations.voiceActor.$element()}
-                    </FormItem>
-                </FormItem>
+                    </XnhFormItem>
+                </XnhFormItem>
                 {/* Parent */}
-                <FormItem label="继承自">
+                <XnhFormItem label="继承自">
                     {props.$parentElement()}
-                </FormItem>
+                </XnhFormItem>
                 {/* Children */}
-                <FormItem label="扩展至">
+                <XnhFormItem label="扩展至">
                     {props.$childrenElement()}
-                </FormItem>
+                </XnhFormItem>
             </Flex>
         </XnhBase.BaseFramework>
     })
 
     const ExtInfo = DbUiConfiguration.wrapLayout.newPage(config, "character", props => {
         return <Flex direction="vertical">
-            <FormItem label={props.item.appearance.$title}>
-                <FormItem label={props.item.appearance.age.$title}>
+            <XnhFormItem label={props.item.appearance.$title}>
+                <XnhFormItem label={props.item.appearance.age.$title}>
                     {props.item.appearance.age.$element}
-                </FormItem>
-                <FormItem label={props.item.appearance.eyes.$title}>
-                    <FormItem label={props.item.appearance.eyes.color.$title}>
+                </XnhFormItem>
+                <XnhFormItem label={props.item.appearance.eyes.$title}>
+                    <XnhFormItem label={props.item.appearance.eyes.color.$title}>
                         {props.item.appearance.eyes.color.$element}
-                    </FormItem>
-                    <FormItem label={props.item.appearance.eyes.features.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.appearance.eyes.features.$title}>
                         {props.item.appearance.eyes.features.$element}
-                    </FormItem>
-                </FormItem>
-                <FormItem label={props.item.appearance.hair.$title}>
-                    <FormItem label={props.item.appearance.hair.color.$title}>
+                    </XnhFormItem>
+                </XnhFormItem>
+                <XnhFormItem label={props.item.appearance.hair.$title}>
+                    <XnhFormItem label={props.item.appearance.hair.color.$title}>
                         {props.item.appearance.hair.color.$element}
-                    </FormItem>
-                    <FormItem label={props.item.appearance.hair.shape.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.appearance.hair.shape.$title}>
                         {props.item.appearance.hair.shape.$element}
-                    </FormItem>
-                </FormItem>
-                <FormItem label={props.item.appearance.wearing.$title}>
-                    <FormItem label={props.item.appearance.wearing.cloths.$title}>
+                    </XnhFormItem>
+                </XnhFormItem>
+                <XnhFormItem label={props.item.appearance.wearing.$title}>
+                    <XnhFormItem label={props.item.appearance.wearing.cloths.$title}>
                         {props.item.appearance.wearing.cloths.$element}
-                    </FormItem>
-                    <FormItem label={props.item.appearance.wearing.mainColor.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.appearance.wearing.mainColor.$title}>
                         {props.item.appearance.wearing.mainColor.$element}
-                    </FormItem>
-                    <FormItem label={props.item.appearance.wearing.detailedColor.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.appearance.wearing.detailedColor.$title}>
                         {props.item.appearance.wearing.detailedColor.$element}
-                    </FormItem>
-                    <FormItem label={props.item.appearance.wearing.attachments.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.appearance.wearing.attachments.$title}>
                         {props.item.appearance.wearing.attachments.$element}
-                    </FormItem>
-                </FormItem>
-                <FormItem label={props.item.appearance.attachments.$title}>
+                    </XnhFormItem>
+                </XnhFormItem>
+                <XnhFormItem label={props.item.appearance.attachments.$title}>
                     {props.item.appearance.attachments.$element}
-                </FormItem>
-            </FormItem>
-            <FormItem label={props.item.voice.$title}>
-                <FormItem label={props.item.voice.age.$title}>
+                </XnhFormItem>
+            </XnhFormItem>
+            <XnhFormItem label={props.item.voice.$title}>
+                <XnhFormItem label={props.item.voice.age.$title}>
                     {props.item.voice.age.$element}
-                </FormItem>
-                <FormItem label={props.item.voice.features.$title}>
+                </XnhFormItem>
+                <XnhFormItem label={props.item.voice.features.$title}>
                     {props.item.voice.features.$element}
-                </FormItem>
-            </FormItem>
-            <FormItem label={props.item.gender.$title}>
+                </XnhFormItem>
+            </XnhFormItem>
+            <XnhFormItem label={props.item.gender.$title}>
                 {props.item.gender.$element}
-            </FormItem>
+            </XnhFormItem>
         </Flex>
     })
 

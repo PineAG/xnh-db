@@ -100,7 +100,7 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
         await this.octokit.repos.createOrUpdateFileContents({
             owner: this.branch.owner,
             repo: this.branch.repo,
-            ref: this.branch.branch,
+            branch: this.branch.branch,
             path: this.patchPath(path),
             content: b64,
             mediaType: {
@@ -117,6 +117,7 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
                 owner: this.branch.owner,
                 repo: this.branch.repo,
                 path: this.patchPath(path),
+                ref: `refs/heads/${this.branch.branch}`,
                 mediaType: {
                     format: "sha"
                 }
@@ -145,7 +146,7 @@ export class OctokitRepoClient implements OfflinePathClientUtils.IPathClient {
         await this.octokit.repos.deleteFile({
             owner: this.branch.owner,
             repo: this.branch.repo,
-            ref: this.branch.branch,
+            branch: this.branch.branch,
             path: this.patchPath(path),
             message: `Delete ${path}`,
             sha

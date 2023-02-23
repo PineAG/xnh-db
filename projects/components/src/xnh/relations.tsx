@@ -1,8 +1,10 @@
 import { XnhDBProtocol as P } from "@xnh-db/protocol";
-import { DbUiConfiguration, FormItem, HStack } from "../rebuild";
+import { DbUiConfiguration, HStack } from "../rebuild";
 import { config } from "./config";
+import { XnhBase } from "./base";
 
 import RP = P.RelationPayloads
+import XnhFormItem = XnhBase.XnhFormItem
 
 export module XnhInterpersonal {
     export const titles: DbUiConfiguration.TitlesFor<RP.Interpersonal> = {
@@ -21,12 +23,12 @@ export module XnhInterpersonal {
 
     export const payloadEditor = DbUiConfiguration.wrapLayout.payloadEditor(config, "interpersonal", props => {
         return <HStack layout={["1fr", "1fr"]}>
-            <FormItem label={props.payload.leftRelation.$title}>
+            <XnhFormItem label={props.payload.leftRelation.$title}>
                 {props.payload.leftRelation.$element}
-            </FormItem>
-            <FormItem label={props.payload.rightRelation.$title}>
+            </XnhFormItem>
+            <XnhFormItem label={props.payload.rightRelation.$title}>
                 {props.payload.rightRelation.$element}
-            </FormItem>
+            </XnhFormItem>
         </HStack>
     })
 }
@@ -47,9 +49,9 @@ export module XnhCharacter_Artwork {
 
     export const payloadEditor = DbUiConfiguration.wrapLayout.payloadEditor(config, "character_artwork", props => {
         return <HStack layout={["1fr", "1fr"]}>
-            <FormItem label={props.payload.characterType.$title}>
+            <XnhFormItem label={props.payload.characterType.$title}>
                 {props.payload.characterType.$element}
-            </FormItem>
+            </XnhFormItem>
         </HStack>
     })
 }
@@ -70,9 +72,9 @@ export module XnhArtwork_Creator {
 
     export const payloadEditor = DbUiConfiguration.wrapLayout.payloadEditor(config, "artwork_creator", props => {
         return <HStack layout={["1fr", "1fr"]}>
-            <FormItem label={props.payload.creatorType.$title}>
+            <XnhFormItem label={props.payload.creatorType.$title}>
                 {props.payload.creatorType.$element}
-            </FormItem>
+            </XnhFormItem>
         </HStack>
     })
 }
@@ -93,9 +95,9 @@ export module XnhCharacter_VoiceActor {
 
     export const payloadEditor = DbUiConfiguration.wrapLayout.payloadEditor(config, "character_voiceActor", props => {
         return <HStack layout={["1fr", "1fr"]}>
-            <FormItem label={props.payload.voiceType.$title}>
+            <XnhFormItem label={props.payload.voiceType.$title}>
                 {props.payload.voiceType.$element}
-            </FormItem>
+            </XnhFormItem>
         </HStack>
     })
 }

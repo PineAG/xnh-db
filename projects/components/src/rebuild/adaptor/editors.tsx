@@ -39,9 +39,16 @@ export module AntdEndpointEditors {
             </>
         },
         fullText: (props) => {
-            return <Input
-                value={props.binding.value}
-                onChange={evt => props.binding.update(evt.target.value)}/>
+            if(props.config.options.richText) {
+                return <Input.TextArea
+                    value={props.binding.value}
+                    onChange={evt => props.binding.update(evt.target.value)}
+                />
+            } else {            
+                return <Input
+                    value={props.binding.value}
+                    onChange={evt => props.binding.update(evt.target.value)}/>
+            }
         },
         fullTextList: (props) => {
             return <div>还没做</div>

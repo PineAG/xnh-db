@@ -1,7 +1,7 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
 import Card from "antd/es/card/Card";
 import React from "react";
-import { DbUiConfiguration, Flex, FormItem, HStack } from "../rebuild";
+import { DbUiConfiguration, Flex, HStack } from "../rebuild";
 
 export module XnhBase {
     export const titles: Omit<DbUiConfiguration.TitlesFor<XnhDBProtocol.IBase>, "$title"> = {
@@ -40,19 +40,22 @@ export module XnhBase {
                 {props.item.profile.$element}
                 {props.item.title.$element}
             </HStack>
-            <FormItem label={props.item.name.$title}>
+            <XnhFormItem label={props.item.name.$title}>
                 <Flex direction="vertical">
-                    <FormItem label={props.item.name.zhs.$title}>
+                    <XnhFormItem label={props.item.name.zhs.$title}>
                         {props.item.name.zhs.$element}
-                    </FormItem>
-                    <FormItem label={props.item.name.en.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.name.en.$title}>
                         {props.item.name.en.$element}
-                    </FormItem>
-                    <FormItem label={props.item.name.ja.$title}>
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.name.ja.$title}>
                         {props.item.name.ja.$element}
-                    </FormItem>
+                    </XnhFormItem>
                 </Flex>
-            </FormItem>
+            </XnhFormItem>
+            <XnhFormItem label={props.item.description.$title}>
+                {props.item.description.$element}
+            </XnhFormItem>
         </Flex>
     }
 
@@ -63,8 +66,21 @@ export module XnhBase {
             <Flex direction="vertical">
                 <div>{props.item.title.$element}</div>
                 <div>{props.item.name.zhs.$element}</div>
+                <div>{props.item.description.$element}</div>
                 {props.children}
             </Flex>
+        </HStack>
+    }
+
+    export interface XnhFormItemProps {
+        label: string
+        children: React.ReactNode
+    }    
+
+    export function XnhFormItem(props: XnhFormItemProps) {
+        return <HStack layout={["auto", "1fr"]} spacing={8} style={{alignItems: "start", margin: 4}}>
+            <div>{props.label}:</div>
+            <div>{props.children}</div>
         </HStack>
     }
 }

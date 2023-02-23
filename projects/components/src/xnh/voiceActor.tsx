@@ -1,9 +1,11 @@
 import { XnhDBProtocol } from "@xnh-db/protocol";
-import { DbUiConfiguration, Flex, FormItem } from "../rebuild";
+import { DbUiConfiguration } from "../rebuild";
 import { XnhBase } from "./base";
 import { config } from "./config";
 
 export module XnhVoiceActor {
+    import XnhFormItem = XnhBase.XnhFormItem
+
     export const VoiceActorTitles: DbUiConfiguration.TitlesFor<XnhDBProtocol.IVoiceActor> = {
         $title: "声优",
         ...XnhBase.titles,
@@ -13,27 +15,24 @@ export module XnhVoiceActor {
     export const fullPage = DbUiConfiguration.wrapLayout.fullPage(config, "voiceActor", props => {
         return <XnhBase.BaseFramework item={props.item}>
             <XnhBase.BaseContent item={props.item}/>
-            <FormItem label={props.item.gender.$title}>
+            <XnhFormItem label={props.item.gender.$title}>
                 {props.item.gender.$element}
-            </FormItem>
-            <FormItem label="关系">
+            </XnhFormItem>
+            <XnhFormItem label="关系">
                 {/* Relations */}
-                <FormItem label="角色">
+                <XnhFormItem label="角色">
                     {props.relations.character.$element()}
-                </FormItem>
-                <FormItem label="创作者">
-                    {props.relations.creator.$element()}
-                </FormItem>
-            </FormItem>
+                </XnhFormItem>
+            </XnhFormItem>
         </XnhBase.BaseFramework>
     })
 
     export const newPage = DbUiConfiguration.wrapLayout.newPage(config, "voiceActor", props => {
         return <XnhBase.BaseFramework item={props.item}>
             <XnhBase.BaseContent item={props.item}/>
-            <FormItem label={props.item.gender.$title}>
+            <XnhFormItem label={props.item.gender.$title}>
                 {props.item.gender.$element}
-            </FormItem>
+            </XnhFormItem>
         </XnhBase.BaseFramework>
     })
 
