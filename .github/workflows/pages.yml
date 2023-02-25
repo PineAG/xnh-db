@@ -5,7 +5,11 @@ name: Build Pages
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "data" ]
+    paths:
+    - "./**"
+    - "!data"
+    - "data/**/status.json"
   pull_request:
     branches: [ "master" ]
 
