@@ -1,7 +1,6 @@
 import { PlusOutlined } from "@ant-design/icons"
 import { CollectionSyncComponents, DBPages, DBSearchWrapper, Flex, SearchInputComponents, SearchResultComponents } from "@xnh-db/components"
 import { Button, Card, Popconfirm } from "antd"
-import { useEffect } from "react"
 import { useNavigate } from "react-router"
 import { XnhPath } from "./paths"
 import { EditModeToolbar, useCollectionName, useItemId, useSearchQuery } from "./utils"
