@@ -17,6 +17,18 @@
    "color": [
     "黑色"
    ]
-  }
+  },
+  "wearing": {
+   "mainColor": [
+    "黑色"
+   ],
+   "detailedColor": [
+    "金色"
+   ]
+  },
+  "attachments": [
+   "角",
+   "尾巴"
+  ]
  }
 }
