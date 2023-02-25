@@ -11,6 +11,8 @@
 * Entity page flex layout
 * Batch DB update actions?
 * Rich text support?
+* Avatar image is not centralized
+* /data pipeline not working
 
 ### Mitigated issues
 * Fix routing issue (broken when character/yyy => artwork/xxx)

@@ -81,6 +81,14 @@ export module XnhCharacter {
                 <XnhFormItem label={props.item.appearance.age.$title}>
                     {props.item.appearance.age.$element}
                 </XnhFormItem>
+                <XnhFormItem label={props.item.appearance.body.$title}>
+                    <XnhFormItem label={props.item.appearance.body.height.$title}>
+                        {props.item.appearance.body.height.$element}
+                    </XnhFormItem>
+                    <XnhFormItem label={props.item.appearance.body.features.$title}>
+                        {props.item.appearance.body.features.$element}
+                    </XnhFormItem>
+                </XnhFormItem>
                 <XnhFormItem label={props.item.appearance.eyes.$title}>
                     <XnhFormItem label={props.item.appearance.eyes.color.$title}>
                         {props.item.appearance.eyes.color.$element}
