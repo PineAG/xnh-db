@@ -34,7 +34,7 @@ jobs:
         cd ../../
     - name: build website
       run: |
-        cd ./projects/view
+        cd ./projects/viewer
         yarn build
         cd ../../
     - uses: actions/checkout@v3
