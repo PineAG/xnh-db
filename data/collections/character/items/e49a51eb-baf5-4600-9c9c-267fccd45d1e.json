@@ -1,0 +1,28 @@
+{
+ "title": "重云",
+ "name": {
+  "zhs": "重云",
+  "en": "Chongyun"
+ },
+ "profile": "e97d63eb-ad16-4aa9-9f9a-576491bd793e",
+ "photos": [
+  "25d09583-a5b3-47ab-84fc-0aeae528b36a",
+  "2de3418d-d911-47b3-86f9-c793f3fe8a21",
+  "f3416374-9ebc-4315-beea-0666e1e52430",
+  "a17f6304-e1f4-47e8-9cae-024bcdcf2c0c"
+ ],
+ "appearance": {
+  "eyes": {
+   "color": [
+    "蓝色",
+    "浅蓝色"
+   ]
+  },
+  "hair": {
+   "color": [
+    "蓝色",
+    "浅蓝色"
+   ]
+  }
+ }
+}
