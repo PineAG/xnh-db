@@ -156,7 +156,7 @@ export module DBPages {
     }
 
     type CreatePageState = {pending: true} | {pending: false, itemId: string}
-    export function useCreatePage(collectionName: string): [JSX.Element, () => Promise<string>] {
+    export function useCreatePage(collectionName: string, newItemId: string): [JSX.Element, () => Promise<string>] {
         const globalProps = DbContexts.useProps()
         const entityBinding = XBinding.useBinding<DeepPartial<FieldConfig.EntityBase>>({})
 
@@ -172,8 +172,8 @@ export module DBPages {
         const injection = createInjectProps(entityBinding)
 
         useEffect(() => {
-            initialize
-        }, [collectionName])
+            initialize()
+        }, [collectionName, newItemId])
 
         let component: React.ReactNode
         if(state.pending) {
@@ -185,10 +185,9 @@ export module DBPages {
         return [component, createPage]
 
         async function initialize() {
-            const itemId = crypto.randomUUID()
-            await collectionClient.putItem(itemId, {})
-            await collectionClient.markDirtyItem(itemId, true)
-            setState({pending: false, itemId})
+            // await collectionClient.putItem(newItemId, {})
+            // await collectionClient.markDirtyItem(newItemId, true)
+            setState({pending: false, itemId: newItemId})
         }
 
         async function createPage() {

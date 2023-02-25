@@ -29,7 +29,7 @@ function InternalRoutes() {
                     <XnhEdit/>
                 </PageWrapper>
             }/>
-            <Route path="create" element={
+            <Route path="create/:itemId" element={
                 <PageWrapper>
                     <XnhCreate/>
                 </PageWrapper>
