@@ -16,11 +16,6 @@ export module SyncFileUtils {
         return (entity: DeepPartial<T>, isDirty: boolean) => markDirtyFiles<T>(entity, conf, isDirty)
     }
 
-    export function useClearDirtyFiles() {
-        const client = GlobalSyncComponents.useQueryClients().files
-        return () => client.clearDirtyFiles()
-    }
-
     export function useMarkDirtyFiles() {
         const client = GlobalSyncComponents.useQueryClients().files
         return async <T extends FieldConfig.EntityBase>(d: DeepPartial<T>, c: FieldConfig.ConfigFromDeclaration<T>, isDirty: boolean) => {

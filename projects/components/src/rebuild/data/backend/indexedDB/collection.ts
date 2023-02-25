@@ -26,6 +26,7 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
     private timeWrapper: IdbStoreWrapper<number, never>
     private fullTextWrapper: IdbStoreWrapper<FullTextItem, "keywords">
     private fullTextTermsWrapper: IdbStoreWrapper<number, never>
+    private dirtyWrapper: IdbStoreWrapper<boolean, never>
 
     constructor(public readonly name: string, private config: FC.ConfigFromDeclaration<T>) {
         const dataIndices: Record<string, IdbIndexOption> = {}
@@ -40,7 +41,7 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
         this.timeWrapper = new IdbStoreWrapper(`entity_${name}:updatedAt`, {})
         this.fullTextWrapper = new IdbStoreWrapper(`entity_${name}:fullText:documents`, {keywords: {keyPath: "keywords", isArray: true, unique: false}})
         this.fullTextTermsWrapper = new IdbStoreWrapper(`entity_${name}:fullText:terms`, {})
-
+        this.dirtyWrapper = new IdbStoreWrapper(`entity_${name}:dirty`, {})
     }
 
     onUpgrade(db: idb.IDBPDatabase) {
@@ -48,6 +49,7 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
         this.timeWrapper.initialize(db)
         this.fullTextWrapper.initialize(db)
         this.fullTextTermsWrapper.initialize(db)
+        this.dirtyWrapper.initialize(db)
     }
 
     async onLaunch(db: idb.IDBPDatabase) {
@@ -69,6 +71,7 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
 
     async deleteItem(db: idb.IDBPDatabase, id: string): Promise<void> {
         await this.dataWrapper.delete(db, id)
+        await this.dirtyWrapper.delete(db, id)
     }
 
     async getAllIndices(db: idb.IDBPDatabase): Promise<[string, Date][]> {
@@ -185,6 +188,21 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
         return this.fullTextTermsWrapper.queryKeys(db, IDBKeyRange.lowerBound(prefix), count)
     }
 
+    async markDirty(db: idb.IDBPDatabase, id: string, isDirty: boolean) {
+        if(isDirty) {
+            await this.dirtyWrapper.put(db, id, true)
+        } else {
+            await this.dirtyWrapper.delete(db, id)
+        }
+    }
+
+    async clearDirty(db: idb.IDBPDatabase) {
+        const idList = await this.dirtyWrapper.getAllKeys(db)
+        for(const id of idList) {
+            await this.deleteItem(db, id)
+        }
+    }
+
 }
 
 export class IdbCollectionOnlineClient<T extends FC.EntityBase> implements IOnlineClient.Collection<T, IdbCollectionQuery> {
@@ -236,6 +254,18 @@ export class IdbCollectionOnlineClient<T extends FC.EntityBase> implements IOnli
     autocompleteFullText(prefix: string, limit: number): Promise<string[]> {
         return this.withDB(async db => {
             return this.wrapper.getFullTextKeysByPrefix(db, prefix, limit)
+        })
+    }
+
+    markDirtyItem(id: string, isDirty: boolean): Promise<void> {
+        return this.withDB(async db => {
+            await this.wrapper.markDirty(db, id, isDirty)
+        })
+    }
+    
+    clearDirtyItem(): Promise<void> {
+        return this.withDB(async db => {
+            await this.wrapper.clearDirty(db)
         })
     }
 }

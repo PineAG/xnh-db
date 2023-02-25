@@ -13,6 +13,8 @@ export module IOnlineClient {
         putItem(id: string, value: DeepPartial<T>): Promise<void>
         deleteItem(id: string): Promise<void>
         autocompleteFullText(prefix: string, limit: number): Promise<string[]>
+        markDirtyItem(id: string, isDirty: boolean): Promise<void>
+        clearDirtyItem(): Promise<void>
     }
 
     export interface Relation<Keys extends string, Payload> {
@@ -20,6 +22,8 @@ export module IOnlineClient {
         putRelation(keys: Record<Keys, string>, payload: DeepPartial<Payload>): Promise<void>
         getRelationsByKey<K extends Keys>(key: K, id: string): Promise<Record<Keys, string>[]>
         deleteRelation(keys: Record<Keys, string>): Promise<void>
+        markDirtyRelation(keys: Record<Keys, string>, isDirty: boolean): Promise<void>
+        clearDirtyRelations(): Promise<void>
     }
 
     export interface Files {

@@ -38,7 +38,7 @@ export module CollectionSyncComponents {
         async function initialize() {
             setPending(true)
             setSyncMessages(null)
-            await Utils.synchronizeCollection(globalConfig, clients.clients, collectionName, "download", message => {
+            await Utils.synchronizeAllClients(globalConfig, clients.clients, "download", message => {
                 setSyncMessages(["正在下载数据", message])
             })
             setSyncMessages(null)
@@ -48,9 +48,11 @@ export module CollectionSyncComponents {
         async function updateCollection() {
             setSyncMessages(null)
             setPending(true)
-            await Utils.synchronizeCollection(globalConfig, clients.clients, collectionName, "upload", message => {
+            await Utils.synchronizeAllClients(globalConfig, clients.clients, "upload", message => {
                 setSyncMessages(["正在上传数据", message])
             })
+            setSyncMessages(["正在清理临时数据"])
+            await Utils.clearDirty(clients.clients)
             setPending(false)
             setSyncMessages(null)
         }

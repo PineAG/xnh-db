@@ -1,6 +1,7 @@
 import { OfflineClientSynchronization } from "@xnh-db/protocol";
 import { DbUiConfiguration } from "../../config";
 import { DBStorage } from "../../data";
+import { GlobalSyncComponents } from "./globalSync";
 
 export module UiSyncUtils {
     type GPBase = DbUiConfiguration.GlobalPropsBase
@@ -162,5 +163,23 @@ export module UiSyncUtils {
                 const titles = config.layout.titles.payloadTitles[relationName]
                 return titles["$title"]
             }
+    }
+
+    export async function clearDirty(clients: DBStorage.DBBackendSet<DPBase>) {
+        for(const collectionName in clients.query.collections) {
+            const c = clients.query.collections[collectionName]
+            await c.clearDirtyItem()
+        }
+        for(const collectionName in clients.query.inheritance) {
+            const c = clients.query.inheritance[collectionName]
+            if(c) {
+                await c.clearDirtyRelations()
+            }
+        }
+        for(const relName in clients.query.relations) {
+            const c = clients.query.relations[relName]
+            await c.clearDirtyRelations()
+        }
+        await clients.query.files.clearDirtyFiles()
     }
 }

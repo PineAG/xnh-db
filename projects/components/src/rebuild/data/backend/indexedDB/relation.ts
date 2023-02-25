@@ -12,6 +12,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
     private relationWrapper: IdbStoreWrapper<Record<keyof C, string>, keyof C & string>
     private timeWrapper: IdbStoreWrapper<number, never>
     private payloadWrapper: IdbStoreWrapper<DeepPartial<Payload>, never>
+    private dirtyWrapper: IdbStoreWrapper<boolean, never>
 
     constructor(name: string, wrappers: {[K in keyof C]: IdbCollectionWrapper<C[K]>}, private config: FC.ConfigFromDeclaration<Payload>) {
         for(const key in wrappers) {
@@ -35,15 +36,17 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
 
         this.timeWrapper = new IdbStoreWrapper(`${this.storeName}:index`, {})
         this.payloadWrapper = new IdbStoreWrapper(`${this.storeName}:payload`, {})
+        this.dirtyWrapper = new IdbStoreWrapper(`${this.storeName}:isDirty`, {})
     }
 
     onUpgrade(db: idb.IDBPDatabase) {
         this.relationWrapper.initialize(db)
         this.timeWrapper.initialize(db)
         this.payloadWrapper.initialize(db)
+        this.dirtyWrapper.initialize(db)
     }
 
-    private extractId(keys: Record<keyof C, string>) {
+    private extractId(keys: Record<Extract<keyof C, string>, string>) {
         return this.sortedKeys.map(k => keys[k]).join("_")
     }
 
@@ -53,6 +56,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
             await this.relationWrapper.delete(db, k)
             await this.timeWrapper.delete(db, k)
             await this.payloadWrapper.delete(db, k)
+            await this.dirtyWrapper.delete(db, k)
         }))
     }
 
@@ -85,6 +89,7 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
         await this.relationWrapper.delete(db, id)
         await this.payloadWrapper.delete(db, id)
         await this.timeWrapper.delete(db, id)
+        await this.dirtyWrapper.delete(db, id)
     }
 
     async getIndex(db: idb.IDBPDatabase): Promise<IOfflineClient.CollectionIndex<Record<keyof C, string>>> {
@@ -120,6 +125,29 @@ export class IdbRelationWrapper<C extends Record<string, any>, Payload extends F
     async updateTags(db: idb.IDBPDatabase, data: DeepPartial<Payload>): Promise<void> {
         await IdbTagWrapper.putTagsByConfig(db, data, this.config)
     }
+
+    async markDirty(db: idb.IDBPDatabase, keys: Record<Extract<keyof C, string>, string>, isDirty: boolean) {
+        const id = this.extractId(keys)
+        if(isDirty) {
+            await this.dirtyWrapper.put(db, id, true)
+        } else {
+            await this.dirtyWrapper.delete(db, id)
+        }
+    }
+
+    async clearDirty(db: idb.IDBPDatabase) {
+        const idList = await this.dirtyWrapper.getAllKeys(db)
+        const keys = await Promise.all(idList.map(async id => {
+            const k = await this.relationWrapper.get(db, id)
+            if(k === undefined) {
+                throw new Error(`Not exist: ${id}`)
+            }
+            return k
+        }))
+        for(const k of keys) {
+            await this.deleteRelation(db, k)
+        }
+    }
 }
 
 export class IdbRelationOnlineClient<C extends Record<string, any>, Payload extends FC.EntityBase> implements IOnlineClient.Relation<Extract<keyof C, string>, Payload> {
@@ -154,6 +182,18 @@ export class IdbRelationOnlineClient<C extends Record<string, any>, Payload exte
     deleteRelation(keys: Record<keyof C, string>): Promise<void> {
         return this.withDB(async db => {
             return this.wrapper.deleteRelation(db, keys)
+        })
+    }
+
+    markDirtyRelation(keys: Record<Extract<keyof C, string>, string>, isDirty: boolean): Promise<void> {
+        return this.withDB(async db => {
+            await this.wrapper.markDirty(db, keys, isDirty)
+        })
+    }
+
+    clearDirtyRelations(): Promise<void> {
+        return this.withDB(async db => {
+            await this.wrapper.clearDirty(db)
         })
     }
 }

@@ -60,7 +60,6 @@ export module DBPages {
         const emptyRelations = useEmptyRelations(collectionName)
         const [relations, setRelations] = useState(emptyRelations)
         const markCollectionDirtyFiles = SyncFileUtils.useMarkCollectionDirtyFiles(collectionName)
-        const clearDirtyFiles = SyncFileUtils.useClearDirtyFiles()
 
         // editable data
         const entityBinding = XBinding.useBinding<DeepPartial<FieldConfig.EntityBase>>({})
@@ -147,35 +146,58 @@ export module DBPages {
                     }
                 }
             }
-
-            await clearDirtyFiles()
         }
 
         async function remove(){
             const client = clients.collections[collectionName]
             await client.deleteItem(itemId)
             await markCollectionDirtyFiles(entity, true)
-            await clearDirtyFiles()
         }
     }
 
+    type CreatePageState = {pending: true} | {pending: false, itemId: string}
     export function useCreatePage(collectionName: string): [JSX.Element, () => Promise<string>] {
         const globalProps = DbContexts.useProps()
         const entityBinding = XBinding.useBinding<DeepPartial<FieldConfig.EntityBase>>({})
 
         const clients = GlobalSyncComponents.useQueryClients()
+        const collectionClient = clients.collections[collectionName]
+
+        const [state, setState] = useState<CreatePageState>({pending: true})
+
+        const {Loading} = DbContexts.useComponents()
 
         const Layout = globalProps.layout.layouts.entities[collectionName].newPage
         const createInjectProps = LayoutInjector.useCreateSimplePagePropsFromBinding(collectionName)
         const injection = createInjectProps(entityBinding)
 
-        const component = <Layout {...injection}/>
+        useEffect(() => {
+            initialize
+        }, [collectionName])
+
+        let component: React.ReactNode
+        if(state.pending) {
+            component = <Loading/>
+        } else {
+            component = <Layout {...injection}/>
+        }
+        
         return [component, createPage]
 
-        async function createPage() {
+        async function initialize() {
             const itemId = crypto.randomUUID()
-            await clients.collections[collectionName].putItem(itemId, entityBinding.value)
-            return itemId
+            await collectionClient.putItem(itemId, {})
+            await collectionClient.markDirtyItem(itemId, true)
+            setState({pending: false, itemId})
+        }
+
+        async function createPage() {
+            if(state.pending) {
+                throw new Error("Invalid state")
+            }
+            await collectionClient.putItem(state.itemId, entityBinding.value)
+            await collectionClient.markDirtyItem(state.itemId, false)
+            return state.itemId
         }
 
     }
