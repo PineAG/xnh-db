@@ -30,7 +30,7 @@ export module IOfflineClient {
 
     export function stringifyRelationKey(keys: Record<string, string>): string {
         const names = Array.from(Object.keys(keys))
-        return names.map(n => keys[n]).join(":")
+        return names.map(n => keys[n]).join("_")
     }
 
     export interface Files {

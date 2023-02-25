@@ -2,7 +2,7 @@ const path = require("path")
 const serveStatic = require("serve-static")
 const fs = require("fs")
 
-const dataRoot = path.resolve(__dirname, "..", "..", "..", "data")
+const dataRoot = path.resolve(__dirname, "..", "..", "..", "data", "data")
 
 module.exports = function(app) {
     app.use("/data/", (req, res) => {
