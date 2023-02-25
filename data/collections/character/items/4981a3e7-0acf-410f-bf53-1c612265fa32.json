@@ -1,0 +1,26 @@
+{
+ "title": "查克罗",
+ "name": {
+  "zhs": "查克罗",
+  "ja": "チャクロ"
+ },
+ "profile": "bdb55672-79b2-4fbc-b702-b1f09bfef765",
+ "photos": [
+  "cc2874b3-c4c2-4762-ad7d-19df11bb459e"
+ ],
+ "appearance": {
+  "age": [
+   "14"
+  ],
+  "eyes": {
+   "color": [
+    "绿色"
+   ]
+  },
+  "hair": {
+   "color": [
+    "黑色"
+   ]
+  }
+ }
+}
