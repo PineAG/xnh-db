@@ -7,8 +7,8 @@ on:
   push:
     branches: [ "master", "data" ]
     paths:
-    - "./**"
-    - "!data"
+    - "**"
+    - "!data/**"
     - "data/**/status.json"
   pull_request:
     branches: [ "master" ]
