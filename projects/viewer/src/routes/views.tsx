@@ -1,8 +1,8 @@
-import { CollectionSyncComponents, DbContexts, DBPages, DBSearchWrapper, Flex, GlobalSyncComponents, SearchInputComponents, SearchResultComponents, XnhUiConfiguration } from "@xnh-db/components"
-import {useNavigate, useParams} from "react-router"
-import {Button, Card, Popconfirm} from "antd"
-import {useItemId, useCollectionName, useSearchQuery, EditModeToolbar} from "./utils"
 import { PlusOutlined } from "@ant-design/icons"
+import { CollectionSyncComponents, DBPages, DBSearchWrapper, Flex, SearchInputComponents, SearchResultComponents } from "@xnh-db/components"
+import { Button, Card, Popconfirm } from "antd"
+import { useNavigate } from "react-router"
+import { EditModeToolbar, useCollectionName, useItemId, useSearchQuery } from "./utils"
 
 interface Props {
     collectionName: string

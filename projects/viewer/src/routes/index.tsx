@@ -1,11 +1,6 @@
-import { XnhUiConfiguration } from "@xnh-db/components"
-import {Routes, Route, Navigate} from "react-router"
+import { Navigate, Route, Routes } from "react-router"
 import { NotFound, PageWrapper } from "./utils"
 import { XnhCreate, XnhEdit, XnhSearch, XnhView } from "./views"
-import {Layout, Menu} from "antd"
-
-
-const collections: (keyof typeof XnhUiConfiguration.config.collections)[] = ["character", "artwork", "voiceActor", "creator"]
 
 function InternalRoutes() {
     return <Routes>
