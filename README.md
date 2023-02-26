@@ -1,16 +1,20 @@
 ## TODOs
-* Tmp edit context
-* Select Parent (patch "exclude" query)
-* remove async operations from relation editor: make payload a binding
-* Gallery editor: + Move
-* Form item boundary inside entity layout
-* Create Entity Dialog
-* Entity page flex layout
-* Batch DB update actions?
-* Rich text support?
-* Avatar image is not centralized
-* /data pipeline not working
-* BUG: UI removes two search tags on one click
+* Edit experience optimization
+  * Tmp edit context
+  * remove async operations from relation editor: make payload a binding
+  * Batch DB update actions?
+  * Create Entity Dialog
+* Async loading optimization
+  * Optimize search result loading (currently load everything immediately)
+* UI Issue
+  * Rich text support? (Markdown)
+  * Avatar image is not centralized
+  * Entity page flex layout
+  * Gallery editor: + Move
+  * Form item boundary inside entity layout
+  * Sync bug
+  * /data pipeline not working
+  * Select Parent (patch "exclude" query)
 
 ### Mitigated issues
 * Fix routing issue (broken when character/yyy => artwork/xxx)
