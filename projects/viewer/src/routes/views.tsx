@@ -1,4 +1,4 @@
-import { PlusOutlined } from "@ant-design/icons"
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons"
 import { CollectionSyncComponents, DBPages, DBSearchWrapper, Flex, SearchInputComponents, SearchResultComponents } from "@xnh-db/components"
 import { Button, Card, Popconfirm } from "antd"
 import { useNavigate } from "react-router"
@@ -7,6 +7,21 @@ import { EditModeToolbar, useCollectionName, useItemId, useSearchQuery } from ".
 
 interface Props {
     collectionName: string
+}
+
+export function XnhList() {
+    const collectionName = useCollectionName()
+    const navigate = useNavigate()
+    return <Flex direction="vertical">
+        <Flex direction="horizontal">
+            <Button
+                type="primary"
+                icon={<SearchOutlined/>}
+                onClick={() => navigate(XnhPath.searchCollection(collectionName, ""))}
+            >搜索</Button>
+        </Flex>
+        <DBPages.CollectionItemList collectionName={collectionName} itemHeight={50}/>
+    </Flex>
 }
 
 export function XnhView() {

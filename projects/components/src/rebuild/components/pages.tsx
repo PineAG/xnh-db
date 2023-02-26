@@ -4,8 +4,9 @@ import { DeepPartial } from "utility-types"
 import { InheritanceUtils } from "../data/inherit"
 import { XBinding } from "./binding"
 import { DbContexts } from "./context"
-import { LayoutInjector } from "./inject"
+import { InjectionParentComponents, LayoutInjector } from "./inject"
 import { GlobalSyncComponents, SyncFileUtils } from "./sync"
+import VirtualList from 'rc-virtual-list';
 
 export module DBPages {
     interface Props {
@@ -220,5 +221,49 @@ export module DBPages {
             bindingGroup[key] = XBinding.propertyOf(binding).join(key)
         }
         return bindingGroup
+    }
+
+    type CollectionItemListProps = {
+        collectionName: string
+        itemHeight: number
+    }
+    export function CollectionItemList(props: CollectionItemListProps) {
+        const clients = GlobalSyncComponents.useQueryClients()
+        const client = clients.collections[props.collectionName]
+
+        const [currentCollection, setCurrentCollection] = useState(props.collectionName)
+
+        const globalProps = DbContexts.useProps()
+
+        const [idList, setIdList] = useState<null | {id: string}[]>(null)
+        const {Loading} = DbContexts.useComponents()
+        const {useOpenItem} = globalProps.actions
+
+        const openItem = useOpenItem(props.collectionName)
+
+        useEffect(() => {
+            loadItems()
+        }, [props.collectionName])
+
+        if(idList === null || currentCollection !== props.collectionName) {
+            return <Loading/>
+        } else {
+            return <VirtualList data={idList} itemHeight={props.itemHeight} itemKey="id">
+                {({id}) => {
+                    return <InjectionParentComponents.ItemView
+                        collectionName={props.collectionName}
+                        itemId={id}
+                        onClick={() => openItem(id)}
+                    />
+                }}
+            </VirtualList>
+        }
+
+        async function loadItems() {
+            const idList = await client.listItems()
+            setIdList(idList.map(id => ({id})))
+            setCurrentCollection(props.collectionName)
+        }
+
     }
 }

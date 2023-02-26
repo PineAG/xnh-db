@@ -15,6 +15,7 @@ export module IOnlineClient {
         autocompleteFullText(prefix: string, limit: number): Promise<string[]>
         markDirtyItem(id: string, isDirty: boolean): Promise<void>
         clearDirtyItem(): Promise<void>
+        listItems(): Promise<string[]>
     }
 
     export interface Relation<Keys extends string, Payload> {

@@ -185,7 +185,8 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
     }
 
     async getFullTextKeysByPrefix(db: idb.IDBPDatabase, prefix: string, count: number): Promise<string[]> {
-        return this.fullTextTermsWrapper.queryKeys(db, IDBKeyRange.lowerBound(prefix), count)
+        const keys = await this.fullTextTermsWrapper.queryKeys(db, IDBKeyRange.lowerBound(prefix), count)
+        return keys.filter(it => it.startsWith(prefix))
     }
 
     async markDirty(db: idb.IDBPDatabase, id: string, isDirty: boolean) {
@@ -201,6 +202,11 @@ export class IdbCollectionWrapper<T extends FC.EntityBase> {
         for(const id of idList) {
             await this.deleteItem(db, id)
         }
+    }
+
+    async getAllKeys(db: idb.IDBPDatabase): Promise<string[]> {
+        const keys = await this.timeWrapper.getAllKeys(db)
+        return keys
     }
 
 }
@@ -266,6 +272,12 @@ export class IdbCollectionOnlineClient<T extends FC.EntityBase> implements IOnli
     clearDirtyItem(): Promise<void> {
         return this.withDB(async db => {
             await this.wrapper.clearDirty(db)
+        })
+    }
+
+    listItems(): Promise<string[]> {
+        return this.withDB(async db => {
+            return await this.wrapper.getAllKeys(db)
         })
     }
 }

@@ -3,7 +3,6 @@
 * +Clear Number Button
 * Fix relation inherit
 * Select Parent (patch "exclude" query)
-* Search random result placeholder
 * remove async operations from relation editor: make payload a binding
 * Gallery editor: + Move
 * Form item boundary inside entity layout
@@ -13,6 +12,7 @@
 * Rich text support?
 * Avatar image is not centralized
 * /data pipeline not working
+* BUG: UI removes two search tags on one click
 
 ### Mitigated issues
 * Fix routing issue (broken when character/yyy => artwork/xxx)
