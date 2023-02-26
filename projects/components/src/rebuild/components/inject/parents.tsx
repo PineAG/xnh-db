@@ -19,6 +19,7 @@ export module InjectionParentComponents {
     interface ItemViewProps {
         itemId: string
         collectionName: string
+        style?: React.CSSProperties
         onClick?: () => void
     }
     export function ItemView(props: ItemViewProps) {
@@ -36,7 +37,7 @@ export module InjectionParentComponents {
         if(injectionProps === null) {
             return <Loading/>
         } else {
-            return <Card onClick={props.onClick}>
+            return <Card onClick={props.onClick} style={props.style}>
                 <ResultLayout {...injectionProps}/>
             </Card>
         }

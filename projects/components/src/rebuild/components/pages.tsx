@@ -226,6 +226,7 @@ export module DBPages {
     type CollectionItemListProps = {
         collectionName: string
         itemHeight: number
+        itemSpacing?: number
     }
     export function CollectionItemList(props: CollectionItemListProps) {
         const clients = GlobalSyncComponents.useQueryClients()
@@ -254,6 +255,7 @@ export module DBPages {
                         collectionName={props.collectionName}
                         itemId={id}
                         onClick={() => openItem(id)}
+                        style={{marginBottom: props.itemSpacing ?? 8}}
                     />
                 }}
             </VirtualList>

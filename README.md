@@ -1,4 +1,5 @@
 ## TODOs
+* Tmp edit context
 * +Delete Avatar Button
 * +Clear Number Button
 * Fix relation inherit
