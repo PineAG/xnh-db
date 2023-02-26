@@ -1,8 +1,5 @@
 ## TODOs
 * Tmp edit context
-* +Delete Avatar Button
-* +Clear Number Button
-* Fix relation inherit
 * Select Parent (patch "exclude" query)
 * remove async operations from relation editor: make payload a binding
 * Gallery editor: + Move

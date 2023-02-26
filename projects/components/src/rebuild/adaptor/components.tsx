@@ -86,7 +86,11 @@ export module AntdGlobalComponents {
             return <Antd.Tag
                 onClick={props.onClick}
                 closable={closable} 
-                onClose={props.onClose}
+                onClose={evt => {
+                    if(!props.onClose) return;
+                    evt.preventDefault()
+                    props.onClose()
+                }}
                 style={props.style}
                 >{props.children}</Antd.Tag>
         },
@@ -94,7 +98,10 @@ export module AntdGlobalComponents {
             const closable = !!props.onClose
             return <Antd.Tag
                 closable={closable} 
-                onClose={props.onClose}
+                onClose={evt => {
+                    evt.preventDefault()
+                    props.onClose()
+                }}
                 style={props.style}
                 >{props.children}</Antd.Tag>
         },

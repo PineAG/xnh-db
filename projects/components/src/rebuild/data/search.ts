@@ -194,5 +194,15 @@ export module DBSearch {
                 }
             }
         }
+
+        export function isEmptyQuery(query: IQuery): boolean {
+            if(query.type === "merge") {
+                return query.children.length === 0 || query.children.every(q => isEmptyQuery(q))
+            } else if (query.type === "exclude") {
+                return isEmptyQuery(query.children[0])
+            } else {
+                return false
+            }
+        }
     } 
 }

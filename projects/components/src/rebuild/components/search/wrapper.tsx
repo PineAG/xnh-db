@@ -1,4 +1,4 @@
-import { FieldConfig } from "@xnh-db/protocol"
+import { FieldConfig, IOnlineClient } from "@xnh-db/protocol"
 import { useEffect, useState } from "react"
 import { DbUiConfiguration } from "../../config"
 import { DBSearch } from "../../data/search"
@@ -56,8 +56,14 @@ export module DBSearchWrapper {
         async function initialize() {
             setItems(null)
             const inputQuery = props.patchSearch ? props.patchSearch(query) : query
-            const results = await DBSearch.search(clients.clients.query, props.collection, inputQuery)
-            setItems(results.map(it => it.id))
+            let results: string[]
+            if(DBSearch.Operators.isEmptyQuery(inputQuery)) {
+                results = await clients.clients.query.collections[props.collection].listItems()
+            } else {
+                const idWithWeight = await DBSearch.search(clients.clients.query, props.collection, inputQuery)
+                results = idWithWeight.map(({id}) => id)
+            }
+            setItems(results)
         }
 
         function search(query: DBSearch.IQuery) {

@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router"
+import { XnhPath } from "./paths"
 import { NotFound, PageWrapper } from "./utils"
 import { XnhCreate, XnhEdit, XnhList, XnhSearch, XnhView } from "./views"
 
@@ -7,9 +8,7 @@ function InternalRoutes() {
         <Route path="" element={<Navigate to="/collection/character"/>}/>
         <Route path="collection/:collectionName">
             <Route path="" element={
-                <PageWrapper>
-                    <XnhList/>
-                </PageWrapper>
+                <Navigate to="search"/>
             }/>
             <Route path="search" element={
                 <PageWrapper>
