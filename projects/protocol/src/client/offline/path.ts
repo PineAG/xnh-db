@@ -249,4 +249,71 @@ export module OfflinePathClientUtils {
         }
         
     }
+
+    export interface RetryPathClientOptions {
+        maxRetry: number
+        initialDelay: number
+        increaseFactor?: number
+        onRetry?: (i: number, delay: number) => void
+        retryOnException?: (e: any) => boolean
+    }
+    export class RetryPathClient implements IPathClient {
+        private client: IPathClient
+        private maxRetry: number
+        private initialDelay: number
+        private increaseFactor: number
+        private onRetry?: (i: number, delay: number) => void
+        private retryOnException?: (e: any) => boolean
+        constructor(client: IPathClient, options: RetryPathClientOptions) {
+            this.client = client
+            this.maxRetry = options.maxRetry
+            this.initialDelay = options.initialDelay
+            this.increaseFactor = options.increaseFactor ?? 1
+            this.onRetry = options.onRetry
+            this.retryOnException = options.retryOnException
+        }
+
+        private async retryAction<R>(actionDescription: string, callback: () => Promise<R>): Promise<R> {
+            let delay = this.initialDelay
+            let counter = 0
+            while(counter < this.maxRetry) {
+                try {
+                    const result = await callback()
+                    return result
+                } catch(e) {
+                    if(this.retryOnException && !this.retryOnException(e)) {
+                        throw e
+                    } else {
+                        console.error(e)
+                    }
+                }
+                if(this.onRetry) {
+                    this.onRetry(counter, delay)
+                }
+                console.warn(`Retried ${actionDescription} for ${counter} times, waiting ${delay/1000} seconds`)
+                await waitPromise(delay)
+                delay *= this.increaseFactor
+                counter++
+            }
+            throw new Error(`Failed on ${actionDescription} after ${counter} retries.`)
+        }
+
+        async read(path: string): Promise<Blob | null> {
+            return await this.retryAction(`Retry read: ${path}`, () => this.client.read(path))
+        }
+
+        async write(path: string, value: Blob): Promise<void> {
+            await this.retryAction(`Retry write: ${path}`, () => this.client.write(path, value))
+        }
+
+        async delete(path: string): Promise<void> {
+            await this.retryAction(`Retry delete: ${path}`, () => this.client.delete(path))
+        }
+    }
+
+    function waitPromise(timeout: number): Promise<void> {
+        return new Promise(resolve => {
+            setTimeout(resolve, timeout)
+        })
+    }
 }
