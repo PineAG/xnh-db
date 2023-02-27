@@ -39,7 +39,8 @@ jobs:
     - name: build website
       run: |
         cd ./projects/viewer
-        CI=0 yarn build
+        export CI=false
+        yarn build
         cd ../../
     - uses: actions/checkout@v3
       with:

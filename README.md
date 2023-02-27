@@ -5,6 +5,7 @@
   * Batch DB update actions?
   * Create Entity Dialog
 * Async loading optimization
+  * File provider to unify view mode and edit mode
   * Octokit auto retry
   * Optimize search result loading (currently load everything immediately)
 * UI Issue
