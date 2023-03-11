@@ -12,6 +12,17 @@ export module XBinding {
         return {value, update}
     }
 
+    export function removeProperty<T extends Record<string, any>, K extends keyof T>(binding: Binding<T | Omit<T, K>>, key: K) {
+        const newObject: Partial<Omit<T, K>> = {}
+        const oldObject = binding.value
+        for(const k in oldObject) {
+            if(k !== key) {
+                newObject[k] = oldObject[k]
+            }
+        }
+        binding.update(newObject as Omit<T, K>)
+    }
+
     export class PropertyBinding<T, K extends keyof T> implements Binding<T[K]> {
         constructor(private parent: Binding<T>, private key: K) {
         }

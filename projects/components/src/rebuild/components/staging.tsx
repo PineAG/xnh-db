@@ -9,174 +9,237 @@ export module StagingUtils {
     type DPBase = DbUiConfiguration.DataPropsBase
 
     type RelationKey = Record<string, string>
-    type RelationItem = {key: RelationKey, payload: FieldConfig.EntityBase}
+
+    export type StagingActions = "write" | "delete"
+
+    type StagingMapping<K, T> = {
+        keys: Record<string, K>
+        values: Record<string, T>
+        actions: Record<string, StagingActions>
+    }
 
     export interface StagingState {
-        collections: Record<string, Partial<Record<string, FieldConfig.EntityBase>>>
-        relations: Record<string, Record<string, RelationItem>>
-        files: Partial<Record<string, Blob>>
+        collections: Record<string, StagingMapping<string, FieldConfig.EntityBase>>
+        relations: Record<string, StagingMapping<RelationKey, FieldConfig.EntityBase>>
+        files: StagingMapping<string, Blob>
     }
 
-    type StagingBinding = XBinding.Binding<StagingState>
+    const StagingContext = createNullableContext<XBinding.Binding<StagingState>>("Not inside StagingProvider")
 
-    interface StagingBindingGroup {
-        loaded: StagingBinding
-        current: StagingBinding
+    export function StagingProvider(props: {children: React.ReactNode}) {
+        const binding = XBinding.useBinding(useEmptyStagingState())
+        return <StagingContext.Provider value={binding}>
+            {props.children}
+        </StagingContext.Provider>
     }
 
-    interface ActionsBase<K, T> {
+    function useEmptyStagingState(): StagingState {
+        const globalProps = DbContexts.useProps()
+        return useMemo(() => {
+            const result: StagingState = {
+                collections: {},
+                relations: {},
+                files: {keys: {}, values: {}, actions: {}}
+            }
+            for(const collectionName in globalProps.props.collections) {
+                result.collections[collectionName] = {keys: {}, values: {}, actions: {}}
+            }
+            for(const relationName in globalProps.props.relations) {
+                result.relations[relationName] = {keys: {}, values: {}, actions: {}}
+            }
+            return result
+        }, [globalProps])
+    }
+
+    export function useCollections(collectionName: string): IMappingBackend<string, FieldConfig.EntityBase> {
+        const binding = useNullableContext(StagingContext)
+        const client = GlobalSyncComponents.useQueryClients().collections[collectionName]
+        const properties = XBinding.propertyOf(binding).join("collections").join(collectionName)
+        return new StagingMappingManager({
+            binding: properties,
+            idSerializer: id => id,
+            backend: {
+                read: id => {
+                    return client.getItemById(id)
+                },
+                write: (id, value) => {
+                    return client.putItem(id, value)
+                },
+                delete: (id) => {
+                    return client.deleteItem(id)
+                }
+            }
+        })
+    }
+
+    export function useRelations(relationName: string): IMappingBackend<RelationKey, FieldConfig.EntityBase> {
+        const binding = useNullableContext(StagingContext)
+        const client = GlobalSyncComponents.useQueryClients().relations[relationName]
+        const properties = XBinding.propertyOf(binding).join("relations").join(relationName)
+        return new StagingMappingManager({
+            binding: properties,
+            idSerializer: id => IOfflineClient.stringifyRelationKey(id),
+            backend: {
+                read: async id => {
+                    const payload = await client.getPayload(id)
+                    return {key: id, payload}
+                },
+                write: (id, value) => {
+                    return client.putRelation(id, value.payload)
+                },
+                delete: (id) => {
+                    return client.deleteRelation(id)
+                }
+            }
+        })
+    }
+
+    export function useFiles(): IMappingBackend<string, Blob> {
+        const binding = useNullableContext(StagingContext)
+        const client = GlobalSyncComponents.useQueryClients().files
+        const properties = XBinding.propertyOf(binding).join("files")
+        return new StagingMappingManager({
+            binding: properties,
+            idSerializer: id => id,
+            backend: {
+                read: id => {
+                    return client.read(id)
+                },
+                write: (id, value) => {
+                    return client.write(id, value)
+                },
+                delete: (id) => {
+                    return client.delete(id)
+                }
+            }
+        })
+    }
+
+    export function useCommit(): () => Promise<void> {
+        const binding = useNullableContext(StagingContext)
+        const clients = GlobalSyncComponents.useQueryClients()
+
+        return async () => {
+            const state = binding.value
+
+            // collections
+            for(const collectionName in state.collections) {
+                const collections = state.collections[collectionName]
+                const client = clients.collections[collectionName]
+                for(const action of retrieveStagingActions(collections)) {
+                    if(action.action === "write") {
+                        await client.putItem(action.key, action.value)
+                    } else {
+                        await client.deleteItem(action.key)
+                    }
+                }
+            }
+
+            // relations
+            for(const relationName in state.relations) {
+                const relations = state.relations[relationName]
+                const client = clients.relations[relationName]
+                for(const action of retrieveStagingActions(relations)) {
+                    if(action.action === "write") {
+                        await client.putRelation(action.key, action.value)
+                    } else {
+                        await client.deleteRelation(action.key)
+                    }
+                }
+            }
+
+            // files
+            for(const action of retrieveStagingActions(state.files)) {
+                if(action.action === "write") {
+                    await clients.files.write(action.key, action.value)
+                } else {
+                    await clients.files.delete(action.key)
+                }
+            }
+        }
+    }
+
+    function* retrieveStagingActions<K, T>(state: StagingMapping<K, T>): Generator<{action: "write", key: K, value: T} | {action: "delete", key: K}> {
+        for(const idString in state.actions) {
+            const action = state.actions[idString]
+            const key = state.keys[idString]
+            if(action === "write") {
+                const value = state.values[idString]
+                yield {action, key, value}
+            } else {
+                yield {action, key}
+            }
+        }
+    }
+
+
+    export interface IMappingBackend<K, T> {
         read(id: K): Promise<T>
         write(id: K, value: T): Promise<void>
         delete(id: K): Promise<void>
     }
 
-    const StagingContext = createNullableContext<StagingBindingGroup>("Not in StagingUtils.Provider")
-
-    export const Provider = StagingContext.Provider
-    
-    export function useStagingState(): StagingBindingGroup {
-        const globalProps = DbContexts.useProps()
-        const emptyState = useMemo(() => createEmptyState(globalProps.props), [])
-        const loadedBindings = XBinding.useBinding<StagingState>(emptyState)
-        const currentBindings = XBinding.useBinding<StagingState>(emptyState)
-        return {loaded: loadedBindings, current: currentBindings}
+    type StagingMappingManagerOptions<K, T> = {
+        binding: XBinding.Binding<StagingMapping<K, T>>
+        idSerializer(key: K): string
+        backend: IMappingBackend<K, T>
     }
 
-    export function useEntityActions(collectionName: string): ActionsBase<string, FieldConfig.EntityBase> {
-        const {current, loaded} = useNullableContext(StagingContext)
-        const clients = GlobalSyncComponents.useQueryClients()
-        const client = clients.collections[collectionName]
-
-        const currentBinding = BindingWrapper.from(XBinding.propertyOf(current).join("collections").join(collectionName))
-        const loadedBinding = BindingWrapper.from(XBinding.propertyOf(loaded).join("collections").join(collectionName))
-
-        return {
-            async read(id) {
-                if(loadedBinding.exists(id)) {
-                    const item = loadedBinding.read(id)
-                    currentBinding.write(id, item)
-                    return item
-                }
-                const item = await client.getItemById(id)
-                currentBinding.write(id, item)
-                loadedBinding.write(id, item)
-                return item
-            },
-            async write(id, item) {
-                currentBinding.write(id, item)
-            },
-            async delete(id) {
-                currentBinding.delete(id)
-            }
+    export class StagingMappingManager<K, T> implements IMappingBackend<K, T> {
+        private binding: XBinding.Binding<StagingMapping<K, T>>
+        private idSerializer: (key: K) => string
+        private client: IMappingBackend<K, T>
+        constructor(options: StagingMappingManagerOptions<K, T>) {
+            this.binding = options.binding
+            this.idSerializer = options.idSerializer
+            this.client = options.backend
         }
-    }
 
-    export function useRelationActions(relationName: string): ActionsBase<RelationKey, FieldConfig.EntityBase> {
-        const {current, loaded} = useNullableContext(StagingContext)
-        const clients = GlobalSyncComponents.useQueryClients()
-        const client = clients.relations[relationName]
-
-        const currentBinding = BindingWrapper.from(XBinding.propertyOf(current).join("relations").join(relationName))
-        const loadedBinding = BindingWrapper.from(XBinding.propertyOf(loaded).join("relations").join(relationName))
+        private get keys() {
+            return XBinding.propertyOf(this.binding).join("keys")
+        }
         
-        return {
-            async read(key) {
-                const id = IOfflineClient.stringifyRelationKey(key)
-                if(loadedBinding.exists(id)) {
-                    const item = loadedBinding.read(id)
-                    currentBinding.write(id, item)
-                    return item
-                }
-                const payload = await client.getPayload(key)
-                const item = {key, payload}
-                currentBinding.write(id, item)
-                loadedBinding.write(id, item)
-                return payload
-            },
-            async write(key, payload) {
-                const id = IOfflineClient.stringifyRelationKey(key)
-                currentBinding.write(id, {key, payload})
-            },
-            async delete(key) {
-                const id = IOfflineClient.stringifyRelationKey(key)
-                currentBinding.delete(id)
+        private get values() {
+            return XBinding.propertyOf(this.binding).join("values")
+        }
+
+        private get actions() {
+            return XBinding.propertyOf(this.binding).join("actions")
+        }
+
+        async read(id: K): Promise<T> {
+            const idString = this.idSerializer(id)
+            const keyBinding = this.keys.join(idString)
+            const itemBinding = this.values.join(idString)
+            if(this.actions.value[idString] === "delete") {
+                throw new Error(`Item has already been deleted: ${id}`)
+            }
+            if(idString in this.keys.value) {
+                return itemBinding.value
+            } else {
+                const value = await this.client.read(id)
+                itemBinding.update(value)
+                keyBinding.update(id)
+                return value
             }
         }
-    }
-
-    export function useFileActions(): ActionsBase<string, Blob> {
-        const {current, loaded} = useNullableContext(StagingContext)
-        const clients = GlobalSyncComponents.useQueryClients()
-        const client = clients.files
-
-        const currentBinding = BindingWrapper.from(XBinding.propertyOf(current).join("files"))
-        const loadedBinding = BindingWrapper.from(XBinding.propertyOf(loaded).join("files"))
-
-        return {
-            async read(fileName) {
-                const blob = await client.read(fileName)
-                loadedBinding.write(fileName, blob)
-                currentBinding.write(fileName, blob)
-                return blob
-            },
-            async write(fileName, value) {
-                currentBinding.write(fileName, value)
-            },
-            async delete(fileName) {
-                currentBinding.delete(fileName)
-            }
+        
+        async write(id: K, value: T): Promise<void> {
+            const idString = this.idSerializer(id)
+            const keyBinding = this.keys.join(idString)
+            const itemBinding = this.values.join(idString)
+            const actionBinding = this.actions.join(idString)
+            keyBinding.update(id)
+            itemBinding.update(value)
+            actionBinding.update("write")
         }
-    }
-
-    export function useApplyChanges() {
-        const clients = GlobalSyncComponents.useQueryClients()
-        const {current, loaded} = useNullableContext(StagingContext)
-
-        return async () => {
-            // TODO:
-        }
-    }
-
-    class BindingWrapper<T> {
-        constructor(private binding: XBinding.Binding<Record<string, T>>) {}
-
-        read(id: string): T {
-            return XBinding.propertyOf(this.binding).join(id).value
+        
+        async delete(id: K): Promise<void> {
+            const idString = this.idSerializer(id)
+            const actionBinding = this.actions.join(idString)
+            actionBinding.update("delete")
         }
 
-        write(id: string, value: T): void {
-            XBinding.propertyOf(this.binding).join(id).update(value)
-        }
-
-        delete(id: string): void {
-            const items = {...this.binding.value}
-            delete items[id]
-            this.binding.update(items)
-        }
-
-        exists(id: string): boolean {
-            return id in this.binding.value
-        }
-
-        static from<T>(binding: XBinding.Binding<Record<string, T>>) {
-            return new BindingWrapper<T>(binding)
-        }
-    }
-
-    function createEmptyState(config: DPBase): StagingState {
-        const collections: Record<string, {}> = {}
-        const relations: Record<string, {}> = {}
-        const files: Partial<Record<string, Blob>> = {}
-
-        for(const c in config.collections) {
-            collections[c] = {}
-        }
-
-        for(const r in config.relations) {
-            relations[r] = {}
-        }
-
-        return {collections, relations, files}
 
     }
 }
