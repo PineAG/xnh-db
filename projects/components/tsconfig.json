@@ -12,5 +12,8 @@
         "./src/**/*.test.ts",
         "./src/**/*.test.tsx",
         "./src/legacy"
+    ],
+    "references": [
+        {"path": "../protocol"}
     ]
 }

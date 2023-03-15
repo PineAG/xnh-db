@@ -115,7 +115,7 @@ export module StagingUtils {
         })
     }
 
-    export function useCommit(): () => Promise<void> {
+    export function useCommitter(): () => Promise<void> {
         const binding = useNullableContext(StagingContext)
         const clients = GlobalSyncComponents.useQueryClients()
 
