@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { DbUiConfiguration } from "../../config"
 import { createNullableContext, DbContexts, useNullableContext } from "../context"
+import { StagingUtils } from "../staging"
 import { GlobalSyncComponents } from "./globalSync"
 import {UiSyncUtils} from "./sync"
 
@@ -13,7 +14,7 @@ export module CollectionSyncComponents {
 
     type CollectionSyncResult = {pending: true, syncMessages: string[]} | {pending: false, updateCollection: UploadFn}
 
-    function useCollectionSync<GP extends GPBase>(collectionName: ConfigUtils.CollNames<GP>): CollectionSyncResult {
+    function useCollectionSync<GP extends GPBase>(): CollectionSyncResult {
         const globalConfig = DbContexts.useProps() as GP
         const clients = GlobalSyncComponents.useClients()
         const [syncMessages, setSyncMessages] = useState<string[] | null>(null)
@@ -21,7 +22,7 @@ export module CollectionSyncComponents {
 
         useEffect(() => {
             initialize()
-        }, [collectionName])
+        }, [])
 
         if(pending) {
             return {
@@ -91,17 +92,16 @@ export module CollectionSyncComponents {
     const ResultContext = createNullableContext<CollectionSyncResult>("Collection sync not initialized")
 
     export interface ProviderProps<GP extends GPBase> {
-        collection: ConfigUtils.CollNames<GP>
         children: React.ReactNode
     }
 
     export function Provider<GP extends GPBase>(props: ProviderProps<GP>) {
-        const syncResult = useCollectionSync<GP>(props.collection)
+        const syncResult = useCollectionSync<GP>()
         const {Loading} = DbContexts.useComponents()
         if(syncResult.pending === false) {
             return <ResultContext.Provider value={syncResult}>
-                {props.children}
-            </ResultContext.Provider>
+                    {props.children}
+                </ResultContext.Provider>
         } else {
             return <>
                 <Loading/>
@@ -120,12 +120,11 @@ export module CollectionSyncComponents {
     }
 
     export interface WrapperProps<GP extends GPBase> {
-        collection: ConfigUtils.CollNames<GP>
         children: ConsumerFn
     }
 
     export function Wrapper<GP extends GPBase>(props: WrapperProps<GP>) {
-        const syncResult = useCollectionSync<GP>(props.collection)
+        const syncResult = useCollectionSync<GP>()
         const {Loading} = DbContexts.useComponents()
 
         if(syncResult.pending === false) {

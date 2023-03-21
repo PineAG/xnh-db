@@ -1,5 +1,5 @@
 import { FieldConfig, IOfflineClient } from "@xnh-db/protocol"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { DbUiConfiguration } from "../config"
 import { XBinding } from "./binding"
 import { createNullableContext, DbContexts, useNullableContext } from "./context"
@@ -26,9 +26,8 @@ export module StagingUtils {
 
     const StagingContext = createNullableContext<XBinding.Binding<StagingState>>("Not inside StagingProvider")
 
-    export function StagingProvider(props: {children: React.ReactNode}) {
-        const binding = XBinding.useBinding(useEmptyStagingState())
-        return <StagingContext.Provider value={binding}>
+    export function StagingProvider(props: {binding: XBinding.Binding<StagingState>, children: React.ReactNode}) {
+        return <StagingContext.Provider value={props.binding}>
             {props.children}
         </StagingContext.Provider>
     }
@@ -49,6 +48,10 @@ export module StagingUtils {
             }
             return result
         }, [globalProps])
+    }
+
+    export function useStagingBinding() {
+        return XBinding.useBinding(useEmptyStagingState())
     }
 
     export function useCollections(collectionName: string): IMappingBackend<string, FieldConfig.EntityBase> {
@@ -98,12 +101,13 @@ export module StagingUtils {
         const binding = useNullableContext(StagingContext)
         const client = GlobalSyncComponents.useQueryClients().files
         const properties = XBinding.propertyOf(binding).join("files")
+        const downloadFile = GlobalSyncComponents.useDownloadFile()
         return new StagingMappingManager({
             binding: properties,
             idSerializer: id => id,
             backend: {
                 read: id => {
-                    return client.read(id)
+                    return downloadFile(id)
                 },
                 write: (id, value) => {
                     return client.write(id, value)
@@ -113,6 +117,29 @@ export module StagingUtils {
                 }
             }
         })
+    }
+
+    export function useObjectURL(fileId: string | undefined): string | null {
+        const files = useFiles()
+        const [url, setUrl] = useState<string | null>(null)
+        useEffect(() => {
+            load()
+        }, [fileId])
+        useEffect(() => {
+            return () => {
+                if(url) {
+                    URL.revokeObjectURL(url)
+                }
+            }
+        }, [url])
+
+        return url
+
+        async function load() {
+            if(!fileId) return;
+            const blob = await files.read(fileId)
+            setUrl(URL.createObjectURL(blob))
+        }
     }
 
     export function useCommitter(): () => Promise<void> {

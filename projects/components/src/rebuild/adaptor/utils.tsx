@@ -6,20 +6,25 @@ import {useState, useEffect} from "react"
 import { XBinding } from "../components/binding";
 import { Flex } from "../components";
 import { AntdUpload } from "./upload";
+import { StagingUtils } from "../components/staging";
 
 export module AntdWrapperUtils {
-    type AsyncImageProps = {fileName: string, imageProps: ImageProps, gallery?: boolean}
+    type AsyncImageProps = {fileName: string, imageProps: ImageProps, gallery?: boolean, editMode?: boolean}
     export function AsyncImage(props: AsyncImageProps) {
-        const url = GlobalSyncComponents.useObjectURL(props.fileName)
+        const url = props.editMode ?
+            StagingUtils.useObjectURL(props.fileName):
+            GlobalSyncComponents.useObjectURL(props.fileName)
         if(!url) {
             return props.gallery ? <></> : <Empty/>
         }
         return <AntdImage {...props.imageProps} src={url}/>
     }
 
-    type AsyncAvatarProps = {fileName: string | undefined, avatarProps?: AvatarProps}
+    type AsyncAvatarProps = {fileName: string | undefined, avatarProps?: AvatarProps, editMode?: boolean}
     export function AsyncAvatar(props: AsyncAvatarProps) {
-        const objectURL = GlobalSyncComponents.useObjectURL(props.fileName)
+        const objectURL = props.editMode ?
+            StagingUtils.useObjectURL(props.fileName):
+            GlobalSyncComponents.useObjectURL(props.fileName)
         if(objectURL) {
             return <Avatar
                 size={Conf.avatarSize}
@@ -105,7 +110,7 @@ export module AntdWrapperUtils {
             {arrayBinding.map(item => (
                 <div key={item.value} style={{width: tileWidth, height: tileHeight, display: "block", position: "relative"}}>
                     <div style={{overflow: "hidden", display: "grid", width: tileWidth, height: tileHeight, placeItems: "center", position: "absolute"}}>
-                        <AsyncImage fileName={item.value} imageProps={{}}/>
+                        <AsyncImage fileName={item.value} imageProps={{}} editMode/>
                     </div>
                     <Flex
                         style={{

@@ -3,8 +3,8 @@ import ReactCrop, {Crop} from "react-image-crop";
 import {useRef, useState, useEffect, ClipboardEvent} from "react"
 import {Modal} from "antd"
 import { AdaptorsConfig } from "./config";
-import { GlobalSyncComponents } from "../components/sync";
 import "react-image-crop/dist/ReactCrop.css";
+import { StagingUtils } from "../components/staging";
 
 export module AntdUpload {
     interface UseUploadFileProps {
@@ -55,7 +55,7 @@ export module AntdUpload {
     export function ImageUploadDialog(props: ImageUploadDialogProps) {
         const [state, setState] = useState<ImageUploadDialogState>({state: "empty"})
         const [crop, setCrop] = useState<Crop>({x: 0, y: 0, width: 0, height: 0, unit: "px"})
-        const clients = GlobalSyncComponents.useQueryClients()
+        const files = StagingUtils.useFiles()
 
         const [imageUploader, onPaste] = useImageUpload(onUpload)
 
@@ -139,9 +139,9 @@ export module AntdUpload {
                 ctx.drawImage(img, x, y, width, height, 0, 0, canvas.width, canvas.height)
             })
             const newId = crypto.randomUUID()
-            await clients.files.write(newId, blob)
-            await clients.files.markDirtyFile(newId, true)
-            props.onUpload(newId)
+            const newFile = `${newId}.webp`
+            await files.write(newFile, blob)
+            props.onUpload(newFile)
             setState({state: "empty"})
         }
         

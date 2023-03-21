@@ -41,7 +41,7 @@ export function XnhView() {
 
 export function XnhEdit() {
     const collectionName = useCollectionName()
-    return <CollectionSyncComponents.Provider collection={collectionName}>
+    return <CollectionSyncComponents.Provider>
         <ItemPageTitle prefix="搜索"/>
         <EditInternal collectionName={collectionName}/>
     </CollectionSyncComponents.Provider>
@@ -84,7 +84,7 @@ function EditInternal({collectionName}: Props) {
 
 export function XnhCreate() {
     const collectionName = useCollectionName()
-    return <CollectionSyncComponents.Provider collection={collectionName}>
+    return <CollectionSyncComponents.Provider>
         <ItemPageTitle prefix="创建"/>
         <CreateInternal collectionName={collectionName}/>
     </CollectionSyncComponents.Provider>

@@ -19,6 +19,7 @@ export module AntdEndpointEditors {
                         avatarProps={{
                             onClick: () => setShowUpload(true)
                         }}
+                        editMode
                     />
                     <Flex direction="horizontal">
                         <Button

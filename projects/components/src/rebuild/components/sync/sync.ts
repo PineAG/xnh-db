@@ -14,6 +14,8 @@ export module UiSyncUtils {
     type ProgMsgHandler = (msg: string) => void
 
     export async function synchronizeAllClients<GP extends GPBase>(config: GP, clients: DBStorage.DBBackendSet<GP["props"]>, mode: SynchronizationMode, onProgressMessage?: ProgMsgHandler) {
+        await synchronizeFiles(config, clients, mode, onProgressMessage)
+        
         const collections = config.props.collections
         const [sourceClients, destinationClients] = mode === "download" ? [clients.remote, clients.local] : [clients.local, clients.remote]
         for(const collectionName in collections) {
@@ -50,7 +52,6 @@ export module UiSyncUtils {
                 }
             }
         }
-        await synchronizeFiles(config, clients, mode, onProgressMessage)
     }
 
     export async function synchronizeCollection<
