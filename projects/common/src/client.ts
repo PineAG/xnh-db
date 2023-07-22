@@ -16,8 +16,17 @@ export module DBClients {
         version: number
     }
 
+    export interface FileIndex {
+        name: string
+        version: number
+        status: EntityState
+    }
+
     export module Query {
-        export type EntityProperties = Record<string, string[]>
+        export type EntityProperties = {
+            propertyCollection: string,
+            values: Record<string, string[]>
+        }
         export type EntityTokens = DBTokenize.IToken[]
 
         export interface IClient {
@@ -33,6 +42,10 @@ export module DBClients {
             queryByFullText(terms: EntityTokens): Promise<DBSearch.SearchResult[]>
             queryByFullTextInCollection(type: string, terms: EntityTokens): Promise<DBSearch.SearchResult[]>
 
+            listTagsInCollection(property: string): Promise<string[]>
+            listTagsGlobal(property: string): Promise<string[]>
+
+            listFiles(): Promise<FileIndex[]>
             readFile(name: string): Promise<FileContent>
             writeFile(name: string, content: FileContent): Promise<void>
             deleteFile(name: string): Promise<void>

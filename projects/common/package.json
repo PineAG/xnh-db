@@ -2,6 +2,7 @@
   "name": "@xnh-db/common",
   "version": "1.0.0",
   "main": "src/index.ts",
-  "types": "src/index.ts",
+  "typings": "src/index.ts",
+  "source": "src/index.ts",
   "license": "MIT"
 }
