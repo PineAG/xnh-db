@@ -1,0 +1,12 @@
+{
+  "name": "xnh-db",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://PineAG@github.com/PineAG/xnh-db.git",
+  "author": "PineAG <pein.agail@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "./projects/*/"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "target": "ES2017",
+        "sourceMap": true,
+        "declaration": true,
+        "composite": true,
+        "declarationMap": true,
+        "moduleResolution": "NodeNext",
+        "module": "CommonJS",
+        "esModuleInterop": true,
+        "strictNullChecks": true,
+        "noEmit": false,
+        "jsx": "react-jsx",
+        "noImplicitAny": true,
+        "baseUrl": ".",
+        "rootDir": "./src",
+        "outDir": "./dist"
+    }
+}
