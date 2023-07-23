@@ -30,20 +30,11 @@ export module DBClients {
     export module Query {
         export type EntityPropertyItem = {propertyCollection: string, values: string[]}
         export type EntityProperties = Record<string, EntityPropertyItem>
-        export type EntityTokens = DBTokenize.IToken[]
 
         export interface PutEntityOptions {
-            version: number
             content: {}
             properties: EntityProperties
-            fullTextTerms: EntityTokens
-            files: FileReference[]
-        }
-
-        export interface DeleteEntityOptions {
-            version: number
-            properties: EntityProperties
-            fullTextTerms: EntityTokens
+            fullTextTerms: DBTokenize.IToken[]
             files: FileReference[]
         }
 
@@ -73,19 +64,16 @@ export module DBClients {
             getEntityIndex(type: string, id: string): Promise<EntityIndex | null>
 
             getEntityContent(type: string, id: string): Promise<{} | null>
-            putEntity(type: string, id: string, options: PutEntityOptions): Promise<void>
-            deleteEntity(type: string, id: string, options: DeleteEntityOptions): Promise<void>
+            putEntity(type: string, id: string, version: number, options: PutEntityOptions): Promise<void>
+            deleteEntity(type: string, id: string, version: number): Promise<void>
 
             // properties
             queryByTag(property: string, value: string): Promise<DBSearch.SearchResult[]>
-            queryByTagInCollection(type: string, property: string, value: string): Promise<DBSearch.SearchResult[]>
-            
-            listTagsInCollection(property: string): Promise<string[]>
             listTagsGlobal(property: string): Promise<string[]>
 
             // full text
-            queryByFullText(terms: EntityTokens): Promise<DBSearch.SearchResult[]>
-            queryByFullTextInCollection(type: string, terms: EntityTokens): Promise<DBSearch.SearchResult[]>
+            queryByFullTextTermGlobal(term: string): Promise<DBSearch.SearchResult[]>
+            queryByFullTextTermInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]>
 
             // files
             listFiles(): Promise<FileIndex[]>

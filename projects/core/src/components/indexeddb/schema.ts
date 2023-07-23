@@ -158,7 +158,9 @@ export module IndexedDBSchema {
             return `Term_${type}_${id}_${term}`
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
-            entity: ["type", "id"]
+            entity: ["type", "id"],
+            globalTerm: "term",
+            collectionTerm: ["type", "term"]
         })
         
         // global

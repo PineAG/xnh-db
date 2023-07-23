@@ -1,6 +1,6 @@
 import idb from "idb"
 import { IndexedDBSchema } from "./schema"
-import { DBClients, DBSearch } from "@xnh-db/common"
+import { DBClients, DBSearch, DBTokenize } from "@xnh-db/common"
 import { sortBy } from "lodash"
 
 export module IndexedDBBackend {
@@ -171,6 +171,86 @@ export module IndexedDBBackend {
 
     class FullTextAdaptor {
         constructor(private db: InternalIDB) {}
+
+        async deleteEntity(type: string, id: string) {
+            const result = await this.entity.getValuesByIndex("entity", [type, id])
+            for(const t of result) {
+                await this.deleteTerm(type, id, t.term)
+            }
+        }
+
+        async putTerm(type: string, id: string, term: DBTokenize.IToken) {
+            const termId = IndexedDBSchema.FullText.entityId(type, id, term.value)
+            await this.entity.put(termId, {
+                type, id, 
+                term: term.value,
+                weight: term.weight
+            })
+            await this.updateCollectionCounter(type, term.value, w => w + term.weight)
+            await this.updateGlobalCounter(term.value, w => w + term.weight)
+        }
+
+        async deleteTerm(type: string, id: string, term: string) {
+            const termId = IndexedDBSchema.FullText.entityId(type, id, term)
+            const current = await this.entity.get(termId)
+            if(!current) {
+                console.warn(`Term does not exist: ${type} ${id} ${term}`)
+                return
+            }
+            await this.entity.delete(termId)
+            await this.updateCollectionCounter(type, current.term, w => w - current.weight)
+            await this.updateGlobalCounter(current.term, w => w - current.weight)
+        }
+
+        async getEntitiesInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
+            const result = await this.entity.getValuesByIndex("collectionTerm", [type, term])
+            return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
+        }
+
+        async getEntitiesGlobal(term: string): Promise<DBSearch.SearchResult[]> {
+            const result = await this.entity.getValuesByIndex("globalTerm", term)
+            return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
+        }
+
+        async getTermWeightsGlobal(term: string): Promise<number | null> {
+            const docId = IndexedDBSchema.FullText.globalId(term)
+            const result = await this.global.get(docId)
+            return result?.totalWeight ?? null
+        }
+
+        async getTermWeightsInCollection(type: string, term: string): Promise<number | null> {
+            const docId = IndexedDBSchema.FullText.collectionId(type, term)
+            const result = await this.collection.get(docId)
+            return result?.totalWeight ?? null
+        }
+
+        private async updateCollectionCounter(type: string, term: string, weightUpdater: (w: number) => number ){
+            const docId = IndexedDBSchema.FullText.collectionId(type, term)
+            const current = await this.collection.get(docId)
+            const nextWeight = weightUpdater(current?.totalWeight ?? 0)
+            if(nextWeight <= 0) {
+                await this.collection.delete(docId)
+            } else {
+                await this.collection.put(docId, {
+                    term, type,
+                    totalWeight: nextWeight
+                })
+            }
+        }
+
+        private async updateGlobalCounter(term: string, weightUpdater: (w: number) => number ){
+            const docId = IndexedDBSchema.FullText.globalId(term)
+            const current = await this.global.get(docId)
+            const nextWeight = weightUpdater(current?.totalWeight ?? 0)
+            if(nextWeight <= 0) {
+                await this.global.delete(docId)
+            } else {
+                await this.global.put(docId, {
+                    term,
+                    totalWeight: nextWeight
+                })
+            }
+        }
 
         // db helpers
         private get entity() {
