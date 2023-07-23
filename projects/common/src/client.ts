@@ -16,11 +16,6 @@ export module DBClients {
         version: number
     }
 
-    export interface FileReference {
-        name: string
-        version: number
-    }
-
     export interface FileIndex {
         name: string
         version: number
@@ -35,7 +30,7 @@ export module DBClients {
             content: {}
             properties: EntityProperties
             fullTextTerms: DBTokenize.IToken[]
-            files: FileReference[]
+            files: string[]
         }
 
         export interface EntityLinkReference {
@@ -68,8 +63,8 @@ export module DBClients {
             deleteEntity(type: string, id: string, version: number): Promise<void>
 
             // properties
-            queryByTag(property: string, value: string): Promise<DBSearch.SearchResult[]>
-            listTagsGlobal(property: string): Promise<string[]>
+            queryByTag(type: string, property: string, value: string): Promise<DBSearch.SearchResult[]>
+            listTags(propertyCollection: string): Promise<string[]>
 
             // full text
             queryByFullTextTermGlobal(term: string): Promise<DBSearch.SearchResult[]>
@@ -77,7 +72,8 @@ export module DBClients {
 
             // files
             listFiles(): Promise<FileIndex[]>
-            readFile(name: string): Promise<FileContent>
+            fileExists(name: string): Promise<boolean>
+            readFile(name: string): Promise<FileContent | null>
             writeFile(name: string, version: number, content: FileContent): Promise<void>
             purgeFiles(): Promise<void>
 

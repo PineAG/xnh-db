@@ -4,24 +4,84 @@ import { DBClients, DBSearch, DBTokenize } from "@xnh-db/common"
 import { sortBy } from "lodash"
 
 export module IndexedDBBackend {
-    export interface IBackend {
-
-    }
-
     type InternalIDB = idb.IDBPDatabase<IndexedDBSchema.Schema>
     type StoreNames = idb.StoreNames<IndexedDBSchema.Schema> & keyof IndexedDBSchema.Schema
 
-    export class Backend implements IBackend {
+    export class Client implements DBClients.Query.IClient {
         private entities: EntityAdaptor
         private properties: PropertyAdaptor
         private fullText: FullTextAdaptor
         private files: FilesAdaptor
+        private links: LinkAdaptor
 
         constructor(db: InternalIDB) {
             this.entities = new EntityAdaptor(db)
             this.properties = new PropertyAdaptor(db)
             this.fullText = new FullTextAdaptor(db)
             this.files = new FilesAdaptor(db)
+            this.links = new LinkAdaptor(db)
+        }
+        listEntities(): Promise<DBClients.EntityIndex[]> {
+            return this.entities.listEntities()
+        }
+        getEntityIndex(type: string, id: string): Promise<DBClients.EntityIndex | null> {
+            return this.entities.getIndex(type, id)
+        }
+        getEntityContent(type: string, id: string): Promise<{} | null> {
+            return this.entities.getContent(type, id)
+        }
+        async putEntity(type: string, id: string, version: number, options: DBClients.Query.PutEntityOptions): Promise<void> {
+            await this.properties.put(type, id, options.properties)
+            await this.fullText.putEntity(type, id, options.fullTextTerms)
+            await this.files.putEntity(type, id, version, options.files)
+            await this.entities.put(type, id, version, options.content)
+        }
+        async deleteEntity(type: string, id: string, version: number): Promise<void> {
+            await this.entities.delete(type, id, version)
+            await this.fullText.deleteEntity(type, id)
+            await this.properties.delete(type, id)
+            await this.entities.delete(type, id, version)
+        }
+        queryByTag(type: string, property: string, value: string): Promise<DBSearch.SearchResult[]> {
+            return this.properties.queryEntities(type, property, value)
+        }
+        listTags(propertyCollection: string): Promise<string[]> {
+            return this.properties.getPropertyValues(propertyCollection)
+        }
+        queryByFullTextTermGlobal(term: string): Promise<DBSearch.SearchResult[]> {
+            return this.fullText.getEntitiesGlobal(term)
+        }
+        queryByFullTextTermInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
+            return this.fullText.getEntitiesInCollection(type, term)
+        }
+        listFiles(): Promise<DBClients.FileIndex[]> {
+            return this.files.listFiles()
+        }
+        async fileExists(name: string): Promise<boolean> {
+            const result = await this.files.readIndex(name)
+            const status = result?.status ?? DBClients.EntityState.Deleted
+            return status === DBClients.EntityState.Active
+        }
+        readFile(name: string): Promise<Uint8Array | null> {
+            return this.files.readFile(name)
+        }
+        async writeFile(name: string, version: number, content: Uint8Array): Promise<void> {
+            await this.files.putFile(name, version, content)
+        }
+        async purgeFiles(): Promise<void> {
+            await this.files.purgeFiles()
+        }
+        listLinks(): Promise<DBClients.Query.EntityLink[]> {
+            return this.links.listLinks()
+        }
+        async putLink(left: DBClients.Query.EntityLinkReference, right: DBClients.Query.EntityLinkReference, version: number): Promise<void> {
+            await this.links.putLink(left, right, version)
+        }
+        getLinksOfEntity(type: string, id: string): Promise<DBClients.Query.EntityLinkResult[]> {
+            return this.links.getLinksByEntity(type, id)
+        }
+        deleteLink(left: DBClients.Query.EntityLinkReference, right: DBClients.Query.EntityLinkReference, version: number): Promise<void> {
+            return this.links.deleteLink(left, right, version)
         }
     }
 
@@ -172,6 +232,12 @@ export module IndexedDBBackend {
     class FullTextAdaptor {
         constructor(private db: InternalIDB) {}
 
+        async putEntity(type: string, id: string, terms: DBTokenize.IToken[]) {
+            for(const t of terms) {
+                await this.putTerm(type, id, t)
+            }
+        }
+
         async deleteEntity(type: string, id: string) {
             const result = await this.entity.getValuesByIndex("entity", [type, id])
             for(const t of result) {
@@ -276,6 +342,14 @@ export module IndexedDBBackend {
         async putFile(name: string, version: number, content: DBClients.FileContent): Promise<void> {
             await this.content.put(name, content)
             await this.updateIndex(name, version, DBClients.EntityState.Active, it => it)
+        }
+
+        async readIndex(name: string): Promise<IndexedDBSchema.Files.FileIndex | null> {
+            return this.index.get(name)
+        }
+
+        async readFile(name: string): Promise<IndexedDBSchema.Files.FileContent | null> {
+            return this.content.get(name)
         }
 
         async deleteFile(name: string) {
