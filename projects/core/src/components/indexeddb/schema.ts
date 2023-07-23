@@ -26,7 +26,7 @@ export module IndexedDBSchema {
         propertyGlobal: {
             key: string
             value: Property.GlobalIndex
-            indexes: {}
+            indexes: typeof Property.globalIndices
         }
 
         // full text
@@ -107,15 +107,16 @@ export module IndexedDBSchema {
         export interface EntityIndex {
             type: string
             id: string
-            property: string
-            value: string[]
+            propertyName: string
+            propertyCollection: string
+            values: string[]
         }
         export function entityId(type: string, id: string, property: string): string {
             return `Prop_${type}_${id}_${property}`
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
             entity: ["type", "id"],
-            property: ["property", "value"]
+            property: ["propertyName", "values"]
         })
 
         // global
@@ -124,9 +125,12 @@ export module IndexedDBSchema {
             value: string
             counts: number
         }
-        export function globalId(propertyCollection: string): string {
-            return `GlobalProp_${propertyCollection}`
+        export function globalId(propertyCollection: string, value: string): string {
+            return `GlobalProp_${propertyCollection}_${value}`
         }
+        export const globalIndices = createIndicesFor<GlobalIndex>().as({
+            propertyCollection: "propertyCollection"
+        })
     }
 
     export module FullText {

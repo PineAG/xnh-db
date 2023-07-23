@@ -23,10 +23,8 @@ export module DBClients {
     }
 
     export module Query {
-        export type EntityProperties = {
-            propertyCollection: string,
-            values: Record<string, string[]>
-        }
+        export type EntityPropertyItem = {propertyCollection: string, values: string[]}
+        export type EntityProperties = Record<string, EntityPropertyItem>
         export type EntityTokens = DBTokenize.IToken[]
 
         export interface IClient {

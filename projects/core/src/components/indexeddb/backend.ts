@@ -1,6 +1,7 @@
 import idb from "idb"
 import { IndexedDBSchema } from "./schema"
 import { DBClients, DBSearch } from "@xnh-db/common"
+import { sortBy } from "lodash"
 
 export module IndexedDBBackend {
     export interface IBackend {
@@ -33,7 +34,7 @@ export module IndexedDBBackend {
                 
                 // properties
                 initializeStore(db, "propertyIndex", IndexedDBSchema.Property.entityIndices)
-                initializeStore(db, "propertyGlobal", {})
+                initializeStore(db, "propertyGlobal", IndexedDBSchema.Property.globalIndices)
 
                 // full text
                 initializeStore(db, "fullTextEntity", IndexedDBSchema.FullText.entityIndices)
@@ -132,18 +133,60 @@ export module IndexedDBBackend {
         constructor(private db: InternalIDB) {}
 
         async put(type: string, id: string, properties: DBClients.Query.EntityProperties): Promise<void> {
-            
+            for(const [propertyName, {propertyCollection, values}] of Object.entries(properties)) {
+                const propId = IndexedDBSchema.Property.entityId(type, id, propertyName)
+                await this.entity.put(propId, {id, type, propertyName, propertyCollection, values})
+                for(const value of values) {
+                    const tagId = IndexedDBSchema.Property.globalId(propertyCollection, value)
+                    const current = await this.global.get(tagId)
+                    const currentCount = current?.counts ?? 0
+                    await this.global.put(tagId, {
+                        value,
+                        propertyCollection,
+                        counts: 1 + currentCount
+                    })
+                }
+            }
         }
 
-        async delete(type: string, id: string, properties: DBClients.Query.EntityProperties): Promise<void> {
-
+        async delete(type: string, id: string): Promise<void> {
+            const properties = await this.entity.getValuesByIndex("entity", [type, id])
+            for(const prop of properties) {
+                for(const value of prop.values) {
+                    const tagId = IndexedDBSchema.Property.globalId(prop.propertyCollection, value)
+                    const current = await this.global.get(tagId)
+                    if(current == null) {
+                        console.warn(`Missing tag info: ${prop.propertyCollection} ${value}`)
+                    } else {
+                        const nextCount = current.counts - 1
+                        if (nextCount <= 0) {
+                            // delete tag reference if ref count == 0
+                            await this.global.delete(tagId)
+                        } else {
+                            // ref count --
+                            await this.global.put(tagId, {...current, counts: nextCount})
+                        }
+                    }
+                }
+                // delete item
+                const propId = IndexedDBSchema.Property.entityId(prop.type, prop.id, prop.propertyName)
+                await this.entity.delete(propId)
+            }
         }
 
         async queryEntities(type: string, propertyName: string, value: string): Promise<DBSearch.SearchResult[]> {
-            this.entity.getValuesByIndex("property", [propertyName, value])
+            const entities = await this.entity.getValuesByIndex("property", [propertyName, value])
+            return entities.map(it => ({
+                id: it.id,
+                type: it.type,
+                weight: 1.0
+            }))
         }
 
-        
+        async getPropertyValues(propertyCollection: string): Promise<string[]> {
+            const results = await this.global.getValuesByIndex("propertyCollection", propertyCollection)
+            return sortBy(results, it => -it.counts).map(it => it.value)
+        }
 
         // db helpers
         private get entity() {
@@ -151,7 +194,7 @@ export module IndexedDBBackend {
         }
 
         private get global() {
-            return new DBWrapper(this.db, "propertyGlobal", {})
+            return new DBWrapper(this.db, "propertyGlobal", IndexedDBSchema.Property.globalIndices)
         }
     }
 

@@ -4,7 +4,7 @@ export module DBSearch {
     export interface SearchResult {
         type: string
         id: string
-        weight: string
+        weight: number
     }
 
     export interface IBackend {
