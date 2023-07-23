@@ -76,12 +76,12 @@ export module DBConfig {
         return configBuilder(Fields)
     }
 
-    export type Entity<C extends ConfigBase> = {
+    export type EvaluatedEntity<C extends ConfigBase> = {
         [K in keyof C]: (
             C[K] extends Field.Field<infer Type> ?
                 Field.Payloads[Type] :
             C[K] extends ConfigBase ?
-                Entity<C[K]> :
+                EvaluatedEntity<C[K]> :
                 never
         )
     }

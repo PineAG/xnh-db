@@ -16,6 +16,11 @@ export module DBClients {
         version: number
     }
 
+    export interface FileReference {
+        name: string
+        version: number
+    }
+
     export interface FileIndex {
         name: string
         version: number
@@ -27,28 +32,72 @@ export module DBClients {
         export type EntityProperties = Record<string, EntityPropertyItem>
         export type EntityTokens = DBTokenize.IToken[]
 
+        export interface PutEntityOptions {
+            version: number
+            content: {}
+            properties: EntityProperties
+            fullTextTerms: EntityTokens
+            files: FileReference[]
+        }
+
+        export interface DeleteEntityOptions {
+            version: number
+            properties: EntityProperties
+            fullTextTerms: EntityTokens
+            files: FileReference[]
+        }
+
+        export interface EntityLinkReference {
+            referenceName: string
+            type: string
+            id: string
+        }
+
+        export interface EntityLinkResult {
+            self: EntityLinkReference
+            opposite: EntityLinkReference
+        }
+
+        export interface EntityLinkPair {
+            left: EntityLinkReference
+            right: EntityLinkReference
+        }
+        
+        export interface EntityLink extends EntityLinkPair {
+            version: number
+            status: EntityState
+        }
+
         export interface IClient {
             listEntities(): Promise<EntityIndex[]>
             getEntityIndex(type: string, id: string): Promise<EntityIndex | null>
 
             getEntityContent(type: string, id: string): Promise<{} | null>
-            putEntity(type: string, id: string, version: number, content: {}, properties: EntityProperties, fullTextTerms: EntityTokens): Promise<void>
-            deleteEntity(type: string, id: string, properties: EntityProperties, fullTextTerms: EntityTokens): Promise<void>
+            putEntity(type: string, id: string, options: PutEntityOptions): Promise<void>
+            deleteEntity(type: string, id: string, options: DeleteEntityOptions): Promise<void>
 
+            // properties
             queryByTag(property: string, value: string): Promise<DBSearch.SearchResult[]>
             queryByTagInCollection(type: string, property: string, value: string): Promise<DBSearch.SearchResult[]>
-            queryByFullText(terms: EntityTokens): Promise<DBSearch.SearchResult[]>
-            queryByFullTextInCollection(type: string, terms: EntityTokens): Promise<DBSearch.SearchResult[]>
-
+            
             listTagsInCollection(property: string): Promise<string[]>
             listTagsGlobal(property: string): Promise<string[]>
 
+            // full text
+            queryByFullText(terms: EntityTokens): Promise<DBSearch.SearchResult[]>
+            queryByFullTextInCollection(type: string, terms: EntityTokens): Promise<DBSearch.SearchResult[]>
+
+            // files
             listFiles(): Promise<FileIndex[]>
             readFile(name: string): Promise<FileContent>
-            writeFile(name: string, content: FileContent): Promise<void>
-            deleteFile(name: string): Promise<void>
-            linkFile(name: string, type: string, id: string): Promise<number>
-            unlinkFile(name: string, type: string, id: string): Promise<number>
+            writeFile(name: string, version: number, content: FileContent): Promise<void>
+            purgeFiles(): Promise<void>
+
+            // links
+            listLinks(): Promise<EntityLink[]>
+            putLink(left: EntityLinkReference, right: EntityLinkReference, version: number): Promise<void>
+            getLinksOfEntity(type: string, id: string): Promise<EntityLinkResult[]>
+            deleteLink(left: EntityLinkReference, right: EntityLinkReference, version: number): Promise<void>
         }
     }
 

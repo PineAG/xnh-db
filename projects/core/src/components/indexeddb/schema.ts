@@ -62,6 +62,19 @@ export module IndexedDBSchema {
             value: Files.FileContent
             indexes: {}
         }
+
+        // links
+        links: {
+            key: string,
+            value: Links.DBLink,
+            indexes: typeof Links.linkIndices
+        }
+
+        linksReferenceNames: {
+            key: string,
+            value: Links.LinkNameIndex,
+            indexes: typeof Links.referenceIndices
+        }
     }
 
     export type StoreIndexBase<T extends {}> = {readonly [key: string]: (keyof T) | readonly (keyof T)[]}
@@ -70,7 +83,7 @@ export module IndexedDBSchema {
         L extends readonly [] ? [] :
         L extends readonly [infer First, ...infer Rest] ?
             Rest extends readonly string[] ?
-                [string, ..._EraseArrayConst<Rest>]
+                [string | number, ..._EraseArrayConst<Rest>]
                 : never 
             : never
     )
@@ -79,7 +92,7 @@ export module IndexedDBSchema {
         -readonly [K in keyof Idx]:
             Idx[K] extends readonly string[] ?
                 _EraseArrayConst<Idx[K]> :
-                string
+                string | number
     }
 
     const createIndicesFor = <T extends {}>() => ({
@@ -116,7 +129,7 @@ export module IndexedDBSchema {
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
             entity: ["type", "id"],
-            property: ["propertyName", "values"]
+            property: ["type", "propertyName", "values"]
         })
 
         // global
@@ -176,7 +189,12 @@ export module IndexedDBSchema {
         export type FileContent = DBClients.FileContent
 
         // meta
-        export type FileIndex = DBClients.FileIndex
+        export interface FileIndex {
+            name: string
+            version: number
+            status: DBClients.EntityState
+            counts: number
+        }
         export const fileIndices = createIndicesFor<FileIndex>().as({
             status: "status"
         })
@@ -193,5 +211,115 @@ export module IndexedDBSchema {
         export const entityIndices = createIndicesFor<EntityIndex>().as({
             file: "files"
         })
+    }
+
+    export module Links {
+        export type LinkItem = DBClients.Query.EntityLinkReference
+        export type ClientLink = DBClients.Query.EntityLinkResult
+        export type LinkRef = DBClients.Query.EntityLink
+
+        export interface BiLink {
+            left: LinkItem
+            right: LinkItem
+        }
+
+        export interface DBLinkBase {
+            leftReferenceName: string
+            leftId: string
+            leftType: string
+
+            rightReferenceName: string
+            rightId: string
+            rightType: string
+        }
+        
+        export interface DBLink extends DBLinkBase {
+            version: number
+            status: DBClients.EntityState
+        }
+
+        // link item
+        export function linkId(link: DBLinkBase): string {
+            return `Link_${link.leftReferenceName}_${link.leftType}_${link.leftId}__${link.rightReferenceName}_${link.rightType}_${link.rightId}`
+        }
+
+        export const linkIndices = createIndicesFor<DBLink>().as({
+            left: ["leftType", "leftId", "status"],
+            right: ["rightType", "rightId", "status"]
+        })
+
+        // link name values
+        export interface LinkNameIndex {
+            leftType: string
+            leftReferenceName: string
+            rightType: string 
+            rightReferenceName: string
+            counts: number
+        }
+
+        export function referenceId(leftType: string, leftReferenceName: string, rightType: string, rightReferenceName: string): string {
+            return `Ref_${leftType}_${leftReferenceName}__${rightType}_${rightReferenceName}`
+        }
+
+        export const referenceIndices = createIndicesFor<LinkNameIndex>().as({
+            types: ["leftType", "rightType"]
+        })
+
+        // converts
+        export function convertBiLinkToDBLink(biLink: BiLink): DBLinkBase {
+            return {
+                leftId: biLink.left.id,
+                leftType: biLink.left.type,
+                leftReferenceName: biLink.left.referenceName,
+                rightId: biLink.right.id,
+                rightType: biLink.right.type,
+                rightReferenceName: biLink.right.referenceName
+            }
+        }
+
+        export function convertDBLinkToBiLink(dbLink: DBLinkBase): BiLink {
+            return {
+                left: {
+                    id: dbLink.leftId,
+                    type: dbLink.leftType,
+                    referenceName: dbLink.leftReferenceName
+                },
+                right: {
+                    id: dbLink.rightId,
+                    type: dbLink.rightType,
+                    referenceName: dbLink.rightReferenceName
+                }
+            }
+        }
+
+        export function createBiLink(left: LinkItem, right: LinkItem): BiLink {
+            if(left.type <= right.type || left.type == right.type && left.referenceName <= right.referenceName) {
+                return {
+                    left: left,
+                    right: right
+                }
+            } else {
+                return {
+                    left: right,
+                    right: left
+                }
+            }
+        }
+
+        export function convertBiLinkToClientLink(entityType: string, entityId: string, biLink: BiLink): ClientLink {
+            if(biLink.left.type === entityType && biLink.left.id === entityId) {
+                return {
+                    self: biLink.left,
+                    opposite: biLink.right
+                }
+            } else if(biLink.right.type === entityType && biLink.right.id === entityId) {
+                return {
+                    self: biLink.right,
+                    opposite: biLink.left
+                }
+            } else {
+                throw new Error(`Invalid link for entity [${entityType}, ${entityId}]: left=[${biLink.left.type}, ${biLink.left.id}], right=[${biLink.right.type}, ${biLink.right.id}]`)
+            }
+        }
     }
 }
