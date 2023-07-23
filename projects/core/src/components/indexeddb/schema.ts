@@ -30,6 +30,11 @@ export module IndexedDBSchema {
         }
 
         // full text
+        fullTextTerm: {
+            key: string
+            value: FullText.TermIndex,
+            indexes: typeof FullText.termIndices
+        }
         fullTextEntity: {
             key: string
             value: FullText.EntityIndex,
@@ -147,21 +152,34 @@ export module IndexedDBSchema {
     }
 
     export module FullText {
-        // entity
-        export interface EntityIndex {
+        // term
+        export interface TermIndex {
             type: string
             id: string
             term: string
             weight: number
         }
-        export function entityId(type: string, id: string, term: string): string {
+        export function termId(type: string, id: string, term: string): string {
             return `Term_${type}_${id}_${term}`
         }
-        export const entityIndices = createIndicesFor<EntityIndex>().as({
+        export const termIndices = createIndicesFor<TermIndex>().as({
             entity: ["type", "id"],
             globalTerm: "term",
             collectionTerm: ["type", "term"]
         })
+
+        // entity
+        export interface EntityIndex {
+            type: string
+            id: string
+            totalWeight: number
+        }
+        export function entityId(type: string, id: string): string {
+            return `Entity_${type}_${id}`
+        }
+        export const entityIndices = createIndicesFor<EntityIndex>().as({
+            entity: ["type", "id"]
+        }) 
         
         // global
         export interface GlobalIndex {

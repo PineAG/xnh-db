@@ -31,13 +31,23 @@ export module IndexedDBBackend {
             return this.entities.getContent(type, id)
         }
         async putEntity(type: string, id: string, version: number, options: DBClients.Query.PutEntityOptions): Promise<void> {
+            if(await this.entities.exists(type, id)) {
+                await this.deleteEntityInternal(type, id, version)
+            }
+
             await this.properties.put(type, id, options.properties)
             await this.fullText.putEntity(type, id, options.fullTextTerms)
             await this.files.putEntity(type, id, version, options.files)
             await this.entities.put(type, id, version, options.content)
+
+            await this.files.purgeFiles()
         }
         async deleteEntity(type: string, id: string, version: number): Promise<void> {
-            await this.entities.delete(type, id, version)
+            await this.deleteEntityInternal(type, id, version)
+            await this.files.purgeFiles()
+        }
+        private async deleteEntityInternal(type: string, id: string, version: number) {
+            await this.files.deleteEntity(type, id, version)
             await this.fullText.deleteEntity(type, id)
             await this.properties.delete(type, id)
             await this.entities.delete(type, id, version)
@@ -53,6 +63,15 @@ export module IndexedDBBackend {
         }
         queryByFullTextTermInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
             return this.fullText.getEntitiesInCollection(type, term)
+        }
+        getFullTextWeightOfEntity(type: string, id: string): Promise<number | null> {
+            return this.fullText.getWeightsOfEntity(type, id)
+        }
+        getFullTextTotalWeightInCollection(type: string, term: string): Promise<number | null> {
+            return this.fullText.getTermWeightsInCollection(type, term)
+        }
+        getFullTextTotalWeightGlobal(term: string): Promise<number | null> {
+            return this.fullText.getTermWeightsGlobal(term)
         }
         listFiles(): Promise<DBClients.FileIndex[]> {
             return this.files.listFiles()
@@ -97,6 +116,7 @@ export module IndexedDBBackend {
                 initializeStore(db, "propertyGlobal", IndexedDBSchema.Property.globalIndices)
 
                 // full text
+                initializeStore(db, "fullTextTerm", IndexedDBSchema.FullText.termIndices)
                 initializeStore(db, "fullTextEntity", IndexedDBSchema.FullText.entityIndices)
                 initializeStore(db, "fullTextCollection", IndexedDBSchema.FullText.collectionIndices)
                 initializeStore(db, "fullTextGlobal", {})
@@ -126,6 +146,12 @@ export module IndexedDBBackend {
 
         async listEntities(): Promise<IndexedDBSchema.Entity.EntityIndex[]> {
             return await this.entityIndex.allValues()
+        }
+
+        async exists(type: string, id: string): Promise<boolean> {
+            const idx = await this.getIndex(type, id)
+            const status = idx?.status ?? DBClients.EntityState.Deleted
+            return status !== DBClients.EntityState.Deleted
         }
 
         async put(type: string, id: string, version: number, entity: IndexedDBSchema.Entity.EntityBase) {
@@ -233,21 +259,27 @@ export module IndexedDBBackend {
         constructor(private db: InternalIDB) {}
 
         async putEntity(type: string, id: string, terms: DBTokenize.IToken[]) {
+            let totalWeight = 0
             for(const t of terms) {
+                totalWeight += t.weight
                 await this.putTerm(type, id, t)
             }
+            const docId = IndexedDBSchema.FullText.entityId(type, id)
+            await this.entity.put(docId, {type, id, totalWeight})
         }
 
         async deleteEntity(type: string, id: string) {
-            const result = await this.entity.getValuesByIndex("entity", [type, id])
+            const result = await this.term.getValuesByIndex("entity", [type, id])
             for(const t of result) {
                 await this.deleteTerm(type, id, t.term)
             }
+            const docId = IndexedDBSchema.FullText.entityId(type, id)
+            await this.entity.delete(docId)
         }
 
-        async putTerm(type: string, id: string, term: DBTokenize.IToken) {
-            const termId = IndexedDBSchema.FullText.entityId(type, id, term.value)
-            await this.entity.put(termId, {
+        private async putTerm(type: string, id: string, term: DBTokenize.IToken) {
+            const termId = IndexedDBSchema.FullText.termId(type, id, term.value)
+            await this.term.put(termId, {
                 type, id, 
                 term: term.value,
                 weight: term.weight
@@ -256,25 +288,25 @@ export module IndexedDBBackend {
             await this.updateGlobalCounter(term.value, w => w + term.weight)
         }
 
-        async deleteTerm(type: string, id: string, term: string) {
-            const termId = IndexedDBSchema.FullText.entityId(type, id, term)
-            const current = await this.entity.get(termId)
+        private async deleteTerm(type: string, id: string, term: string) {
+            const termId = IndexedDBSchema.FullText.termId(type, id, term)
+            const current = await this.term.get(termId)
             if(!current) {
                 console.warn(`Term does not exist: ${type} ${id} ${term}`)
                 return
             }
-            await this.entity.delete(termId)
+            await this.term.delete(termId)
             await this.updateCollectionCounter(type, current.term, w => w - current.weight)
             await this.updateGlobalCounter(current.term, w => w - current.weight)
         }
 
         async getEntitiesInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
-            const result = await this.entity.getValuesByIndex("collectionTerm", [type, term])
+            const result = await this.term.getValuesByIndex("collectionTerm", [type, term])
             return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
         }
 
         async getEntitiesGlobal(term: string): Promise<DBSearch.SearchResult[]> {
-            const result = await this.entity.getValuesByIndex("globalTerm", term)
+            const result = await this.term.getValuesByIndex("globalTerm", term)
             return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
         }
 
@@ -287,6 +319,12 @@ export module IndexedDBBackend {
         async getTermWeightsInCollection(type: string, term: string): Promise<number | null> {
             const docId = IndexedDBSchema.FullText.collectionId(type, term)
             const result = await this.collection.get(docId)
+            return result?.totalWeight ?? null
+        }
+
+        async getWeightsOfEntity(type: string, id: string): Promise<number | null> {
+            const docId = IndexedDBSchema.FullText.entityId(type, id)
+            const result = await this.entity.get(docId)
             return result?.totalWeight ?? null
         }
 
@@ -319,6 +357,10 @@ export module IndexedDBBackend {
         }
 
         // db helpers
+        private get term() {
+            return new DBWrapper(this.db, "fullTextTerm", IndexedDBSchema.FullText.termIndices)
+        }
+
         private get entity() {
             return new DBWrapper(this.db, "fullTextEntity", IndexedDBSchema.FullText.entityIndices)
         }
