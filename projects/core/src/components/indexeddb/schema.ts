@@ -59,7 +59,7 @@ export module IndexedDBSchema {
         }
         fileContent: {
             key: string,
-            value: Files.FileContent
+            value: Blob,
             indexes: {}
         }
 
@@ -83,7 +83,7 @@ export module IndexedDBSchema {
         L extends readonly [] ? [] :
         L extends readonly [infer First, ...infer Rest] ?
             Rest extends readonly string[] ?
-                [string | number, ..._EraseArrayConst<Rest>]
+                [string | number | boolean, ..._EraseArrayConst<Rest>]
                 : never 
             : never
     )
@@ -92,7 +92,7 @@ export module IndexedDBSchema {
         -readonly [K in keyof Idx]:
             Idx[K] extends readonly string[] ?
                 _EraseArrayConst<Idx[K]> :
-                string | number
+                string | number | boolean
     }
 
     const createIndicesFor = <T extends {}>() => ({
@@ -194,22 +194,25 @@ export module IndexedDBSchema {
             version: number
             status: DBClients.EntityState
             counts: number
+            noReference: boolean
         }
         export const fileIndices = createIndicesFor<FileIndex>().as({
-            status: "status"
+            status: "status",
+            purging: ["status", "noReference"]
         })
 
         // entity
         export interface EntityIndex {
             type: string
             id: string
-            files: string[]
+            fileName: string
         }
-        export function entityId(type: string, id: string): string {
-            return `Files_${type}_${id}`
+        export function entityId(type: string, id: string, fileName: string): string {
+            return `Files_${type}_${id}_${fileName}`
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
-            file: "files"
+            entity: ["type", "id"],
+            file: "fileName"
         })
     }
 

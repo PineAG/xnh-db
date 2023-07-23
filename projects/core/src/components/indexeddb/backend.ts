@@ -64,6 +64,10 @@ export module IndexedDBBackend {
     class EntityAdaptor {
         constructor(private db: InternalIDB) {}
 
+        async listEntities(): Promise<IndexedDBSchema.Entity.EntityIndex[]> {
+            return await this.entityIndex.allValues()
+        }
+
         async put(type: string, id: string, version: number, entity: IndexedDBSchema.Entity.EntityBase) {
             const docId = IndexedDBSchema.Entity.entityId(type, id)
             await this.entityData.put(docId, entity)
@@ -185,33 +189,86 @@ export module IndexedDBBackend {
     class FilesAdaptor {
         constructor(private db: InternalIDB) {}
 
-        async listFiles(): Promise<DBClients.FileIndex> {
-
+        async listFiles(): Promise<DBClients.FileIndex[]> {
+            return await this.index.allValues()
         }
 
         async putFile(name: string, version: number, content: DBClients.FileContent): Promise<void> {
-
+            await this.content.put(name, content)
+            await this.updateIndex(name, version, DBClients.EntityState.Active, it => it)
         }
 
         async deleteFile(name: string) {
+            const idx = await this.index.get(name)
+            if(idx === null) {
+                console.warn(`File has already been deleted: ${name}`)
+                return
+            }
+            if(!idx.noReference) {
+                throw new Error(`File is referred by some entities: ${name}`)
+            }
 
+            await this.updateIndex(name, idx.version, DBClients.EntityState.Deleted, it => it)
+            await this.content.delete(name)
         }
 
-        async linkFile(type: string, id: string, fileName: string) {
-
+        async putEntity(type: string, id: string, version: number, files: string[]) {
+            for(const f of files) {
+                await this.linkFile(type, id, version, f)
+            }
         }
 
-        async unlinkFile(type: string, id: string, fileName: string) {
+        async deleteEntity(type: string, id: string, version: number) {
+            const files = await this.entity.getValuesByIndex("entity", [type, id])
+            for(const f of files) {
+                await this.unlinkFile(f.type, f.id, version, f.fileName)
+            }
+        }
 
+        async linkFile(type: string, id: string, version: number, fileName: string) {
+            const entityId = IndexedDBSchema.Files.entityId(type, id, fileName)
+            const current = await this.entity.get(entityId)
+            if(current) {
+                console.warn(`File link already exists: ${type} ${id} ${fileName}`)
+                return
+            }
+            await this.entity.put(entityId, {type, id, fileName})
+            await this.updateIndex(fileName, version, DBClients.EntityState.Active, it => it + 1)
+        }
+
+        async unlinkFile(type: string, id: string, version: number, fileName: string) {
+            const entityId = IndexedDBSchema.Files.entityId(type, id, fileName)
+            const current = await this.entity.get(entityId)
+            if(!current) {
+                console.warn(`File link not exists: ${type} ${id} ${fileName}`)
+                return
+            }
+            await this.entity.delete(entityId)
+            await this.updateIndex(fileName, version, DBClients.EntityState.Active, it => it - 1)
         }
 
         async purgeFiles() {
-            
+            const names = await this.index.getKeysByIndex("purging", [DBClients.EntityState.Active, true])
+            for(const n of names) {
+                await this.deleteFile(n)
+            }
+        }
+
+        private async updateIndex(name: string, version: number, status: DBClients.EntityState, counterUpdater: (c: number) => number) {
+            const currentIndex = await this.index.get(name)
+            const currentCount = currentIndex?.counts ?? 0
+            const nextCount = counterUpdater(currentCount)
+            await this.index.put(name, {
+                name, version,
+                counts: nextCount,
+                status,
+                noReference: nextCount <= 0
+            })
         }
 
         // db helpers
         private get content() {
-            return new DBWrapper(this.db, "fileContent", {})
+            return new FileContentWrapper(this.db)
         }
 
         private get index() {
@@ -225,6 +282,15 @@ export module IndexedDBBackend {
 
     class LinkAdaptor {
         constructor(private db: InternalIDB) {}
+
+        async listLinks(): Promise<IndexedDBSchema.Links.LinkRef[]> {
+            const results = await this.links.allValues()
+            return results.map(it => ({
+                ...IndexedDBSchema.Links.convertDBLinkToBiLink(it),
+                version: it.version,
+                status: it.status
+            }))
+        }
 
         async putLink(left: IndexedDBSchema.Links.LinkItem, right: IndexedDBSchema.Links.LinkItem, version: number): Promise<void> {
             const biLink = IndexedDBSchema.Links.createBiLink(left, right)
@@ -319,6 +385,13 @@ export module IndexedDBBackend {
     class DBWrapper<Name extends StoreNames> {
         constructor(private db: InternalIDB, private name: Name, private indices: IndexedDBSchema.Schema[Name]["indexes"]) {}
 
+        async allValues(): Promise<IndexedDBSchema.Schema[Name]["value"][]> {
+            const tx = this.db.transaction(this.name, "readonly")
+            const result = await tx.store.getAll()
+            await tx.done
+            return result
+        }
+
         async get(id: string): Promise<IndexedDBSchema.Schema[Name]["value"] | null> {
             const tx = this.db.transaction(this.name, "readonly")
             const result = await tx.store.get(id)
@@ -350,6 +423,30 @@ export module IndexedDBBackend {
             const result = await tx.store.index(indexName).getAll(value)
             await tx.done
             return result ?? null
+        }
+    }
+
+    class FileContentWrapper {
+        constructor(private db: InternalIDB) {}
+
+        async get(name: string): Promise<IndexedDBSchema.Files.FileContent | null> {
+            const tx = this.db.transaction("fileContent", "readonly")
+            const result = await tx.store.get(name)
+            await tx.done
+            if(!result) {
+                return null
+            } else {
+                const buffer = await result.arrayBuffer()
+                return new Uint8Array(buffer)
+            }
+        }
+
+        async put(name: string, content: IndexedDBSchema.Files.FileContent) {
+
+        }
+
+        async delete(name: string) {
+
         }
     }
 }
