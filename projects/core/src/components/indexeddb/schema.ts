@@ -64,30 +64,27 @@ export module IndexedDBSchema {
         }
     }
 
-    export type StoreIndexBase<T> = Readonly<Record<string, Readonly<(keyof T) | (keyof T)[]>>> & {[key: string]: string | string[]}
+    export type StoreIndexBase<T extends {}> = {readonly [key: string]: (keyof T) | readonly (keyof T)[]}
 
-    type _EraseArrayConst<L extends string[]> = (
-        L extends [] ? [] :
-        L extends [infer First, ...infer Rest] ?
-            Rest extends string[] ?
+    type _EraseArrayConst<L extends readonly string[]> = (
+        L extends readonly [] ? [] :
+        L extends readonly [infer First, ...infer Rest] ?
+            Rest extends readonly string[] ?
                 [string, ..._EraseArrayConst<Rest>]
                 : never 
             : never
     )
 
-    export type ApplyIndexDefinition<T, Idx extends StoreIndexBase<T>> = {
-        [K in keyof Idx]: Idx[K]
-            // Idx[K] extends string?
-            //         string :
-            // Idx[K] extends string[] ?
-            //         _EraseArrayConst<Idx[K]> : "Not_Matched"
+    export type ApplyIndexDefinition<Idx> = {
+        -readonly [K in keyof Idx]:
+            Idx[K] extends readonly string[] ?
+                _EraseArrayConst<Idx[K]> :
+                string
     }
 
-    type x = [1,2,3] extends [] ? true : false
-
-    const createIndicesFor = <T>() => ({
-        as: function<const Idx extends StoreIndexBase<T>>(idx: Idx): ApplyIndexDefinition<T, Idx> {
-            return idx as ApplyIndexDefinition<T, Idx>
+    const createIndicesFor = <T extends {}>() => ({
+        as: function<const Idx extends StoreIndexBase<T>>(idx: Idx): ApplyIndexDefinition<Idx> {
+            return idx as ApplyIndexDefinition<Idx>
         }
     })
 
@@ -146,7 +143,7 @@ export module IndexedDBSchema {
         export const entityIndices = createIndicesFor<EntityIndex>().as({
             entity: ["type", "id"]
         })
-    
+        
         // global
         export interface GlobalIndex {
             term: string

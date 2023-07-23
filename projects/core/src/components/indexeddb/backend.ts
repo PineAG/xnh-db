@@ -140,7 +140,6 @@ export module IndexedDBBackend {
         }
 
         async queryEntities(type: string, propertyName: string, value: string): Promise<DBSearch.SearchResult[]> {
-            type X = IndexedDBSchema.Schema["propertyIndex"]["indexes"] extends string[] ? true : false
             this.entity.getValuesByIndex("property", [propertyName, value])
         }
 
