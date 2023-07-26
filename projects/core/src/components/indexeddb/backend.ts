@@ -81,21 +81,8 @@ export module IndexedDBBackend {
             const status = result?.status ?? DBClients.EntityState.Deleted
             return status === DBClients.EntityState.Active
         }
-        async readFile(name: string, fallbackReader: (name: string) => Promise<Uint8Array | null>): Promise<Uint8Array | null> {
-            let content = await this.files.readFile(name)
-            if(content !== null) {
-                return content
-            }
-            if(await this.fileExists(name)) {
-                content = await fallbackReader(name)
-                if(content === null) {
-                    return null
-                }
-                await this.files.putContent(name, content)
-                return content
-            } else {
-                return null
-            }
+        async readFile(name: string): Promise<Uint8Array | null> {
+            return await this.files.readFile(name)
         }
         async writeFile(name: string, version: number, content: Uint8Array): Promise<void> {
             await this.files.putContent(name, content)
@@ -662,11 +649,15 @@ export module IndexedDBBackend {
         }
 
         async put(name: string, content: IndexedDBSchema.Files.FileContent) {
-
+            const tx = this.db.transaction("fileContent", "readwrite")
+            await tx.store.put(new Blob([content]), name)
+            await tx.done
         }
 
         async delete(name: string) {
-
+            const tx = this.db.transaction("fileContent", "readwrite")
+            await tx.store.delete(name)
+            await tx.done
         }
     }
 }

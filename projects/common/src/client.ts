@@ -78,7 +78,7 @@ export module DBClients {
             // files
             listFiles(): Promise<FileIndex[]>
             fileExists(name: string): Promise<boolean>
-            readFile(name: string, fallbackReader: (name: string) => Promise<Uint8Array | null>): Promise<FileContent | null>
+            readFile(name: string): Promise<FileContent | null>
             writeFile(name: string, version: number, content: FileContent): Promise<void>
             deleteFileContent(name: string): Promise<void>
             purgeFiles(): Promise<void>
@@ -103,6 +103,8 @@ export module DBClients {
 
         export interface IReader {
             readStoreState(): Promise<StoreState>
+            readEntity(type: string, id: string): Promise<{}>
+            readFile(name: string): Promise<FileContent>
         }
 
         export interface IWriter {
@@ -122,18 +124,20 @@ export module DBClients {
             }
     
             type ActionOptions = {
-                putEntity: {type: string, id: string, entity: {}, version: number},
+                putEntity: {type: string, id: string, readEntity: () => Promise<{}>, version: number},
                 deleteEntity: {type: string, id: string, version: number},
                 putLink: EntityLinkPair & {version: number},
                 deleteLink: EntityLinkPair & {version: number},
                 putFile: {fileName: string, readContent: () => Promise<FileContent>, version: number},
-                deleteFile: {fileName: string},
+                deleteFile: {fileName: string, version: number},
             }
+
+            type ActionOption<A extends ActionTypes, R extends ResourceTypes> = ActionOptions[`${A}${Capitalize<R>}`]
     
             export interface Action<A extends ActionTypes, R extends ResourceTypes> {
                 action: A
                 resource: R
-                options: ActionOptions[`${A}${Capitalize<R>}`]
+                options: ActionOption<A, R>
             }
     
             export function isActionOfType<A extends ActionTypes, R extends ResourceTypes>(actionType: A, resourceType: R, obj: ActionBase): obj is Action<A, R> {
@@ -149,7 +153,131 @@ export module DBClients {
                 deleteFile: Action<ActionTypes.Delete, ResourceTypes.File>[]
             }
 
+            type OptionsCollection = {
+                [K in keyof ActionOptions]: ActionOptions[K][]
+            }
+
             export type ActionBase = Actions.Action<ActionTypes, ResourceTypes>
+
+            export interface ExtractSyncActionsOptions {
+                createFileReader(name: string): () => Promise<FileContent>
+                createEntityReader(type: string, id: string): () => Promise<{}>
+
+            }
+
+            export async function extractActions(srcReader: IReader, dstReader: IReader): Promise<ActionCollection> {
+                const [srcState, dstState] = await Promise.all([
+                    srcReader.readStoreState(),
+                    dstReader.readStoreState()
+                ])
+                const actions = extractSyncActionsFromStates(srcState, dstState, {
+                    createEntityReader: (type, id) => () => srcReader.readEntity(type, id),
+                    createFileReader: (name) => () => srcReader.readFile(name)
+                })
+                return actions
+            }
+
+            export function extractSyncActionsFromStates(srcState: StoreState, dstState: StoreState, options: ExtractSyncActionsOptions): ActionCollection {
+                const resultOptions: OptionsCollection = {
+                    putEntity: [],
+                    deleteEntity: [],
+                    putLink: [],
+                    deleteLink: [],
+                    putFile: [],
+                    deleteFile: []
+                }
+
+                for(const link of diffStates(
+                    srcState.links, dstState.links, 
+                    it => `${it.left.type}_${it.left.id}_${it.left.referenceName}:${it.right.type}_${it.right.id}_${it.right.referenceName}`)
+                ) {
+                    if(link.status === EntityState.Active) {
+                        resultOptions.putLink.push({
+                            left: link.left,
+                            right: link.right,
+                            version: link.version
+                        })
+                    } else {
+                        resultOptions.deleteLink.push({
+                            left: link.left,
+                            right: link.right,
+                            version: link.version
+                        })
+                    }
+                }
+
+                for(const entity of diffStates(
+                    srcState.entities, dstState.entities,
+                    it => `${it.type}_${it.id}`
+                )) {
+                    if(entity.status === EntityState.Active) {
+                        resultOptions.putEntity.push({
+                            type: entity.type,
+                            id: entity.id,
+                            version: entity.version,
+                            readEntity: options.createEntityReader(entity.type, entity.id)
+                        })
+                    } else {
+                        resultOptions.deleteEntity.push({
+                            id: entity.id,
+                            type: entity.type,
+                            version: entity.version
+                        })
+                    }
+                }
+
+                for(const file of diffStates(srcState.files, dstState.files, it => it.name)) {
+                    if(file.status === EntityState.Active) {
+                        resultOptions.putFile.push({
+                            fileName: file.name,
+                            version: file.version,
+                            readContent: options.createFileReader(file.name)
+                        })
+                    } else {
+                        resultOptions.deleteFile.push({
+                            fileName: file.name,
+                            version: file.version
+                        })
+                    }
+                }
+
+                const actions: ActionCollection = {
+                    putEntity: composeActions(ActionTypes.Put, ResourceTypes.Entity, resultOptions.putEntity),
+                    deleteEntity: composeActions(ActionTypes.Delete, ResourceTypes.Entity, resultOptions.deleteEntity),
+                    putLink: composeActions(ActionTypes.Put, ResourceTypes.Link, resultOptions.putLink),
+                    deleteLink: composeActions(ActionTypes.Delete, ResourceTypes.Link, resultOptions.deleteLink),
+                    putFile: composeActions(ActionTypes.Put, ResourceTypes.File, resultOptions.putFile),
+                    deleteFile: composeActions(ActionTypes.Delete, ResourceTypes.File, resultOptions.deleteFile),
+                }
+
+                return actions
+            }
+
+            function composeActions<A extends ActionTypes, R extends ResourceTypes>(actionType: A, resourceType: R, options: ActionOption<A, R>[]): Action<A, R>[] {
+                return options.map(op => ({
+                    action: actionType,
+                    resource: resourceType,
+                    options: op
+                }))
+            }
+
+            function diffStates<T extends {version: number}>(src: T[], dst: T[], toString: (t: T) => string): T[] {
+                const srcEntities = arrayToMap(src, toString)
+                const dstEntities = arrayToMap(dst, toString)
+                const results: T[] = []
+                for(const s in srcEntities) {
+                    const srcVersion = srcEntities[s].version
+                    const dstVersion = dstEntities[s]?.version ?? -1
+                    if(srcVersion > dstVersion) {
+                        results.push(srcEntities[s])
+                    }
+                }
+                return results
+            }
+
+            function arrayToMap<T>(items: T[], toString: (t: T) => string): Record<string, T> {
+                return Object.fromEntries(items.map(it => [toString(it), it]))
+            }
         }
 
         type ConfigCollection = Record<string, DBConfig.ConfigBase>
@@ -162,6 +290,22 @@ export module DBClients {
                 const links = await this.queryClient.listLinks()
                 const files = await this.queryClient.listFiles()
                 return {entities, links, files}
+            }
+
+            async readEntity(type: string, id: string): Promise<{}> {
+                const result = await this.queryClient.getEntityContent(type, id)
+                if(result == null) {
+                    throw new Error(`Entity not found: ${type} ${id}`)
+                }
+                return result
+            }
+
+            async readFile(name: string): Promise<FileContent> {
+                const result = await this.queryClient.readFile(name)
+                if(result == null) {
+                    throw new Error(`File not found: ${name}`)
+                }
+                return result
             }
 
             async* performActions(actions: Actions.ActionCollection): AsyncGenerator<Actions.ActionBase> {
@@ -182,11 +326,12 @@ export module DBClients {
                 }
                 for(const a of actions.putEntity) {
                     yield a
-                    const {type, id, version, entity} = a.options
+                    const {type, id, version, readEntity} = a.options
                     const config = this.configs[type]
                     if(config == null) {
                         throw new Error(`Invalid type: ${type}`)
                     }
+                    const entity = await readEntity()
                     const fullTextTerms = DBConfig.Convert.extractFullTextTerms(config, entity)
                     const files = DBConfig.Convert.extractFileNames(config, entity)
                     const properties = DBConfig.Convert.extractProperties(config, entity)
