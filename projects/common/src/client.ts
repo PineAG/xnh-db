@@ -78,8 +78,9 @@ export module DBClients {
             // files
             listFiles(): Promise<FileIndex[]>
             fileExists(name: string): Promise<boolean>
-            readFile(name: string): Promise<FileContent | null>
+            readFile(name: string, fallbackReader: (name: string) => Promise<Uint8Array | null>): Promise<FileContent | null>
             writeFile(name: string, version: number, content: FileContent): Promise<void>
+            deleteFileContent(name: string): Promise<void>
             purgeFiles(): Promise<void>
 
             // links
@@ -94,38 +95,121 @@ export module DBClients {
         export type EntityLinkPair = Query.EntityLinkPair
         export type EntityLink = Query.EntityLink
 
+        export interface StoreState {
+            entities: EntityIndex[]
+            files: FileIndex[]
+            links: EntityLink[]
+        }
+
         export interface IReader {
-            readEntityIndices(): Promise<EntityIndex[]>
-            readEntity(type: string, id: string): Promise<{} | null>
-            readFileIndices(): Promise<FileIndex[]>
-            readFile(name: string): Promise<FileContent | null>
-            readLinks(): Promise<EntityLink[]>
+            readStoreState(): Promise<StoreState>
         }
 
         export interface IWriter {
-            writeEntity(type: string, id: string, version: number, entity: {}): Promise<void>
-            deleteEntity(type: string, id: string, version: number): Promise<void>
-
-            writeFile(name: string, version: number, content: FileContent): Promise<void>
-            deleteFile(name: string, version: number, content: FileContent): Promise<void>
-
-            addLink(link: EntityLinkPair, version: number): Promise<void>
-            deleteLink(link: EntityLinkPair, version: number): Promise<void>
+            performActions(actions: Actions.ActionCollection): AsyncGenerator<Actions.ActionBase>
         }
 
-        export type QueryAdaptorConfigCollection = Record<string, DBConfig.ConfigBase>
-
-        export class QueryAdaptor implements IReader, IWriter {
-            constructor(private backend: Query.IClient, private configs: QueryAdaptorConfigCollection) {}
-            
-
-            private config(name: string): DBConfig.ConfigBase {
-                const c = this.configs[name]
-                if(!c) {
-                    throw new Error(`Config not found: ${name}`)
-                }
-                return c
+        export module Actions {
+            export enum ActionTypes {
+                Put = "put",
+                Delete = "delete"
             }
+
+            export enum ResourceTypes {
+                Entity = "entity",
+                Link = "link",
+                File = "file"
+            }
+    
+            type ActionOptions = {
+                putEntity: {type: string, id: string, entity: {}, version: number},
+                deleteEntity: {type: string, id: string, version: number},
+                putLink: EntityLinkPair & {version: number},
+                deleteLink: EntityLinkPair & {version: number},
+                putFile: {fileName: string, readContent: () => Promise<FileContent>, version: number},
+                deleteFile: {fileName: string},
+            }
+    
+            export interface Action<A extends ActionTypes, R extends ResourceTypes> {
+                action: A
+                resource: R
+                options: ActionOptions[`${A}${Capitalize<R>}`]
+            }
+    
+            export function isActionOfType<A extends ActionTypes, R extends ResourceTypes>(actionType: A, resourceType: R, obj: ActionBase): obj is Action<A, R> {
+                return obj.action === actionType && obj.resource === resourceType
+            }
+
+            export type ActionCollection = {
+                putEntity: Action<ActionTypes.Put, ResourceTypes.Entity>[]
+                deleteEntity: Action<ActionTypes.Delete, ResourceTypes.Entity>[]
+                putLink: Action<ActionTypes.Put, ResourceTypes.Link>[]
+                deleteLink: Action<ActionTypes.Delete, ResourceTypes.Link>[]
+                putFile: Action<ActionTypes.Put, ResourceTypes.File>[]
+                deleteFile: Action<ActionTypes.Delete, ResourceTypes.File>[]
+            }
+
+            export type ActionBase = Actions.Action<ActionTypes, ResourceTypes>
+        }
+
+        type ConfigCollection = Record<string, DBConfig.ConfigBase>
+
+        export class QueryClientAdaptor implements IReader, IWriter {
+            constructor(private queryClient: Query.IClient, private configs: ConfigCollection) {}
+
+            async readStoreState(): Promise<StoreState> {
+                const entities = await this.queryClient.listEntities()
+                const links = await this.queryClient.listLinks()
+                const files = await this.queryClient.listFiles()
+                return {entities, links, files}
+            }
+
+            async* performActions(actions: Actions.ActionCollection): AsyncGenerator<Actions.ActionBase> {
+                for(const a of actions.deleteFile) {
+                    yield a
+                    await this.queryClient.deleteFileContent(a.options.fileName)
+                }
+                for(const a of actions.putFile) {
+                    yield a
+                    const {fileName, version, readContent} = a.options
+                    const content = await readContent()
+                    await this.queryClient.writeFile(fileName, version, content)
+                }
+                for(const a of actions.deleteEntity) {
+                    yield a
+                    const {type, id, version} = a.options
+                    await this.queryClient.deleteEntity(type, id, version)
+                }
+                for(const a of actions.putEntity) {
+                    yield a
+                    const {type, id, version, entity} = a.options
+                    const config = this.configs[type]
+                    if(config == null) {
+                        throw new Error(`Invalid type: ${type}`)
+                    }
+                    const fullTextTerms = DBConfig.Convert.extractFullTextTerms(config, entity)
+                    const files = DBConfig.Convert.extractFileNames(config, entity)
+                    const properties = DBConfig.Convert.extractProperties(config, entity)
+                    await this.queryClient.putEntity(type, id, version, {
+                        content: entity,
+                        files,
+                        properties,
+                        fullTextTerms
+                    })
+                }
+                for(const a of actions.deleteLink) {
+                    yield a
+                    const {left, right, version} = a.options
+                    await this.queryClient.deleteLink(left, right, version)
+                }
+                for(const a of actions.putLink) {
+                    yield a
+                    const {left, right, version} = a.options
+                    await this.queryClient.putLink(left, right, version)
+                }
+                await this.queryClient.purgeFiles()
+            }
+            
         }
     }
 

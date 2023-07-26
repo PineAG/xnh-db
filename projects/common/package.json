@@ -4,5 +4,8 @@
   "main": "src/index.ts",
   "typings": "src/index.ts",
   "source": "src/index.ts",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "type-fest": "^4.0.0"
+  }
 }

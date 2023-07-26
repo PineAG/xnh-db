@@ -7,12 +7,12 @@ export module IndexedDBBackend {
     type InternalIDB = idb.IDBPDatabase<IndexedDBSchema.Schema>
     type StoreNames = idb.StoreNames<IndexedDBSchema.Schema> & keyof IndexedDBSchema.Schema
 
-    export class Client implements DBClients.Query.IClient {
-        private entities: EntityAdaptor
-        private properties: PropertyAdaptor
-        private fullText: FullTextAdaptor
-        private files: FilesAdaptor
-        private links: LinkAdaptor
+    export class Backend implements DBClients.Query.IClient {
+        private readonly entities: EntityAdaptor
+        private readonly properties: PropertyAdaptor
+        private readonly fullText: FullTextAdaptor
+        private readonly files: FilesAdaptor
+        private readonly links: LinkAdaptor
 
         constructor(db: InternalIDB) {
             this.entities = new EntityAdaptor(db)
@@ -81,11 +81,28 @@ export module IndexedDBBackend {
             const status = result?.status ?? DBClients.EntityState.Deleted
             return status === DBClients.EntityState.Active
         }
-        readFile(name: string): Promise<Uint8Array | null> {
-            return this.files.readFile(name)
+        async readFile(name: string, fallbackReader: (name: string) => Promise<Uint8Array | null>): Promise<Uint8Array | null> {
+            let content = await this.files.readFile(name)
+            if(content !== null) {
+                return content
+            }
+            if(await this.fileExists(name)) {
+                content = await fallbackReader(name)
+                if(content === null) {
+                    return null
+                }
+                await this.files.putContent(name, content)
+                return content
+            } else {
+                return null
+            }
         }
         async writeFile(name: string, version: number, content: Uint8Array): Promise<void> {
-            await this.files.putFile(name, version, content)
+            await this.files.putContent(name, content)
+            await this.files.touchFile(name, version)
+        }
+        async deleteFileContent(name: string): Promise<void> {
+            await this.files.deleteFileContent(name)
         }
         async purgeFiles(): Promise<void> {
             await this.files.purgeFiles()
@@ -381,9 +398,12 @@ export module IndexedDBBackend {
             return await this.index.allValues()
         }
 
-        async putFile(name: string, version: number, content: DBClients.FileContent): Promise<void> {
-            await this.content.put(name, content)
+        async touchFile(name: string, version: number) {
             await this.updateIndex(name, version, DBClients.EntityState.Active, it => it)
+        }
+
+        async putContent(name: string, content: DBClients.FileContent): Promise<void> {
+            await this.content.put(name, content)
         }
 
         async readIndex(name: string): Promise<IndexedDBSchema.Files.FileIndex | null> {
@@ -392,6 +412,10 @@ export module IndexedDBBackend {
 
         async readFile(name: string): Promise<IndexedDBSchema.Files.FileContent | null> {
             return this.content.get(name)
+        }
+
+        async deleteFileContent(name: string) {
+            await this.content.delete(name)
         }
 
         async deleteFile(name: string) {
