@@ -1,13 +1,16 @@
-import idb from "idb"
+import type {IDBPDatabase, StoreNames as IDBStoreNames} from "idb"
+import {openDB} from "idb"
 import { IndexedDBSchema } from "./schema"
 import { DBClients, DBSearch, DBTokenize } from "@xnh-db/common"
 import { sortBy } from "lodash"
 
 export module IndexedDBBackend {
-    type InternalIDB = idb.IDBPDatabase<IndexedDBSchema.Schema>
-    type StoreNames = idb.StoreNames<IndexedDBSchema.Schema> & keyof IndexedDBSchema.Schema
+    type InternalIDB = IDBPDatabase<IndexedDBSchema.Schema>
+    type StoreNames = IDBStoreNames<IndexedDBSchema.Schema> & keyof IndexedDBSchema.Schema
 
-    export class Backend implements DBClients.Query.IClient {
+    export type ClientIDB = InternalIDB
+
+    export class Client implements DBClients.Query.IClient {
         private readonly entities: EntityAdaptor
         private readonly properties: PropertyAdaptor
         private readonly fullText: FullTextAdaptor
@@ -109,7 +112,7 @@ export module IndexedDBBackend {
     }
 
     export function open(name: string): Promise<InternalIDB> {
-        return idb.openDB<IndexedDBSchema.Schema>(name, 1, {
+        return openDB<IndexedDBSchema.Schema>(name, 1, {
             upgrade(db) {
                 // entities
                 initializeStore(db, "entityIndex", IndexedDBSchema.Entity.entityIndices)
@@ -138,9 +141,10 @@ export module IndexedDBBackend {
 
         function initializeStore<Name extends StoreNames>(db: InternalIDB, name: Name, indices: IndexedDBSchema.Schema[Name]["indexes"]) {
             const store = db.createObjectStore(name, {})
-            for(const name in indices) {
-                const prop = indices[name] as string | string[]
-                store.createIndex(name, prop, {multiEntry: Array.isArray(prop)})
+            for(const idx in indices) {
+                const prop = indices[idx] as string | string[]
+                console.log(idx, prop)
+                store.createIndex(idx, prop, {multiEntry: true})
             }
         }
     }
