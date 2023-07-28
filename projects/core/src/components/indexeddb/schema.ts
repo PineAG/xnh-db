@@ -1,4 +1,4 @@
-import { DBClients } from "@xnh-db/common"
+import { DBClients, DBTokenize } from "@xnh-db/common"
 import idb from "idb"
 
 export module IndexedDBSchema {
@@ -82,27 +82,11 @@ export module IndexedDBSchema {
         }
     }
 
-    export type StoreIndexBase<T extends {}> = {readonly [key: string]: (keyof T) | readonly (keyof T)[]}
-
-    type _EraseArrayConst<L extends readonly string[]> = (
-        L extends readonly [] ? [] :
-        L extends readonly [infer First, ...infer Rest] ?
-            Rest extends readonly string[] ?
-                [string | number | boolean, ..._EraseArrayConst<Rest>]
-                : never 
-            : never
-    )
-
-    export type ApplyIndexDefinition<Idx> = {
-        -readonly [K in keyof Idx]:
-            Idx[K] extends readonly string[] ?
-                _EraseArrayConst<Idx[K]> :
-                string | number | boolean
-    }
+    export type StoreIndexBase<T extends {}> = {readonly [key: string]: keyof T}
 
     const createIndicesFor = <T extends {}>() => ({
-        as: function<const Idx extends StoreIndexBase<T>>(idx: Idx): ApplyIndexDefinition<Idx> {
-            return idx as ApplyIndexDefinition<Idx>
+        as: function<const Idx extends StoreIndexBase<T>>(idx: Idx): Idx {
+            return idx
         }
     })
 
@@ -123,28 +107,53 @@ export module IndexedDBSchema {
     export module Property {
         // entity
         export interface EntityIndex {
+            // payload
             type: string
             id: string
-            propertyName: string
-            propertyCollection: string
-            values: string[]
+            value: string
+            propertyCollection: string,
+            // index
+            $entity: `${string}_${string}`
+            $propertyValue: `${string}_${string}_${string}`
         }
         export function entityId(type: string, id: string, property: string): string {
             return `Prop_${type}_${id}_${property}`
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
-            entity: ["type", "id"],
-            property: ["type", "propertyName", "values"]
+            entity: "$entity",
+            property: "$propertyValue"
         })
+
+        export function extractEntityIndices(type: string, id: string, properties: DBClients.Query.EntityProperties): EntityIndex[] {
+            const result: EntityIndex[] = []
+            for(const [propertyName, prop] of Object.entries(properties)) {
+                for(const value of prop.values) {
+                    result.push({
+                        type, id, value,
+                        propertyCollection: prop.propertyCollection,
+                        $entity: `${type}_${id}`,
+                        $propertyValue: `${type}_${propertyName}_${value}`
+                    })
+                }
+            }
+            return result
+        }
 
         // global
         export interface GlobalIndex {
             propertyCollection: string
             value: string
-            counts: number
+            sum: number
         }
-        export function globalId(propertyCollection: string, value: string): string {
+        export function globalId({propertyCollection, value}: GlobalIndex): string {
             return `GlobalProp_${propertyCollection}_${value}`
+        }
+        export function toAggregation(idx: EntityIndex): GlobalIndex {
+            return {
+                propertyCollection: idx.propertyCollection,
+                value: idx.value,
+                sum: 1,
+            }
         }
         export const globalIndices = createIndicesFor<GlobalIndex>().as({
             propertyCollection: "propertyCollection"
@@ -158,15 +167,27 @@ export module IndexedDBSchema {
             id: string
             term: string
             weight: number
+            $entity: `${string}_${string}`
+            $collectionTerm: `${string}_${string}`
         }
         export function termId(type: string, id: string, term: string): string {
             return `Term_${type}_${id}_${term}`
         }
         export const termIndices = createIndicesFor<TermIndex>().as({
-            entity: ["type", "id"],
+            entity: "$entity",
             globalTerm: "term",
-            collectionTerm: ["type", "term"]
+            collectionTerm: "$collectionTerm"
         })
+
+        export function extractTermIndices(type: string, id: string, fullTextTerms: DBTokenize.IToken[]): TermIndex[] {
+            return fullTextTerms.map<TermIndex>(it => ({
+                type, id,
+                term: it.value,
+                weight: it.weight,
+                $entity: `${type}_${id}`,
+                $collectionTerm: `${type}_${it.value}`
+            }))
+        }
 
         // entity
         export interface EntityIndex {
@@ -177,63 +198,91 @@ export module IndexedDBSchema {
         export function entityId(type: string, id: string): string {
             return `Entity_${type}_${id}`
         }
-        export const entityIndices = createIndicesFor<EntityIndex>().as({
-            entity: ["type", "id"]
-        }) 
+        export const entityIndices = createIndicesFor<EntityIndex>().as({})
         
         // global
         export interface GlobalIndex {
             term: string
-            totalWeight: number
+            sum: number
         }
-        export function globalId(term: string): string {
+        export function globalId({term}: GlobalIndex): string {
             return `GlobalTerm_${term}`
+        }
+        export function toGlobalAggregation(idx: TermIndex): GlobalIndex {
+            return {
+                term: idx.term,
+                sum: idx.weight
+            }
         }
 
         // collection
         export interface CollectionIndex {
             type: string
             term: string
-            totalWeight: number
+            sum: number
         }
-        export function collectionId(type: string, term: string): string {
+        export function collectionId({type, term}: CollectionIndex): string {
             return `CollectionTerm_${type}_${term}`
         }
         export const collectionIndices = createIndicesFor<CollectionIndex>().as({
             collection: "type"
         })
+        export function toCollectionAggregation(idx: TermIndex): CollectionIndex {
+            return {
+                type: idx.type,
+                term: idx.term,
+                sum: idx.weight
+            }
+        }
     }
 
     export module Files {
         // content
         export type FileContent = DBClients.FileContent
 
-        // meta
-        export interface FileIndex {
+        // meta -- aggregation
+        export interface FileIndexOptions {
             name: string
             version: number
             status: DBClients.EntityState
-            counts: number
+            sum: number
             noReference: boolean
+        }
+
+        export interface FileIndex extends FileIndexOptions {
+            $purging: `${string}_${boolean}`
         }
         export const fileIndices = createIndicesFor<FileIndex>().as({
             status: "status",
-            purging: ["status", "noReference"]
+            purging: "$purging"
         })
+
+        export function createFileIndex(options: FileIndexOptions): FileIndex {
+            return {...options, $purging: `${options.status}_${options.noReference}`}
+        }
 
         // entity
         export interface EntityIndex {
             type: string
             id: string
             fileName: string
+            $entity: `${string}_${string}`
         }
         export function entityId(type: string, id: string, fileName: string): string {
             return `Files_${type}_${id}_${fileName}`
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
-            entity: ["type", "id"],
+            entity: "$entity",
             file: "fileName"
         })
+        export function toEntityIndex(type: string, id: string, fileName: string): EntityIndex {
+            return {
+                type,
+                id,
+                fileName,
+                $entity: `${type}_${id}`
+            }
+        }
     }
 
     export module Links {
@@ -241,35 +290,36 @@ export module IndexedDBSchema {
         export type ClientLink = DBClients.Query.EntityLinkResult
         export type LinkRef = DBClients.Query.EntityLink
 
+        // link item
         export interface BiLink {
             left: LinkItem
             right: LinkItem
         }
-
-        export interface DBLinkBase {
-            leftReferenceName: string
-            leftId: string
-            leftType: string
-
-            rightReferenceName: string
-            rightId: string
-            rightType: string
-        }
         
-        export interface DBLink extends DBLinkBase {
+        export interface DBLink extends BiLink {
             version: number
             status: DBClients.EntityState
+            $left: `${string}_${string}_${DBClients.EntityState}` // type, id, status
+            $right: `${string}_${string}_${DBClients.EntityState}` // type, id, status
         }
 
-        // link item
-        export function linkId(link: DBLinkBase): string {
-            return `Link_${link.leftReferenceName}_${link.leftType}_${link.leftId}__${link.rightReferenceName}_${link.rightType}_${link.rightId}`
+        export function linkId(link: BiLink): string {
+            return `Link_${link.left.referenceName}_${link.left.type}_${link.left.id}__${link.right.referenceName}_${link.right.type}_${link.right.id}`
         }
 
         export const linkIndices = createIndicesFor<DBLink>().as({
-            left: ["leftType", "leftId", "status"],
-            right: ["rightType", "rightId", "status"]
+            left: "$left",
+            right: "$right"
         })
+
+        export function createLinkIndex(biLink: BiLink, version: number, status: DBClients.EntityState): DBLink {
+            return {
+                ...biLink,
+                version, status, 
+                $left: `${biLink.left.type}_${biLink.left.id}_${status}`,
+                $right: `${biLink.right.type}_${biLink.right.id}_${status}`,
+            }
+        }
 
         // link name values
         export interface LinkNameIndex {
@@ -278,6 +328,7 @@ export module IndexedDBSchema {
             rightType: string 
             rightReferenceName: string
             counts: number
+            $leftRightType: `${string}_${string}`
         }
 
         export function referenceId(leftType: string, leftReferenceName: string, rightType: string, rightReferenceName: string): string {
@@ -285,33 +336,18 @@ export module IndexedDBSchema {
         }
 
         export const referenceIndices = createIndicesFor<LinkNameIndex>().as({
-            types: ["leftType", "rightType"]
+            types: "$leftRightType"
         })
 
         // converts
-        export function convertBiLinkToDBLink(biLink: BiLink): DBLinkBase {
-            return {
-                leftId: biLink.left.id,
-                leftType: biLink.left.type,
-                leftReferenceName: biLink.left.referenceName,
-                rightId: biLink.right.id,
-                rightType: biLink.right.type,
-                rightReferenceName: biLink.right.referenceName
-            }
+        export function convertBiLinkToDBLink(biLink: BiLink, version: number, status: DBClients.EntityState): DBLink {
+            return createLinkIndex(biLink, version, status)
         }
 
-        export function convertDBLinkToBiLink(dbLink: DBLinkBase): BiLink {
+        export function convertDBLinkToBiLink(dbLink: DBLink): BiLink {
             return {
-                left: {
-                    id: dbLink.leftId,
-                    type: dbLink.leftType,
-                    referenceName: dbLink.leftReferenceName
-                },
-                right: {
-                    id: dbLink.rightId,
-                    type: dbLink.rightType,
-                    referenceName: dbLink.rightReferenceName
-                }
+                left: dbLink.left,
+                right: dbLink.right
             }
         }
 
