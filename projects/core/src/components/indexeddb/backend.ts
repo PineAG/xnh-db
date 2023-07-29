@@ -1,4 +1,4 @@
-import type {IDBPDatabase, StoreNames as IDBStoreNames} from "idb"
+import type {IDBPDatabase, StoreNames as IDBStoreNames, IndexKey} from "idb"
 import {openDB} from "idb"
 import { IndexedDBSchema } from "./schema"
 import { DBClients, DBSearch, DBTokenize } from "@xnh-db/common"
@@ -198,49 +198,27 @@ export module IndexedDBBackend {
         constructor(private db: InternalIDB) {}
 
         async put(type: string, id: string, properties: DBClients.Query.EntityProperties): Promise<void> {
-            for(const [propertyName, {propertyCollection, values}] of Object.entries(properties)) {
-                const propId = IndexedDBSchema.Property.entityId(type, id, propertyName)
-                await this.entity.put(propId, {id, type, propertyName, propertyCollection, values})
-                for(const value of values) {
-                    const tagId = IndexedDBSchema.Property.globalId(propertyCollection, value)
-                    const current = await this.global.get(tagId)
-                    const currentCount = current?.counts ?? 0
-                    await this.global.put(tagId, {
-                        value,
-                        propertyCollection,
-                        counts: 1 + currentCount
-                    })
-                }
+            const entityIndices = IndexedDBSchema.Property.extractEntityIndices(type, id, properties)
+            for(const entityIndex of entityIndices) {
+                const propId = IndexedDBSchema.Property.entityId(entityIndex)
+                await this.entity.put(propId, entityIndex)
+                const globalAgg = IndexedDBSchema.Property.toAggregation(entityIndex)
+                await this.globalAgg.put(globalAgg)
             }
         }
 
         async delete(type: string, id: string): Promise<void> {
-            const properties = await this.entity.getValuesByIndex("entity", [type, id])
-            for(const prop of properties) {
-                for(const value of prop.values) {
-                    const tagId = IndexedDBSchema.Property.globalId(prop.propertyCollection, value)
-                    const current = await this.global.get(tagId)
-                    if(current == null) {
-                        console.warn(`Missing tag info: ${prop.propertyCollection} ${value}`)
-                    } else {
-                        const nextCount = current.counts - 1
-                        if (nextCount <= 0) {
-                            // delete tag reference if ref count == 0
-                            await this.global.delete(tagId)
-                        } else {
-                            // ref count --
-                            await this.global.put(tagId, {...current, counts: nextCount})
-                        }
-                    }
-                }
-                // delete item
-                const propId = IndexedDBSchema.Property.entityId(prop.type, prop.id, prop.propertyName)
-                await this.entity.delete(propId)
+            const entityIndices = await this.entity.getValuesByIndex("entity", `${type}_${id}`)
+            for(const entityIndex of entityIndices) {
+                const entityId = IndexedDBSchema.Property.entityId(entityIndex)
+                const aggDoc = IndexedDBSchema.Property.toAggregation(entityIndex)
+                await this.globalAgg.delete(aggDoc)
+                await this.entity.delete(entityId)
             }
         }
 
         async queryEntities(type: string, propertyName: string, value: string): Promise<DBSearch.SearchResult[]> {
-            const entities = await this.entity.getValuesByIndex("property", [type, propertyName, value])
+            const entities = await this.entity.getValuesByIndex("property", `${type}_${propertyName}_${value}`)
             return entities.map(it => ({
                 id: it.id,
                 type: it.type,
@@ -250,7 +228,7 @@ export module IndexedDBBackend {
 
         async getPropertyValues(propertyCollection: string): Promise<string[]> {
             const results = await this.global.getValuesByIndex("propertyCollection", propertyCollection)
-            return sortBy(results, it => -it.counts).map(it => it.value)
+            return sortBy(results, it => -it.sum).map(it => it.value)
         }
 
         // db helpers
@@ -261,6 +239,10 @@ export module IndexedDBBackend {
         private get global() {
             return new DBWrapper(this.db, "propertyGlobal", IndexedDBSchema.Property.globalIndices)
         }
+
+        private get globalAgg() {
+            return new AggregationWrapper(this.global, IndexedDBSchema.Property.globalId)
+        }
     }
 
     class FullTextAdaptor {
@@ -268,48 +250,36 @@ export module IndexedDBBackend {
 
         async putEntity(type: string, id: string, terms: DBTokenize.IToken[]) {
             let totalWeight = 0
-            for(const t of terms) {
-                totalWeight += t.weight
-                await this.putTerm(type, id, t)
+            const termIndices = IndexedDBSchema.FullText.extractTermIndices(type, id, terms)
+            for(const termIndex of termIndices) {
+                const termId = IndexedDBSchema.FullText.termId(termIndex)
+                await this.term.put(termId, termIndex)
+                const collectionAgg = IndexedDBSchema.FullText.toCollectionAggregation(termIndex)
+                const globalAgg = IndexedDBSchema.FullText.toGlobalAggregation(termIndex)
+                await this.collectionAgg.put(collectionAgg)
+                await this.globalAgg.put(globalAgg)
+                totalWeight += termIndex.weight
             }
             const docId = IndexedDBSchema.FullText.entityId(type, id)
             await this.entity.put(docId, {type, id, totalWeight})
         }
 
         async deleteEntity(type: string, id: string) {
-            const result = await this.term.getValuesByIndex("entity", [type, id])
-            for(const t of result) {
-                await this.deleteTerm(type, id, t.term)
+            const termIndices = await this.term.getValuesByIndex("entity", `${type}_${id}`)
+            for(const termIndex of termIndices) {
+                const termId = IndexedDBSchema.FullText.termId(termIndex)
+                const collectionAgg = IndexedDBSchema.FullText.toCollectionAggregation(termIndex)
+                const globalAgg = IndexedDBSchema.FullText.toGlobalAggregation(termIndex)
+                await this.collectionAgg.delete(collectionAgg)
+                await this.globalAgg.delete(globalAgg)
+                await this.term.delete(termId)
             }
             const docId = IndexedDBSchema.FullText.entityId(type, id)
             await this.entity.delete(docId)
         }
 
-        private async putTerm(type: string, id: string, term: DBTokenize.IToken) {
-            const termId = IndexedDBSchema.FullText.termId(type, id, term.value)
-            await this.term.put(termId, {
-                type, id, 
-                term: term.value,
-                weight: term.weight
-            })
-            await this.updateCollectionCounter(type, term.value, w => w + term.weight)
-            await this.updateGlobalCounter(term.value, w => w + term.weight)
-        }
-
-        private async deleteTerm(type: string, id: string, term: string) {
-            const termId = IndexedDBSchema.FullText.termId(type, id, term)
-            const current = await this.term.get(termId)
-            if(!current) {
-                console.warn(`Term does not exist: ${type} ${id} ${term}`)
-                return
-            }
-            await this.term.delete(termId)
-            await this.updateCollectionCounter(type, current.term, w => w - current.weight)
-            await this.updateGlobalCounter(current.term, w => w - current.weight)
-        }
-
         async getEntitiesInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
-            const result = await this.term.getValuesByIndex("collectionTerm", [type, term])
+            const result = await this.term.getValuesByIndex("collectionTerm", `${type}_${term}`)
             return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
         }
 
@@ -321,47 +291,19 @@ export module IndexedDBBackend {
         async getTermWeightsGlobal(term: string): Promise<number | null> {
             const docId = IndexedDBSchema.FullText.globalId(term)
             const result = await this.global.get(docId)
-            return result?.totalWeight ?? null
+            return result?.sum ?? null
         }
 
         async getTermWeightsInCollection(type: string, term: string): Promise<number | null> {
             const docId = IndexedDBSchema.FullText.collectionId(type, term)
             const result = await this.collection.get(docId)
-            return result?.totalWeight ?? null
+            return result?.sum ?? null
         }
 
         async getWeightsOfEntity(type: string, id: string): Promise<number | null> {
             const docId = IndexedDBSchema.FullText.entityId(type, id)
             const result = await this.entity.get(docId)
             return result?.totalWeight ?? null
-        }
-
-        private async updateCollectionCounter(type: string, term: string, weightUpdater: (w: number) => number ){
-            const docId = IndexedDBSchema.FullText.collectionId(type, term)
-            const current = await this.collection.get(docId)
-            const nextWeight = weightUpdater(current?.totalWeight ?? 0)
-            if(nextWeight <= 0) {
-                await this.collection.delete(docId)
-            } else {
-                await this.collection.put(docId, {
-                    term, type,
-                    totalWeight: nextWeight
-                })
-            }
-        }
-
-        private async updateGlobalCounter(term: string, weightUpdater: (w: number) => number ){
-            const docId = IndexedDBSchema.FullText.globalId(term)
-            const current = await this.global.get(docId)
-            const nextWeight = weightUpdater(current?.totalWeight ?? 0)
-            if(nextWeight <= 0) {
-                await this.global.delete(docId)
-            } else {
-                await this.global.put(docId, {
-                    term,
-                    totalWeight: nextWeight
-                })
-            }
         }
 
         // db helpers
@@ -377,8 +319,16 @@ export module IndexedDBBackend {
             return new DBWrapper(this.db, "fullTextCollection", IndexedDBSchema.FullText.collectionIndices)
         }
 
+        private get collectionAgg() {
+            return new AggregationWrapper(this.collection, t => IndexedDBSchema.FullText.collectionId(t.type, t.term))
+        }
+
         private get global() {
             return new DBWrapper(this.db, "fullTextGlobal", {})
+        }
+
+        private get globalAgg() {
+            return new AggregationWrapper(this.global, t => IndexedDBSchema.FullText.globalId(t.term))
         }
     }
 
@@ -390,7 +340,12 @@ export module IndexedDBBackend {
         }
 
         async touchFile(name: string, version: number) {
-            await this.updateIndex(name, version, DBClients.EntityState.Active, it => it)
+            await this.patchFileIndex({
+                name,
+                status: DBClients.EntityState.Active,
+                counts: 0,
+                version
+            })
         }
 
         async putContent(name: string, content: DBClients.FileContent): Promise<void> {
@@ -415,11 +370,15 @@ export module IndexedDBBackend {
                 console.warn(`File has already been deleted: ${name}`)
                 return
             }
-            if(!idx.noReference) {
+            if(idx.counts > 0) {
                 throw new Error(`File is referred by some entities: ${name}`)
             }
 
-            await this.updateIndex(name, idx.version, DBClients.EntityState.Deleted, it => it)
+            await this.patchFileIndex({
+                name,
+                status: DBClients.EntityState.Deleted,
+                counts: 0
+            })
             await this.content.delete(name)
         }
 
@@ -430,7 +389,7 @@ export module IndexedDBBackend {
         }
 
         async deleteEntity(type: string, id: string, version: number) {
-            const files = await this.entity.getValuesByIndex("entity", [type, id])
+            const files = await this.entity.getValuesByIndex("entity", `${type}_${id}`)
             for(const f of files) {
                 await this.unlinkFile(f.type, f.id, version, f.fileName)
             }
@@ -443,8 +402,13 @@ export module IndexedDBBackend {
                 console.warn(`File link already exists: ${type} ${id} ${fileName}`)
                 return
             }
-            await this.entity.put(entityId, {type, id, fileName})
-            await this.updateIndex(fileName, version, DBClients.EntityState.Active, it => it + 1)
+            const entityIndex = IndexedDBSchema.Files.toEntityIndex(type, id, fileName)
+            await this.entity.put(entityId, entityIndex)
+            await this.patchFileIndex({
+                name: fileName,
+                counts: 1,
+                status: DBClients.EntityState.Active
+            })
         }
 
         async unlinkFile(type: string, id: string, version: number, fileName: string) {
@@ -455,26 +419,48 @@ export module IndexedDBBackend {
                 return
             }
             await this.entity.delete(entityId)
-            await this.updateIndex(fileName, version, DBClients.EntityState.Active, it => it - 1)
+            await this.patchFileIndex({
+                name: fileName, 
+                counts: -1
+            })
         }
 
         async purgeFiles() {
-            const names = await this.index.getKeysByIndex("purging", [DBClients.EntityState.Active, true])
+            const names = await this.index.getKeysByIndex("purging", `${DBClients.EntityState.Active}_${0}`)
             for(const n of names) {
                 await this.deleteFile(n)
             }
         }
 
-        private async updateIndex(name: string, version: number, status: DBClients.EntityState, counterUpdater: (c: number) => number) {
-            const currentIndex = await this.index.get(name)
-            const currentCount = currentIndex?.counts ?? 0
-            const nextCount = counterUpdater(currentCount)
-            await this.index.put(name, {
-                name, version,
-                counts: nextCount,
+        private async patchFileIndex(options: {
+            name: string,
+            counts: number,
+            status?: DBClients.EntityState,
+            version?: number
+        }) {
+            const current = await this.index.get(options.name)
+            const newCounts = Math.max(0, current?.counts ?? 0 + options.counts)
+            let version = options.version
+            if(!version) {
+                if(!current) {
+                    throw new Error(`Not exist: ${options.name}`)
+                }
+                version = current.version
+            }
+            let status = options.status
+            if(!status) {
+                if(!current) {
+                    throw new Error(`Not exist: ${options.name}`)
+                }
+                status = current.status
+            }
+            const newIndex = IndexedDBSchema.Files.createFileIndex({
+                name: options.name,
+                version,
                 status,
-                noReference: nextCount <= 0
+                counts: newCounts
             })
+            await this.index.put(options.name, newIndex)
         }
 
         // db helpers
@@ -505,33 +491,18 @@ export module IndexedDBBackend {
 
         async putLink(left: IndexedDBSchema.Links.LinkItem, right: IndexedDBSchema.Links.LinkItem, version: number): Promise<void> {
             const biLink = IndexedDBSchema.Links.createBiLink(left, right)
-            const dbLink = IndexedDBSchema.Links.convertBiLinkToDBLink(biLink)
-            const docId = IndexedDBSchema.Links.linkId(dbLink)
+            const docId = IndexedDBSchema.Links.linkId(biLink)
+            const dbLink = IndexedDBSchema.Links.createLinkIndex(biLink, version, DBClients.EntityState.Active)
 
-            await this.links.put(docId, {
-                ...dbLink,
-                version,
-                status: DBClients.EntityState.Active
-            })
+            await this.links.put(docId, dbLink)
             
-            const refId = IndexedDBSchema.Links.referenceId(
-                biLink.left.type, biLink.left.referenceName,
-                biLink.right.type, biLink.right.referenceName)
-            const currentRef = await this.referenceNames.get(refId)
-            const currentCounts = currentRef?.counts ?? 0
-            await this.referenceNames.put(refId, {
-                leftType: biLink.left.type,
-                leftReferenceName: biLink.left.referenceName,
-                rightType: biLink.right.type,
-                rightReferenceName: biLink.right.referenceName,
-                counts: currentCounts + 1
-            })
+            const ref = IndexedDBSchema.Links.createLinkNameIndex(dbLink, 1)
+            await this.referenceAgg.put(ref)
         }
 
         async deleteLink(left: IndexedDBSchema.Links.LinkItem, right: IndexedDBSchema.Links.LinkItem, version: number): Promise<void> {
             const biLink = IndexedDBSchema.Links.createBiLink(left, right)
-            const dbLink = IndexedDBSchema.Links.convertBiLinkToDBLink(biLink)
-            const docId = IndexedDBSchema.Links.linkId(dbLink)
+            const docId = IndexedDBSchema.Links.linkId(biLink)
 
             const current = await this.links.get(docId)
             if(current === null) {
@@ -545,24 +516,15 @@ export module IndexedDBBackend {
                 version
             })
 
-            const references = await this.referenceNames.getValuesByIndex("types", [biLink.left.type, biLink.right.type])
+            const references = await this.referenceNames.getValuesByIndex("types", `${biLink.left.type}_${biLink.right.type}`)
             for(const ref of references) {
-                const nextCount = ref.counts - 1
-                const refId = IndexedDBSchema.Links.referenceId(left.type, left.referenceName, right.type, right.referenceName)
-                if(nextCount <= 0) {
-                    await this.referenceNames.delete(refId)
-                } else {
-                    await this.referenceNames.put(refId, {
-                        ...current,
-                        counts: nextCount
-                    })
-                }
+                await this.referenceAgg.delete(ref)
             }
         }
 
         async getLinksByEntity(type: string, id: string): Promise<IndexedDBSchema.Links.ClientLink[]> {
-            const leftResults = await this.links.getValuesByIndex("left", [type, id, DBClients.EntityState.Active])
-            const rightResults = await this.links.getValuesByIndex("right", [type, id, DBClients.EntityState.Active])
+            const leftResults = await this.links.getValuesByIndex("left", `${type}_${id}_${DBClients.EntityState.Active}`)
+            const rightResults = await this.links.getValuesByIndex("right", `${type}_${id}_${DBClients.EntityState.Active}`)
             const results = [...leftResults, ...rightResults]
             return results
                 .map(it => IndexedDBSchema.Links.convertDBLinkToBiLink(it))
@@ -570,8 +532,8 @@ export module IndexedDBBackend {
         }
 
         async deleteEntity(type: string, id: string, version: number): Promise<void> {
-            const leftResults = await this.links.getValuesByIndex("left", [type, id, DBClients.EntityState.Active])
-            const rightResults = await this.links.getValuesByIndex("right", [type, id, DBClients.EntityState.Active])
+            const leftResults = await this.links.getValuesByIndex("left", `${type}_${id}_${DBClients.EntityState.Active}`)
+            const rightResults = await this.links.getValuesByIndex("right", `${type}_${id}_${DBClients.EntityState.Active}`)
 
             const results = [...leftResults, ...rightResults]
             for(const r of results) {
@@ -588,6 +550,10 @@ export module IndexedDBBackend {
 
         private get referenceNames() {
             return new DBWrapper(this.db, "linksReferenceNames", IndexedDBSchema.Links.referenceIndices)
+        }
+
+        private get referenceAgg() {
+            return new AggregationWrapper(this.referenceNames, IndexedDBSchema.Links.referenceId)
         }
     }
 
@@ -622,18 +588,59 @@ export module IndexedDBBackend {
             await tx.done
         }
 
-        async getKeysByIndex<Idx extends keyof IndexedDBSchema.Schema[Name]["indexes"]>(indexName: Idx, value: (typeof this.indices)[Idx]): Promise<string[]> {
+        async getKeysByIndex<Idx extends keyof IndexedDBSchema.Schema[Name]["indexes"]>(indexName: Idx, value: IndexKey<IndexedDBSchema.Schema, Name, Idx>): Promise<string[]> {
             const tx = this.db.transaction(this.name, "readonly")
             const result = await tx.store.index(indexName).getAllKeys(value)
             await tx.done
             return result ?? null
         }
 
-        async getValuesByIndex<Idx extends keyof IndexedDBSchema.Schema[Name]["indexes"]>(indexName: Idx, value: (typeof this.indices)[Idx]): Promise<IndexedDBSchema.Schema[Name]["value"][]> {
+        async getValuesByIndex<Idx extends keyof IndexedDBSchema.Schema[Name]["indexes"]>(indexName: Idx, value: IndexKey<IndexedDBSchema.Schema, Name, Idx>): Promise<IndexedDBSchema.Schema[Name]["value"][]> {
             const tx = this.db.transaction(this.name, "readonly")
             const result = await tx.store.index(indexName).getAll(value)
             await tx.done
             return result ?? null
+        }
+    }
+
+    type AggNames = {[N in StoreNames]: IndexedDBSchema.Schema[N]["value"] extends {sum: number} ? N : never}[StoreNames]
+
+    class AggregationWrapper<TName extends AggNames> {
+        constructor(private backend: DBWrapper<TName>, private extractId: (entity: IndexedDBSchema.Schema[TName]["value"]) => string) {}
+
+        async put(entity: IndexedDBSchema.Schema[TName]["value"]) {
+            const aggId = this.extractId(entity)
+            const current = await this.backend.get(aggId)
+            if(current == null) {
+                await this.backend.put(aggId, entity)
+            }  else {
+                await this.backend.put(aggId, {
+                    ...entity,
+                    sum: current.sum + entity.sum
+                })
+            }
+        }
+
+        async delete(entity: IndexedDBSchema.Schema[TName]["value"]) {
+            const aggId = this.extractId(entity)
+            const current = await this.backend.get(aggId)
+            if(current == null) {
+                console.warn(`Not found: ${aggId}`)
+                return
+            }
+            const newCount = current.sum - entity.sum;
+            if(newCount < 0) {
+                throw new Error("count < 0")
+            }
+            const nextEntity: IndexedDBSchema.Schema[TName]["value"] = {
+                ...entity,
+                sum: newCount
+            }
+            if(nextEntity.sum > 0) {
+                await this.backend.put(aggId, nextEntity)
+            } else {
+                await this.backend.delete(aggId)
+            }
         }
     }
 
