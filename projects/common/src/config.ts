@@ -147,7 +147,7 @@ export module DBConfig {
                 }
                 for(const v of results) {
                     for(const t of tokenizer(v)) {
-                        return {value: t.value, weight: t.weight * weight}
+                        yield {value: t.value, weight: t.weight * weight}
                     }
                 }
             }

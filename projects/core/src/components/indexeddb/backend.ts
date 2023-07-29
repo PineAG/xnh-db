@@ -42,12 +42,9 @@ export module IndexedDBBackend {
             await this.fullText.putEntity(type, id, options.fullTextTerms)
             await this.files.putEntity(type, id, version, options.files)
             await this.entities.put(type, id, version, options.content)
-
-            await this.files.purgeFiles()
         }
         async deleteEntity(type: string, id: string, version: number): Promise<void> {
             await this.deleteEntityInternal(type, id, version)
-            await this.files.purgeFiles()
         }
         private async deleteEntityInternal(type: string, id: string, version: number) {
             await this.files.deleteEntity(type, id, version)
@@ -143,7 +140,6 @@ export module IndexedDBBackend {
             const store = db.createObjectStore(name, {})
             for(const idx in indices) {
                 const prop = indices[idx] as string | string[]
-                console.log(idx, prop)
                 store.createIndex(idx, prop, {multiEntry: true})
             }
         }
@@ -379,7 +375,7 @@ export module IndexedDBBackend {
                 status: DBClients.EntityState.Deleted,
                 counts: 0
             })
-            await this.content.delete(name)
+            await this.deleteFileContent(name)
         }
 
         async putEntity(type: string, id: string, version: number, files: string[]) {

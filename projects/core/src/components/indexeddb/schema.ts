@@ -357,7 +357,7 @@ export module IndexedDBSchema {
         }
 
         export function createBiLink(left: LinkItem, right: LinkItem): BiLink {
-            if(left.type <= right.type || left.type == right.type && left.referenceName <= right.referenceName) {
+            if(shouldReverseLink(left, right)) {
                 return {
                     left: left,
                     right: right
@@ -368,6 +368,19 @@ export module IndexedDBSchema {
                     right: left
                 }
             }
+        }
+
+        function shouldReverseLink(left: LinkItem, right: LinkItem): boolean {
+            if(left.type > right.type) {
+                return true
+            }
+            if(left.referenceName > right.referenceName) {
+                return true
+            }
+            if(left.id > right.id) {
+                return true
+            }
+            return false
         }
 
         export function convertBiLinkToClientLink(entityType: string, entityId: string, biLink: BiLink): ClientLink {
