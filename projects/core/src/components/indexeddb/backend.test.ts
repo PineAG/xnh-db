@@ -241,6 +241,18 @@ describe("indexeddb-backend", () => {
 
     })
 
+    test.only("ref-count-link", async () => {
+        throw new Error("Not implemented")
+    })
+
+    test.only("ref-count-file", async () => {
+        throw new Error("Not implemented")
+    })
+
+    test.only("ref-count-property", async () => {
+        throw new Error("Not implemented")
+    })
+
     async function putCharacter(backend: IndexedDBBackend.Client, id: string, version: number, entity: TestEntities.Character) {
         const extractedProperties = DBConfig.Convert.extractProperties(TestEntities.characterConfig, entity)
         const extractedTerms = DBConfig.Convert.extractFullTextTerms(TestEntities.characterConfig, entity)
