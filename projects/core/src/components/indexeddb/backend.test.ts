@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto"
+import {deleteDB} from "idb"
 import {describe, test, expect, beforeEach, afterEach} from "@jest/globals"
 import {IndexedDBBackend} from "./backend"
 import { DBClients, DBConfig, DBTokenize } from "@xnh-db/common"
@@ -79,9 +80,11 @@ describe("indexeddb-backend", () => {
         syncClient2 = new DBClients.FullSync.QueryClientAdaptor(backend2, {character: TestEntities.characterConfig})
     })
 
-    afterEach(() => {
+    afterEach(async () => {
         db.close()
         db2.close()
+        await deleteDB("test")
+        await deleteDB("test2")
     })
 
     test("simple-case-1-entity-0-link", async () => {
@@ -184,10 +187,8 @@ describe("indexeddb-backend", () => {
 
         const allLinks2 = await backend.listLinks()
         expect(allLinks2[0].status).toBe(DBClients.EntityState.Deleted)
-        console.log(allLinks2)
 
         const emptyLinks = await backend.getLinksOfEntity(type, id1)
-        console.log(emptyLinks)
         expect(emptyLinks.length).toBe(0)
     })
 
