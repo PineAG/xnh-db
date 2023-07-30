@@ -177,6 +177,10 @@ export module DBClients {
                 return actions
             }
 
+            export async function performActions(writer: IWriter, actions: ActionCollection) {
+                for await(const action of writer.performActions(actions));
+            }
+
             export function extractSyncActionsFromStates(srcState: StoreState, dstState: StoreState, options: ExtractSyncActionsOptions): ActionCollection {
                 const resultOptions: OptionsCollection = {
                     putEntity: [],

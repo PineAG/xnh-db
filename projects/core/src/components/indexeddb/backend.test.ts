@@ -76,7 +76,7 @@ describe("indexeddb-backend", () => {
         
         db2 = await IndexedDBBackend.open("test2")
         backend2 = new IndexedDBBackend.Client(db2)
-        syncClient2 = new DBClients.FullSync.QueryClientAdaptor(backend, {character: TestEntities.characterConfig})
+        syncClient2 = new DBClients.FullSync.QueryClientAdaptor(backend2, {character: TestEntities.characterConfig})
     })
 
     afterEach(() => {
@@ -97,7 +97,7 @@ describe("indexeddb-backend", () => {
         const fileList_1 = await backend.listFiles();
         expect(fileList_1.length).toBe(1)
         
-        await putCharacter(id, version, TestEntities.character_ChongYun)
+        await putCharacter(backend, id, version, TestEntities.character_ChongYun)
 
         const entityList_1 = await backend.listEntities()
         expect(entityList_1.length).toBe(1)
@@ -149,7 +149,7 @@ describe("indexeddb-backend", () => {
         const type = TestEntities.type_Character
         const version = DBClients.Utils.NewVersion()
 
-        await putCharacter(id, version, TestEntities.character_ChongYun)
+        await putCharacter(backend, id, version, TestEntities.character_ChongYun)
 
         await backend.deleteEntity(type, id, DBClients.Utils.NewVersion())
         await backend.deleteEntity(type, id, DBClients.Utils.NewVersion())
@@ -161,8 +161,8 @@ describe("indexeddb-backend", () => {
         const type = TestEntities.type_Character
         const version = DBClients.Utils.NewVersion()
 
-        await putCharacter(id1, version, TestEntities.character_ChongYun)
-        await putCharacter(id2, version, TestEntities.character_XingQiu)
+        await putCharacter(backend, id1, version, TestEntities.character_ChongYun)
+        await putCharacter(backend, id2, version, TestEntities.character_XingQiu)
         await backend.putLink(
             {type, id: id1, referenceName: "bottom"},
             {type, id: id2, referenceName: "top"},
@@ -191,7 +191,57 @@ describe("indexeddb-backend", () => {
         expect(emptyLinks.length).toBe(0)
     })
 
-    async function putCharacter(id: string, version: number, entity: TestEntities.Character) {
+    test("sync", async () => {
+        const version = DBClients.Utils.NewVersion()
+        const version2 = version - 100
+        await putCharacter(backend, "chongyun", version, TestEntities.character_ChongYun)
+        await putCharacter(backend2, "xingqiu", version2, TestEntities.character_XingQiu)
+        expect((await backend.listEntities()).length).toBe(1)
+        expect((await backend2.listEntities()).length).toBe(1)
+        const actions = await DBClients.FullSync.Actions.extractActions(syncClient, syncClient2)
+        await DBClients.FullSync.Actions.performActions(syncClient2, actions)
+        const entityList1 = await backend2.listEntities()
+        expect(entityList1.length).toBe(2)
+
+        const v3 = DBClients.Utils.NewVersion()
+        await backend2.putLink({
+            type: "character",
+            id: "chongyun",
+            referenceName: "bottom",
+        }, {
+            type: "character",
+            id: "xingqiu",
+            referenceName: "top",
+        }, v3)
+
+        const actions2 = await DBClients.FullSync.Actions.extractActions(syncClient2, syncClient)
+        await DBClients.FullSync.Actions.performActions(syncClient, actions2)
+        expect((await backend.listEntities()).length).toBe(2)
+        expect((await backend.listLinks()).length).toBe(1)
+        expect((await backend.listFiles()).length).toBe(1) // they share the same profile
+
+        const v4 = DBClients.Utils.NewVersion()
+        await backend.deleteEntity("character", "chongyun", v4) // delete one character
+        const actions3 = await DBClients.FullSync.Actions.extractActions(syncClient, syncClient2)
+        await DBClients.FullSync.Actions.performActions(syncClient2, actions3)
+
+        
+        {
+            const entities = await backend2.listEntities()
+            expect(entities.every(it => (
+                it.id === "chongyun" && it.status === DBClients.EntityState.Deleted ||
+                it.id === "xingqiu" && it.status === DBClients.EntityState.Active
+            ))).toBeTruthy()
+
+            const links = await backend2.listLinks();
+            expect(links[0].status).toBe(DBClients.EntityState.Deleted)
+
+            expect(await backend2.getEntityContent("character", "chongyun")).toBeNull()
+        }
+
+    })
+
+    async function putCharacter(backend: IndexedDBBackend.Client, id: string, version: number, entity: TestEntities.Character) {
         const extractedProperties = DBConfig.Convert.extractProperties(TestEntities.characterConfig, entity)
         const extractedTerms = DBConfig.Convert.extractFullTextTerms(TestEntities.characterConfig, entity)
         await backend.writeFile(TestEntities.profileName_Chongyun, version, TestEntities.exampleProfileData)

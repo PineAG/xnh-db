@@ -22,6 +22,7 @@
   "scripts": {
     "build": "tsc --build --verbose",
     "test": "jest ./src",
+    "test:coverage": "jest --coverage ./src",
     "test:indexeddb": "jest ./src/components/indexeddb"
   }
 }
