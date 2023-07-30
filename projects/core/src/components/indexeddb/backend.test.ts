@@ -32,7 +32,7 @@ module TestEntities {
     export const id_ChongYun = "chongyun"
     export const character_ChongYun: Character = {
         title: "重云",
-        name: ["Chong Yun", "重云"],
+        name: ["Chong Yun"],
         age: ["shota"],
         profile: profileName_Chongyun,
         outlook: {
@@ -44,21 +44,39 @@ module TestEntities {
             }
         }
     }
+    export const character_XingQiu: Character = {
+        title: "行秋",
+        name: ["Xing Qiu"],
+        age: ["shota"],
+        profile: profileName_Chongyun,
+        outlook: {
+            eye: {
+                color: ["gold"]
+            }, 
+            hair: {
+                color: ["blue"]
+            }
+        }
+    }
 }
 
 describe("indexeddb-backend", () => {
     let db: IndexedDBBackend.ClientIDB
     let backend: IndexedDBBackend.Client
+    let syncClient: DBClients.FullSync.QueryClientAdaptor
     
     let db2: IndexedDBBackend.ClientIDB
     let backend2: IndexedDBBackend.Client
+    let syncClient2: DBClients.FullSync.QueryClientAdaptor
 
     beforeEach(async () => {
         db = await IndexedDBBackend.open("test")
         backend = new IndexedDBBackend.Client(db)
+        syncClient = new DBClients.FullSync.QueryClientAdaptor(backend, {character: TestEntities.characterConfig})
         
         db2 = await IndexedDBBackend.open("test2")
         backend2 = new IndexedDBBackend.Client(db2)
+        syncClient2 = new DBClients.FullSync.QueryClientAdaptor(backend, {character: TestEntities.characterConfig})
     })
 
     afterEach(() => {
@@ -79,15 +97,7 @@ describe("indexeddb-backend", () => {
         const fileList_1 = await backend.listFiles();
         expect(fileList_1.length).toBe(1)
         
-        const extractedProperties = DBConfig.Convert.extractProperties(config, content)
-        const extractedTerms = DBConfig.Convert.extractFullTextTerms(config, content)
-
-        await backend.putEntity(type, id, version, {
-            content,
-            properties: extractedProperties,
-            fullTextTerms: extractedTerms,
-            files: [TestEntities.profileName_Chongyun]
-        })
+        await putCharacter(id, version, TestEntities.character_ChongYun)
 
         const entityList_1 = await backend.listEntities()
         expect(entityList_1.length).toBe(1)
@@ -101,17 +111,17 @@ describe("indexeddb-backend", () => {
         expect((await backend.queryByTag(type, "/age", "not_age")).length).toBe(0)
 
         // full text
-        const queryFullTextPropertyCollection = await backend.queryByFullTextTermInCollection(type, "重云")
+        const queryFullTextPropertyCollection = await backend.queryByFullTextTermInCollection(type, "Chong")
         expect(queryFullTextPropertyCollection.length).toBe(1)
         expect(queryFullTextPropertyCollection[0].id).toBe(id)
 
         expect((await backend.queryByFullTextTermInCollection(type, "NotTerm")).length).toBe(0)
 
-        const queryFullTextPropertyGlobal = await backend.queryByFullTextTermGlobal("重云")
+        const queryFullTextPropertyGlobal = await backend.queryByFullTextTermGlobal("Chong")
         expect(queryFullTextPropertyGlobal.length).toBe(1)
         expect(queryFullTextPropertyGlobal[0].id).toBe(id)
 
-        expect((await backend.queryByFullTextTermInCollection("not_type", "重云")).length).toBe(0)
+        expect((await backend.queryByFullTextTermInCollection("not_type", "Chong")).length).toBe(0)
 
         // delete
         const newVersion = DBClients.Utils.NewVersion()
@@ -123,8 +133,8 @@ describe("indexeddb-backend", () => {
         expect(await backend.getEntityContent(type, id)).toBeNull()
 
         expect((await backend.queryByTag(type, "/age", "shota")).length).toBe(0)
-        expect((await backend.queryByFullTextTermInCollection(type, "重云")).length).toBe(0)
-        expect((await backend.queryByFullTextTermGlobal("重云")).length).toBe(0)
+        expect((await backend.queryByFullTextTermInCollection(type, "Chong")).length).toBe(0)
+        expect((await backend.queryByFullTextTermGlobal("Chong")).length).toBe(0)
 
         const fileList_2 = await backend.listFiles()
         expect(fileList_2[0].status).toBe(DBClients.EntityState.Active)
@@ -133,4 +143,63 @@ describe("indexeddb-backend", () => {
         await backend.purgeFiles()
         expect((await backend.readFile(TestEntities.profileName_Chongyun))).toBeNull()
     })
+
+    test("double-deletion", async () => {
+        const id = "chongyun"
+        const type = TestEntities.type_Character
+        const version = DBClients.Utils.NewVersion()
+
+        await putCharacter(id, version, TestEntities.character_ChongYun)
+
+        await backend.deleteEntity(type, id, DBClients.Utils.NewVersion())
+        await backend.deleteEntity(type, id, DBClients.Utils.NewVersion())
+    })
+
+    test("links", async () => {
+        const id1 = "chongyun"
+        const id2 = "xingqiu"
+        const type = TestEntities.type_Character
+        const version = DBClients.Utils.NewVersion()
+
+        await putCharacter(id1, version, TestEntities.character_ChongYun)
+        await putCharacter(id2, version, TestEntities.character_XingQiu)
+        await backend.putLink(
+            {type, id: id1, referenceName: "bottom"},
+            {type, id: id2, referenceName: "top"},
+            version
+        )
+
+        const links1 = await backend.getLinksOfEntity(type, id1)
+        expect(links1[0].self.id).toBe(id1)
+        expect(links1[0].opposite.id).toBe(id2)
+
+        const links2 = await backend.getLinksOfEntity(type, id2)
+        expect(links2[0].self.id).toBe(id2)
+        expect(links2[0].opposite.id).toBe(id1)
+
+        const allLinks1 = await backend.listLinks()
+        expect(allLinks1[0].status).toBe(DBClients.EntityState.Active)
+
+        await backend.deleteEntity(type, id2, version)
+
+        const allLinks2 = await backend.listLinks()
+        expect(allLinks2[0].status).toBe(DBClients.EntityState.Deleted)
+        console.log(allLinks2)
+
+        const emptyLinks = await backend.getLinksOfEntity(type, id1)
+        console.log(emptyLinks)
+        expect(emptyLinks.length).toBe(0)
+    })
+
+    async function putCharacter(id: string, version: number, entity: TestEntities.Character) {
+        const extractedProperties = DBConfig.Convert.extractProperties(TestEntities.characterConfig, entity)
+        const extractedTerms = DBConfig.Convert.extractFullTextTerms(TestEntities.characterConfig, entity)
+        await backend.writeFile(TestEntities.profileName_Chongyun, version, TestEntities.exampleProfileData)
+        await backend.putEntity("character", id, version, {
+            content: entity,
+            properties: extractedProperties,
+            fullTextTerms: extractedTerms,
+            files: [TestEntities.profileName_Chongyun]
+        })
+    }
 })

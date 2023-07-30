@@ -44,9 +44,14 @@ export module IndexedDBBackend {
             await this.entities.put(type, id, version, options.content)
         }
         async deleteEntity(type: string, id: string, version: number): Promise<void> {
+            if(!await this.entities.exists(type, id)) {
+                console.warn(`Not exists: ${type}, ${id}`)
+                return
+            }
             await this.deleteEntityInternal(type, id, version)
         }
         private async deleteEntityInternal(type: string, id: string, version: number) {
+            await this.links.deleteEntity(type, id, version)
             await this.files.deleteEntity(type, id, version)
             await this.fullText.deleteEntity(type, id)
             await this.properties.delete(type, id)
@@ -411,8 +416,7 @@ export module IndexedDBBackend {
             const entityId = IndexedDBSchema.Files.entityId(type, id, fileName)
             const current = await this.entity.get(entityId)
             if(!current) {
-                console.warn(`File link not exists: ${type} ${id} ${fileName}`)
-                return
+                throw new Error(`File link not exists: ${type} ${id} ${fileName}`)
             }
             await this.entity.delete(entityId)
             await this.patchFileIndex({
@@ -435,7 +439,10 @@ export module IndexedDBBackend {
             version?: number
         }) {
             const current = await this.index.get(options.name)
-            const newCounts = Math.max(0, current?.counts ?? 0 + options.counts)
+            const newCounts = current?.counts ?? 0 + options.counts
+            if(newCounts < 0) {
+                throw new Error("counts < 0")
+            }
             let version = options.version
             if(!version) {
                 if(!current) {
@@ -500,17 +507,8 @@ export module IndexedDBBackend {
             const biLink = IndexedDBSchema.Links.createBiLink(left, right)
             const docId = IndexedDBSchema.Links.linkId(biLink)
 
-            const current = await this.links.get(docId)
-            if(current === null) {
-                console.warn("Link does not exist.")
-                return
-            }
-
-            await this.links.put(docId, {
-                ...current, 
-                status: DBClients.EntityState.Deleted,
-                version
-            })
+            const dbLink = IndexedDBSchema.Links.createLinkIndex(biLink, version, DBClients.EntityState.Deleted)
+            await this.links.put(docId, dbLink)
 
             const references = await this.referenceNames.getValuesByIndex("types", `${biLink.left.type}_${biLink.right.type}`)
             for(const ref of references) {
@@ -621,8 +619,7 @@ export module IndexedDBBackend {
             const aggId = this.extractId(entity)
             const current = await this.backend.get(aggId)
             if(current == null) {
-                console.warn(`Not found: ${aggId}`)
-                return
+                throw new Error(`Not found: ${aggId}`)
             }
             const newCount = current.sum - entity.sum;
             if(newCount < 0) {
