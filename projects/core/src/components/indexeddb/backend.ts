@@ -439,19 +439,19 @@ export module IndexedDBBackend {
             version?: number
         }) {
             const current = await this.index.get(options.name)
-            const newCounts = current?.counts ?? 0 + options.counts
+            const newCounts = (current?.counts ?? 0) + options.counts
             if(newCounts < 0) {
                 throw new Error("counts < 0")
             }
             let version = options.version
-            if(!version) {
+            if(version === undefined) {
                 if(!current) {
                     throw new Error(`Not exist: ${options.name}`)
                 }
                 version = current.version
             }
             let status = options.status
-            if(!status) {
+            if(status === undefined) {
                 if(!current) {
                     throw new Error(`Not exist: ${options.name}`)
                 }

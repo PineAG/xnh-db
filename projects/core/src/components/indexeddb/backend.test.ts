@@ -241,15 +241,43 @@ describe("indexeddb-backend", () => {
 
     })
 
-    test.only("ref-count-link", async () => {
-        throw new Error("Not implemented")
+    test("ref-count-link", async () => {
+        const version = DBClients.Utils.NewVersion()
+        await putCharacter(backend, "chongyun", version, TestEntities.character_ChongYun)
+        await putCharacter(backend, "xingqiu", version, TestEntities.character_XingQiu)
+        await backend.putLink({
+            type: "character",
+            id: "chongyun",
+            referenceName: "bottom",
+        }, {
+            type: "character",
+            id: "xingqiu",
+            referenceName: "top",
+        }, version)
+        await backend.deleteEntity("character", "chongyun", version)
+        const links = await backend.listLinks()
+        expect(links[0].status).toBe(DBClients.EntityState.Deleted)
     })
 
     test.only("ref-count-file", async () => {
+        const version = DBClients.Utils.NewVersion()
+        await putCharacter(backend, "chongyun", version, TestEntities.character_ChongYun)
+        await putCharacter(backend, "xingqiu", version, TestEntities.character_XingQiu)
+        await backend.deleteEntity("character", "chongyun", version)
+        await backend.purgeFiles();
+        const files1 = await backend.listFiles()
+        expect(files1[0].status).toBe(DBClients.EntityState.Active)
+        await backend.deleteEntity("character", "xingqiu", version)
+        await backend.purgeFiles();
+        const files2 = await backend.listFiles()
+        expect(files2[0].status).toBe(DBClients.EntityState.Deleted)
+    })
+
+    test("ref-count-property", async () => {
         throw new Error("Not implemented")
     })
 
-    test.only("ref-count-property", async () => {
+    test("ref-count-fullText", async () => {
         throw new Error("Not implemented")
     })
 
