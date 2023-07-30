@@ -259,7 +259,7 @@ describe("indexeddb-backend", () => {
         expect(links[0].status).toBe(DBClients.EntityState.Deleted)
     })
 
-    test.only("ref-count-file", async () => {
+    test("ref-count-file", async () => {
         const version = DBClients.Utils.NewVersion()
         await putCharacter(backend, "chongyun", version, TestEntities.character_ChongYun)
         await putCharacter(backend, "xingqiu", version, TestEntities.character_XingQiu)
@@ -267,18 +267,12 @@ describe("indexeddb-backend", () => {
         await backend.purgeFiles();
         const files1 = await backend.listFiles()
         expect(files1[0].status).toBe(DBClients.EntityState.Active)
+        expect(await backend.readFile(TestEntities.profileName_Chongyun)).not.toBeNull()
         await backend.deleteEntity("character", "xingqiu", version)
         await backend.purgeFiles();
         const files2 = await backend.listFiles()
         expect(files2[0].status).toBe(DBClients.EntityState.Deleted)
-    })
-
-    test("ref-count-property", async () => {
-        throw new Error("Not implemented")
-    })
-
-    test("ref-count-fullText", async () => {
-        throw new Error("Not implemented")
+        expect(await backend.readFile(TestEntities.profileName_Chongyun)).toBeNull()
     })
 
     async function putCharacter(backend: IndexedDBBackend.Client, id: string, version: number, entity: TestEntities.Character) {
