@@ -91,6 +91,9 @@ export module IndexedDBBackend {
             await this.files.putContent(name, content)
             await this.files.touchFile(name, version)
         }
+        async touchFile(name: string, version: number): Promise<void> {
+            await this.files.touchFile(name, version)
+        }
         async writeFileContent(name: string, content: Uint8Array): Promise<void> {
             const meta = await this.files.readIndex(name)
             if(!meta || meta.status !== DBClients.EntityState.Active) {

@@ -80,6 +80,7 @@ export module DBClients {
             listFiles(): Promise<FileIndex[]>
             getFileMeta(name: string): Promise<FileIndex | null>
             readFile(name: string): Promise<FileContent | null>
+            touchFile(name: string, version: number): Promise<void>
             writeFile(name: string, version: number, content: FileContent): Promise<void>
             writeFileContent(name: string, content: FileContent): Promise<void>
             deleteFileContent(name: string): Promise<void>
@@ -321,9 +322,8 @@ export module DBClients {
                 }
                 for(const a of actions.putFile) {
                     yield a
-                    const {fileName, version, readContent} = a.options
-                    const content = await readContent()
-                    await this.queryClient.writeFile(fileName, version, content)
+                    const {fileName, version} = a.options
+                    await this.queryClient.touchFile(fileName, version)
                 }
                 for(const a of actions.deleteEntity) {
                     yield a

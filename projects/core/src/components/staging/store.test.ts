@@ -94,7 +94,7 @@ describe("staging-tests", () => {
         expect(entity).not.toBeNull()
     })
 
-    test.only("sync-back", async () => {
+    test("sync-back", async () => {
         const type = "item"
         const id = "item1"
         const id2 = "item2"
@@ -110,5 +110,16 @@ describe("staging-tests", () => {
         const entity2 = await backend.getEntityIndex(type, id2)
         expect(entity1?.status).toBe(DBClients.EntityState.Active)
         expect(entity2?.status).toBe(DBClients.EntityState.Deleted)
+    })
+
+    test("file", async () => {
+        const fp = "file"
+        const content = new Uint8Array()
+        fallbackBackend.putFile(fp, content)
+        await backend.touchFile(fp, 1)
+        expect(await backend.readFile(fp)).toBeNull()
+        const storeContent = await Utils.pendResult(() => store.file(fp))
+        expect(storeContent).not.toBeNull()
+        expect(await backend.readFile(fp)).not.toBeNull()
     })
 })
