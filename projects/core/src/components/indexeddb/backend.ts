@@ -81,10 +81,8 @@ export module IndexedDBBackend {
         listFiles(): Promise<DBClients.FileIndex[]> {
             return this.files.listFiles()
         }
-        async fileExists(name: string): Promise<boolean> {
-            const result = await this.files.readIndex(name)
-            const status = result?.status ?? DBClients.EntityState.Deleted
-            return status === DBClients.EntityState.Active
+        getFileMeta(name: string): Promise<DBClients.FileIndex | null> {
+            return this.files.readIndex(name)
         }
         async readFile(name: string): Promise<Uint8Array | null> {
             return await this.files.readFile(name)
@@ -92,6 +90,13 @@ export module IndexedDBBackend {
         async writeFile(name: string, version: number, content: Uint8Array): Promise<void> {
             await this.files.putContent(name, content)
             await this.files.touchFile(name, version)
+        }
+        async writeFileContent(name: string, content: Uint8Array): Promise<void> {
+            const meta = await this.files.readIndex(name)
+            if(!meta || meta.status !== DBClients.EntityState.Active) {
+                throw new Error(`File has been deleted: ${name}`)
+            }
+            await this.files.putContent(name, content)
         }
         async deleteFileContent(name: string): Promise<void> {
             await this.files.deleteFileContent(name)
@@ -521,8 +526,10 @@ export module IndexedDBBackend {
             const rightResults = await this.links.getValuesByIndex("right", `${type}_${id}_${DBClients.EntityState.Active}`)
             const results = [...leftResults, ...rightResults]
             return results
-                .map(it => IndexedDBSchema.Links.convertDBLinkToBiLink(it))
-                .map(it => IndexedDBSchema.Links.convertBiLinkToClientLink(type, id, it))
+                .map(it => {
+                    const biLink = IndexedDBSchema.Links.convertDBLinkToBiLink(it)
+                    return IndexedDBSchema.Links.convertBiLinkToClientLink(type, id, biLink, it.version)
+                })
         }
 
         async deleteEntity(type: string, id: string, version: number): Promise<void> {

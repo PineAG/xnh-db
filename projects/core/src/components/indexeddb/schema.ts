@@ -383,16 +383,18 @@ export module IndexedDBSchema {
             return false
         }
 
-        export function convertBiLinkToClientLink(entityType: string, entityId: string, biLink: BiLink): ClientLink {
+        export function convertBiLinkToClientLink(entityType: string, entityId: string, biLink: BiLink, version: number): ClientLink {
             if(biLink.left.type === entityType && biLink.left.id === entityId) {
                 return {
                     self: biLink.left,
-                    opposite: biLink.right
+                    opposite: biLink.right,
+                    version
                 }
             } else if(biLink.right.type === entityType && biLink.right.id === entityId) {
                 return {
                     self: biLink.right,
-                    opposite: biLink.left
+                    opposite: biLink.left,
+                    version
                 }
             } else {
                 throw new Error(`Invalid link for entity [${entityType}, ${entityId}]: left=[${biLink.left.type}, ${biLink.left.id}], right=[${biLink.right.type}, ${biLink.right.id}]`)

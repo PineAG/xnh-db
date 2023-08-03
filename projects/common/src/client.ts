@@ -43,6 +43,7 @@ export module DBClients {
         export interface EntityLinkResult {
             self: EntityLinkReference
             opposite: EntityLinkReference
+            version: number
         }
 
         export interface EntityLinkPair {
@@ -77,9 +78,10 @@ export module DBClients {
 
             // files
             listFiles(): Promise<FileIndex[]>
-            fileExists(name: string): Promise<boolean>
+            getFileMeta(name: string): Promise<FileIndex | null>
             readFile(name: string): Promise<FileContent | null>
             writeFile(name: string, version: number, content: FileContent): Promise<void>
+            writeFileContent(name: string, content: FileContent): Promise<void>
             deleteFileContent(name: string): Promise<void>
             purgeFiles(): Promise<void>
 
