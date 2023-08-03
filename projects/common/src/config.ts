@@ -106,6 +106,26 @@ export module DBConfig {
         )
     }
 
+    export type FillEndpoints<C extends ConfigBase, Endpoint> = {
+        [K in keyof C]: (
+            C[K] extends Field.Field<infer Type> ?
+                Endpoint:
+            C[K] extends ConfigBase ?
+                FillEndpoints<C[K], Endpoint> :
+                never
+        )
+    }
+
+    export type MapEndpoints<C extends ConfigBase, Endpoints extends {[K in Types]: any}> = {
+        [K in keyof C]: (
+            C[K] extends Field.Field<infer Type> ?
+                Endpoints[Type]:
+            C[K] extends ConfigBase ?
+                FillEndpoints<C[K], Endpoints> :
+                never
+        )
+    }
+
     export module Convert {
         export type EntityPropertyItem = {propertyCollection: string, values: string[]}
 

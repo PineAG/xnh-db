@@ -55,7 +55,7 @@ export module StagingStore {
         }
 
         // entities
-        entity<T>(type: string, id: string): Wrappers.Entity {
+        entity(type: string, id: string): Wrappers.Entity {
             const result = this.getEntity(type, id)
             if(result) {
                 return result as Wrappers.Entity
@@ -64,7 +64,17 @@ export module StagingStore {
             return {status: DataStatus.Pending}
         }
 
-        putEntity<T>(type: string, id: string, version: number, data: T) {
+        allEntities(): Wrappers.EntityId[] {
+            const result: Wrappers.EntityId[] = []
+            for(const entity of this.entities.values()){
+                if(entity.status === DataStatus.Active) {
+                    result.push(entity.id)
+                }
+            }
+            return result
+        }
+
+        putEntity(type: string, id: string, version: number, data: {}) {
             this.setEntity(type, id, {status: DataStatus.Active, version, data: data as {}, id: {type, id}})
         }
 
