@@ -111,7 +111,7 @@ export module DBClients {
         }
 
         export interface IWriter {
-            performActions(actions: Actions.ActionCollection): AsyncGenerator<Actions.ActionBase>
+            performActions(actions: Actions.ActionCollection, lazyFileContent: boolean): AsyncGenerator<Actions.ActionBase>
         }
 
         export module Actions {
@@ -180,8 +180,8 @@ export module DBClients {
                 return actions
             }
 
-            export async function performActions(writer: IWriter, actions: ActionCollection) {
-                for await(const action of writer.performActions(actions));
+            export async function performActions(writer: IWriter, actions: ActionCollection, lazyFileContent: boolean) {
+                for await(const action of writer.performActions(actions, lazyFileContent));
             }
 
             export function extractSyncActionsFromStates(srcState: StoreState, dstState: StoreState, options: ExtractSyncActionsOptions): ActionCollection {
@@ -315,15 +315,21 @@ export module DBClients {
                 return result
             }
 
-            async* performActions(actions: Actions.ActionCollection): AsyncGenerator<Actions.ActionBase> {
+            async* performActions(actions: Actions.ActionCollection, lazyFileContent: boolean): AsyncGenerator<Actions.ActionBase> {
                 for(const a of actions.deleteFile) {
                     yield a
                     await this.queryClient.deleteFileContent(a.options.fileName)
                 }
                 for(const a of actions.putFile) {
                     yield a
-                    const {fileName, version} = a.options
-                    await this.queryClient.touchFile(fileName, version)
+                    const {fileName, version, readContent} = a.options
+                    if(lazyFileContent) {
+                        await this.queryClient.touchFile(fileName, version)
+                    } else {
+                        const content = await readContent()
+                        await this.queryClient.writeFile(fileName, version, content)
+                    }
+                    
                 }
                 for(const a of actions.deleteEntity) {
                     yield a

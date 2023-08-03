@@ -105,7 +105,7 @@ describe("staging-tests", () => {
         const actions = await DBClients.FullSync.Actions.extractActions(store, dst)
         expect(actions.putEntity.length).toBe(1)
         expect(actions.deleteEntity.length).toBe(1)
-        await DBClients.FullSync.Actions.performActions(dst, actions)
+        await DBClients.FullSync.Actions.performActions(dst, actions, false)
         const entity1 = await backend.getEntityIndex(type, id)
         const entity2 = await backend.getEntityIndex(type, id2)
         expect(entity1?.status).toBe(DBClients.EntityState.Active)

@@ -200,7 +200,7 @@ describe("indexeddb-backend", () => {
         expect((await backend.listEntities()).length).toBe(1)
         expect((await backend2.listEntities()).length).toBe(1)
         const actions = await DBClients.FullSync.Actions.extractActions(syncClient, syncClient2)
-        await DBClients.FullSync.Actions.performActions(syncClient2, actions)
+        await DBClients.FullSync.Actions.performActions(syncClient2, actions, false)
         const entityList1 = await backend2.listEntities()
         expect(entityList1.length).toBe(2)
 
@@ -216,7 +216,7 @@ describe("indexeddb-backend", () => {
         }, v3)
 
         const actions2 = await DBClients.FullSync.Actions.extractActions(syncClient2, syncClient)
-        await DBClients.FullSync.Actions.performActions(syncClient, actions2)
+        await DBClients.FullSync.Actions.performActions(syncClient, actions2, false)
         expect((await backend.listEntities()).length).toBe(2)
         expect((await backend.listLinks()).length).toBe(1)
         expect((await backend.listFiles()).length).toBe(1) // they share the same profile
@@ -224,7 +224,7 @@ describe("indexeddb-backend", () => {
         const v4 = DBClients.Utils.NewVersion()
         await backend.deleteEntity("character", "chongyun", v4) // delete one character
         const actions3 = await DBClients.FullSync.Actions.extractActions(syncClient, syncClient2)
-        await DBClients.FullSync.Actions.performActions(syncClient2, actions3)
+        await DBClients.FullSync.Actions.performActions(syncClient2, actions3, false)
 
         
         {
