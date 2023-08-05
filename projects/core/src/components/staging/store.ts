@@ -1,5 +1,5 @@
 import { DBClients, DBConfig } from "@xnh-db/common";
-import { observable, action, makeAutoObservable, ObservableMap, toJS } from "mobx";
+import { observable, action, makeAutoObservable, ObservableMap, toJS, runInAction } from "mobx";
 
 export module StagingStore {
     
@@ -378,4 +378,45 @@ export module StagingStore {
     function linkId(left: DBClients.Query.EntityLinkReference, right: DBClients.Query.EntityLinkReference): string {
         return `${left.type}_${left.id}_${left.referenceName}:${right.type}_${right.id}_${right.referenceName}`
     }
+
+    export interface PropertyEndpoint<N extends DBConfig.Field.Types> {
+        value: DBConfig.Field.Payloads[N] | null
+        update(value: DBConfig.Field.Payloads[N]): void
+    }
+
+    export type StoreEndpoints<C extends DBConfig.ConfigBase> = DBConfig.MapEndpoints<C, {
+        file: PropertyEndpoint<DBConfig.Field.Types.File>,
+        fileList: PropertyEndpoint<DBConfig.Field.Types.FileList>,
+        tagList: PropertyEndpoint<DBConfig.Field.Types.TagList>,
+        fullText: PropertyEndpoint<DBConfig.Field.Types.FullText>,
+        fullTextList: PropertyEndpoint<DBConfig.Field.Types.FullTextList>,
+    }>
+
+    export function convertEndpoints<C extends DBConfig.ConfigBase>(config: C, entity: DBConfig.PartialEntity<C>): StoreEndpoints<C> {
+        const result: any = {}
+        for(const key in config) {
+            const c = config[key]
+            if(DBConfig.Field.isField(c)) {
+                const endpoint: PropertyEndpoint<DBConfig.Field.Types> = {
+                    get value(): any {
+                        return entity[key]
+                    },
+                    update(value) {
+                        runInAction(() => {
+                            entity[key] = value as any
+                        })
+                    }
+                }
+                result[key] = endpoint
+            } else {
+                if(entity[key] == undefined) {
+                    runInAction(() => {
+                        entity[key] = {} as any
+                    })
+                }
+                result[key] = convertEndpoints(c, entity[key] as any)
+            }
+        }
+        return result
+    } 
 }

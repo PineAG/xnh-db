@@ -122,4 +122,20 @@ describe("staging-tests", () => {
         expect(storeContent).not.toBeNull()
         expect(await backend.readFile(fp)).not.toBeNull()
     })
+
+    test("endpoint", () => {
+        const type = "item"
+        const id = "1"
+        store.putEntity(type, id, 1, {tags: ["233"]})
+        const item = store.entity(type, id)
+        if(item.status !== StagingStore.DataStatus.Active) {
+            throw new Error(item.status)
+        }
+        const data = item.data as TestConfig.Item
+        const proxy = StagingStore.convertEndpoints(TestConfig.config, data)
+        expect(proxy.tags.value && proxy.tags.value[0]).toBe("233")
+        proxy.tags.update(["666"])
+
+        expect(data.tags && data.tags[0]).toBe("666")
+    })
 })

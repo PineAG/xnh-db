@@ -18,6 +18,14 @@ export module DBConfig {
             fileList: string[]
         }
 
+        export const defaultValues: {[K in Types]: () => Payloads[K]} = {
+            fullText: () => "",
+            fullTextList: () => [],
+            tagList: () => [],
+            file: () => "",
+            fileList: () => []
+        }
+
         export type Options = {
             fullText: {
                 tokenizer: DBTokenize.FuncTokenizer,
