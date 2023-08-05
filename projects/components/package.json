@@ -1,0 +1,15 @@
+{
+  "name": "components",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@xnh-db/common": "*",
+    "@xnh-db/core": "*",
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^4.0.2",
+    "typescript": "^5.1.6"
+  }
+}
