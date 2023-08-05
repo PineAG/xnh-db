@@ -133,3 +133,4 @@ dist
 .idea
 
 /data
+cred.json

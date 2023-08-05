@@ -14,11 +14,19 @@
         "jsx": "react-jsx",
         "noImplicitAny": true,
         "baseUrl": ".",
+        "resolveJsonModule": true,
         "paths": {
             "@core/*": ["./src/components/*"],
             "@common": ["@xnh-db/common"]
         },
         "rootDir": "./src",
         "outDir": "./dist"
-    }
+    },
+    "include": [
+        "./src/**/*.ts",
+        "./src/**/*.json"
+    ],
+    "exclude": [
+        "./**/*.test.ts"
+    ]
 }

@@ -355,4 +355,42 @@ export module DBFileBackend {
             return `${link.left.type}_${link.left.id}_${link.left.referenceName}__${link.right.type}_${link.right.id}_${link.right.referenceName}`
         }
     }
+
+    export module MemoryAdaptor {
+        export class Backend implements IFileBackend {
+            private store = new Map<string, Uint8Array>()
+            constructor() {}
+
+            reader(): IFileReader {
+                return new FileReader(this.store)
+            }
+            
+            writer(): IFileWriter {
+                return new FileWriter(this.store)
+            }
+        }
+
+        export class FileReader implements IFileReader {
+            constructor(private store: Map<string, Uint8Array>) {}
+
+            async read(name: string): Promise<Uint8Array | null> {
+                return this.store.get(name) ?? null
+            }
+        }
+
+        export class FileWriter implements IFileWriter {
+            constructor(private store: Map<string, Uint8Array>) {}
+
+            write(name: string, value: Uint8Array): void {
+                this.store.set(name, value)
+            }
+            delete(name: string): void {
+                this.store.delete(name)
+            }
+
+            async commit(): Promise<void> {
+                // pass
+            }
+        }
+    }
 }

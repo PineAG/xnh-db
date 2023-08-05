@@ -6,8 +6,12 @@
   "source": "src/index.ts",
   "license": "MIT",
   "dependencies": {
+    "@octokit/core": "^5.0.0",
+    "@octokit/rest": "^20.0.1",
     "@xnh-db/common": "*",
+    "dayjs": "^1.11.9",
     "idb": "^7.1.1",
+    "js-base64": "^3.7.5",
     "lodash": "^4.17.21",
     "mobx": "^6.10.0"
   },
@@ -17,6 +21,7 @@
     "@babel/plugin-transform-class-properties": "^7.22.5",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
+    "@octokit/fixtures": "^22.0.6",
     "@types/lodash": "^4.14.195",
     "fake-indexeddb": "^4.0.2",
     "jest": "^29.6.1",
@@ -28,6 +33,7 @@
     "test": "jest ./src",
     "test:coverage": "jest --coverage ./src",
     "test:indexeddb": "jest ./src/components/indexeddb",
-    "test:staging": "jest ./src/components/staging"
+    "test:staging": "jest ./src/components/staging",
+    "test:octokit": "jest ./src/components/octokit"
   }
 }
