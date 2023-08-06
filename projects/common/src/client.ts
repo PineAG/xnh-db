@@ -111,7 +111,7 @@ export module DBClients {
         }
 
         export interface IWriter {
-            performActions(actions: Actions.ActionCollection, lazyFileContent: boolean): AsyncGenerator<Actions.ActionBase>
+            performActions(actions: Actions.ActionCollection, lazyFileContent: boolean, onMessage?: (message: string) => void): Promise<void>
         }
 
         export module Actions {
@@ -147,6 +147,10 @@ export module DBClients {
                 return obj.action === actionType && obj.resource === resourceType
             }
 
+            export function isActionOnResource<R extends ResourceTypes>(resourceType: R, obj: ActionBase): obj is Action<ActionTypes, R> {
+                return obj.resource === resourceType
+            }
+
             export type ActionCollection = {
                 putEntity: Action<ActionTypes.Put, ResourceTypes.Entity>[]
                 deleteEntity: Action<ActionTypes.Delete, ResourceTypes.Entity>[]
@@ -178,10 +182,6 @@ export module DBClients {
                     createFileReader: (name) => () => srcReader.readFile(name)
                 })
                 return actions
-            }
-
-            export async function performActions(writer: IWriter, actions: ActionCollection, lazyFileContent: boolean) {
-                for await(const action of writer.performActions(actions, lazyFileContent));
             }
 
             export function extractSyncActionsFromStates(srcState: StoreState, dstState: StoreState, options: ExtractSyncActionsOptions): ActionCollection {
@@ -315,13 +315,15 @@ export module DBClients {
                 return result
             }
 
-            async* performActions(actions: Actions.ActionCollection, lazyFileContent: boolean): AsyncGenerator<Actions.ActionBase> {
+            async performActions(actions: Actions.ActionCollection, lazyFileContent: boolean, onMessage?: (message: string) => void): Promise<void> {
+                const msg = new Utils.MessageHelper(onMessage)
+
                 for(const a of actions.deleteFile) {
-                    yield a
+                    msg.emit(a)
                     await this.queryClient.deleteFileContent(a.options.fileName)
                 }
                 for(const a of actions.putFile) {
-                    yield a
+                    msg.emit(a)
                     const {fileName, version, readContent} = a.options
                     if(lazyFileContent) {
                         await this.queryClient.touchFile(fileName, version)
@@ -332,12 +334,12 @@ export module DBClients {
                     
                 }
                 for(const a of actions.deleteEntity) {
-                    yield a
+                    msg.emit(a)
                     const {type, id, version} = a.options
                     await this.queryClient.deleteEntity(type, id, version)
                 }
                 for(const a of actions.putEntity) {
-                    yield a
+                    msg.emit(a)
                     const {type, id, version, readEntity} = a.options
                     const config = this.configs[type]
                     if(config == null) {
@@ -355,12 +357,12 @@ export module DBClients {
                     })
                 }
                 for(const a of actions.deleteLink) {
-                    yield a
+                    msg.emit(a)
                     const {left, right, version} = a.options
                     await this.queryClient.deleteLink(left, right, version)
                 }
                 for(const a of actions.putLink) {
-                    yield a
+                    msg.emit(a)
                     const {left, right, version} = a.options
                     await this.queryClient.putLink(left, right, version)
                 }
@@ -385,6 +387,34 @@ export module DBClients {
                 properties: DBConfig.Convert.extractProperties(config, entity),
                 fullTextTerms: DBConfig.Convert.extractFullTextTerms(config, entity),
                 files: DBConfig.Convert.extractFileNames(config, entity)
+            }
+        }
+
+        import ResourceTypes = FullSync.Actions.ResourceTypes
+        import isActionOnResource = FullSync.Actions.isActionOnResource
+        export class MessageHelper {
+            constructor(private onMessage?: (message: string) => void) {}
+
+            emit(action: FullSync.Actions.ActionBase) {
+                this.onMessage?.call(null, this.stringifyAction(action))
+            }
+
+            private stringifyAction(action: FullSync.Actions.ActionBase): string {
+                const prefix = `${action.action} ${action.resource}`
+                const suffix = `@ver ${action.options.version}`
+
+                let resourceId
+                if(isActionOnResource(ResourceTypes.Entity, action)) {
+                    resourceId = `${action.options.type}:${action.options.id}`
+                } else if (isActionOnResource(ResourceTypes.File, action)) {
+                    resourceId = action.options.fileName
+                } else if (isActionOnResource(ResourceTypes.Link, action)) {
+                    resourceId = `${action.options.left.type}:${action.options.left.id}:${action.options.right.referenceName}-${action.options.right.type}:${action.options.right.id}:${action.options.right.referenceName}`
+                } else {
+                    throw new Error(`Unknown type of resource: ${action.resource}`)
+                }
+
+                return `${prefix} ${resourceId} ${suffix}`
             }
         }
     }

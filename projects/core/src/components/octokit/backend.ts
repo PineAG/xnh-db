@@ -63,15 +63,18 @@ export module OctokitBackend {
         delete(name: string): void {
             this.deletedFiles.add(name)
         }
-        async commit(): Promise<void> {
+        async commit(onMessage?: (message: string) => void): Promise<void> {
             const adaptor = new OctokitAdaptor(this.octokit, this.target)
             const message = commitMessageByDate()
             const committer = this.committer
             const currentCommit = await adaptor.getBranchCommit()
             const blobs: Record<string, string> = {}
             for(const [path, blob] of Object.entries(this.fileContent)) {
+                onMessage?.call(null, `Uploading blob ${path}`)
                 blobs[path] = await adaptor.createBlob(blob)
             }
+
+            onMessage?.call(null, `Committing ${this.target.owner}/${this.target.repo}/${this.target.branch}`)
             if(currentCommit) {
                 const treeHash = await adaptor.createTree(blobs, Array.from(this.deletedFiles), currentCommit)
                 const commitHash = await adaptor.createCommit(message, committer, treeHash, [currentCommit])

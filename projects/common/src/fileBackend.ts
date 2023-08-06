@@ -17,7 +17,7 @@ export module DBFileBackend {
     export interface IFileWriter {
         write(name: string, value: Uint8Array): void
         delete(name: string): void
-        commit(): Promise<void>
+        commit(onMessage?: (message: string) => void): Promise<void>
     }
 
     export interface BackendOptions {
@@ -76,30 +76,32 @@ export module DBFileBackend {
         constructor(private reader: IFileReader, private writer: IFileWriter, private options: BackendOptions) {
         }
 
-        async *performActions(actions: DBClients.FullSync.Actions.ActionCollection, lazyFileContent: boolean): AsyncGenerator<DBClients.FullSync.Actions.ActionBase> {
+        async performActions(actions: DBClients.FullSync.Actions.ActionCollection, lazyFileContent: boolean, onMessage?: (message: string) => void): Promise<void> {
             const writer = new WriterAdaptor(this.reader, this.writer, this.options.partitionPrefixLength)
+            const msg = new DBClients.Utils.MessageHelper(onMessage)
 
             for(const action of actions.deleteLink) {
+                msg.emit(action)
                 await writer.putLinkIndex({
                     status: DBClients.EntityState.Deleted, 
                     version: action.options.version,
                     left: action.options.left,
                     right: action.options.right
                 })
-                yield action
             }
 
             for(const action of actions.putLink) {
+                msg.emit(action)
                 await writer.putLinkIndex({
                     status: DBClients.EntityState.Active, 
                     version: action.options.version,
                     left: action.options.left,
                     right: action.options.right
                 })
-                yield action
             }
 
             for(const action of actions.deleteEntity) {
+                msg.emit(action)
                 await writer.deleteEntityContent(action.options.type, action.options.id)
                 await writer.putEntityIndex({
                     status: DBClients.EntityState.Deleted,
@@ -107,10 +109,10 @@ export module DBFileBackend {
                     type: action.options.type,
                     version: action.options.version
                 })
-                yield action
             }
 
             for(const action of actions.putEntity) {
+                msg.emit(action)
                 const entity = await action.options.readEntity()
                 await writer.writeEntityContent(action.options.type, action.options.id, entity)
                 await writer.putEntityIndex({
@@ -119,21 +121,20 @@ export module DBFileBackend {
                     type: action.options.type,
                     version: action.options.version
                 })
-                yield action
             }
 
-            for(const action of actions.deleteEntity) {
-                await writer.deleteEntityContent(action.options.type, action.options.id)
-                await writer.putEntityIndex({
+            for(const action of actions.deleteFile) {
+                msg.emit(action)
+                writer.deleteFileContent(action.options.fileName)
+                await writer.putFileIndex({
                     status: DBClients.EntityState.Deleted,
-                    id: action.options.id,
-                    type: action.options.type,
+                    name: action.options.fileName,
                     version: action.options.version
                 })
-                yield action
             }
 
             for(const action of actions.putFile) {
+                msg.emit(action)
                 if(lazyFileContent) {
                     writer.deleteFileContent(action.options.fileName)
                 } else {
@@ -145,21 +146,10 @@ export module DBFileBackend {
                     name: action.options.fileName,
                     version: action.options.version
                 })
-                yield action
-            }
-
-            for(const action of actions.deleteFile) {
-                writer.deleteFileContent(action.options.fileName)
-                await writer.putFileIndex({
-                    status: DBClients.EntityState.Deleted,
-                    name: action.options.fileName,
-                    version: action.options.version
-                })
-                yield action
             }
 
             writer.commit()
-            await this.writer.commit()
+            await this.writer.commit(onMessage)
         }
     }
 
