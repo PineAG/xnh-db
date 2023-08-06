@@ -3,7 +3,7 @@ import { action, makeAutoObservable, observable } from "mobx";
 
 export module SynchronizationStore {
 
-    type UpstreamBackend = {
+    export type UpstreamBackend = {
         type: "readonly",
         backend: {
             reader: () => DBClients.FullSync.IReader
@@ -16,17 +16,17 @@ export module SynchronizationStore {
         }
     }
 
-    type DownstreamBackend = {
+    export type DownstreamBackend = {
         reader: () => DBClients.FullSync.IReader,
         writer: () => DBClients.FullSync.IWriter
     }
 
-    interface BackendState {
+    export interface BackendState {
         upstream: UpstreamBackend,
         downstream: DownstreamBackend
     }
 
-    type SyncState = {
+    export type SyncState = {
         status: "unchecked"
     } | {
         status: "pushing",
