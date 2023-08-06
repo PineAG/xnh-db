@@ -1,2 +1,5 @@
 export * from "./components/indexeddb"
 export * from "./components/staging"
+export * from "./components/octokit"
+export * from "./components/restful"
+export * from "./components/sync"
