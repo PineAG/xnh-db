@@ -1,6 +1,10 @@
 import {DBClients} from "./client"
 
 export module DBFileBackend {
+    export interface IFileReadonlyBackend {
+        reader(): IFileReader
+    }
+
     export interface IFileBackend {
         reader(): IFileReader
         writer(): IFileWriter

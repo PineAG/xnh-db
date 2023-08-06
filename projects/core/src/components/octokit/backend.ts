@@ -10,6 +10,23 @@ export module OctokitBackend {
         branch: string
     }
 
+    export interface CommitterInfo {
+        name: string,
+        email: string
+    } 
+
+    export interface ReadonlyOptions {
+        target: SyncTarget
+    }
+
+    export class ReadonlyBackend implements DBFileBackend.IFileReadonlyBackend {
+        constructor(private octokit: Octokit, private options: ReadonlyOptions) {}
+
+        reader(): DBFileBackend.IFileReader {
+            return new FileReader(this.octokit, this.options.target)
+        }
+    }
+
     export interface Options {
         target: SyncTarget
         committer: CommitterInfo
@@ -18,18 +35,18 @@ export module OctokitBackend {
     export class FileBackend implements DBFileBackend.IFileBackend {
         constructor(private octokit: Octokit, private options: Options) {}
         reader(): DBFileBackend.IFileReader {
-            return new FileReader(this.octokit,this.options)
+            return new FileReader(this.octokit, this.options.target)
         }
         writer(): DBFileBackend.IFileWriter {
-            return new FileWriter(this.octokit,this.options)
+            return new FileWriter(this.octokit, this.options.committer, this.options.target)
         }
     }
 
     class FileReader implements DBFileBackend.IFileReader {
-        constructor(private octokit: Octokit, private options: Options) {}
+        constructor(private octokit: Octokit, private target: SyncTarget) {}
         
         async read(name: string): Promise<Uint8Array | null> {
-            const adaptor = new OctokitAdaptor(this.octokit, this.options.target)
+            const adaptor = new OctokitAdaptor(this.octokit, this.target)
             return await adaptor.readFileContent(name)
         }
     }
@@ -38,7 +55,7 @@ export module OctokitBackend {
         private fileContent: Record<string, Uint8Array> = {}
         private deletedFiles = new Set<string>()
 
-        constructor(private octokit: Octokit, private options: Options) {}
+        constructor(private octokit: Octokit, private committer: CommitterInfo, private target: SyncTarget) {}
         
         write(name: string, value: Uint8Array): void {
             this.fileContent[name] = value
@@ -47,20 +64,20 @@ export module OctokitBackend {
             this.deletedFiles.add(name)
         }
         async commit(): Promise<void> {
-            const adaptor = new OctokitAdaptor(this.octokit, this.options.target)
+            const adaptor = new OctokitAdaptor(this.octokit, this.target)
             const message = commitMessageByDate()
-            const committer = this.options.committer
+            const committer = this.committer
             const currentCommit = await adaptor.getBranchCommit()
             const blobs: Record<string, string> = {}
             for(const [path, blob] of Object.entries(this.fileContent)) {
-                blobs[path] = await adaptor.createBlob(path, blob)
+                blobs[path] = await adaptor.createBlob(blob)
             }
             if(currentCommit) {
                 const treeHash = await adaptor.createTree(blobs, Array.from(this.deletedFiles), currentCommit)
                 const commitHash = await adaptor.createCommit(message, committer, treeHash, [currentCommit])
                 await adaptor.resetBranch(commitHash)
             } else {
-                console.warn(`Branch not exists, creating branch ${this.options.target.branch}`)
+                console.warn(`Branch not exists, creating branch ${this.target.branch}`)
                 const treeHash = await adaptor.createTree(blobs, Array.from(this.deletedFiles), undefined)
                 const commitHash = await adaptor.createCommit(message, committer, treeHash, [])
                 await adaptor.createBranch(commitHash)
@@ -68,11 +85,6 @@ export module OctokitBackend {
         }
         
     }
-
-    export interface CommitterInfo {
-        name: string,
-        email: string
-    } 
 
     export class OctokitAdaptor {
         constructor(private octokit: Octokit, private target: SyncTarget) {}
@@ -128,7 +140,7 @@ export module OctokitBackend {
             })
         }
 
-        async createBlob(path: string, blob: Uint8Array): Promise<string> {
+        async createBlob(blob: Uint8Array): Promise<string> {
             const {owner, repo} = this.target
 
             const {data} = await this.octokit.git.createBlob({
@@ -190,8 +202,6 @@ export module OctokitBackend {
                 sha: commit
             })
         }
-
-
     }
 
     function commitMessageByDate() {
