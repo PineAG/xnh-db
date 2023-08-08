@@ -17,7 +17,7 @@ export module IndexedDBBackend {
         private readonly files: FilesAdaptor
         private readonly links: LinkAdaptor
 
-        constructor(db: InternalIDB) {
+        constructor(db: Promise<InternalIDB>) {
             this.entities = new EntityAdaptor(db)
             this.properties = new PropertyAdaptor(db)
             this.fullText = new FullTextAdaptor(db)
@@ -159,7 +159,7 @@ export module IndexedDBBackend {
     }
 
     class EntityAdaptor {
-        constructor(private db: InternalIDB) {}
+        constructor(private db: Promise<InternalIDB>) {}
 
         async listEntities(): Promise<IndexedDBSchema.Entity.EntityIndex[]> {
             return await this.entityIndex.allValues()
@@ -204,7 +204,7 @@ export module IndexedDBBackend {
     }
 
     class PropertyAdaptor {
-        constructor(private db: InternalIDB) {}
+        constructor(private db: Promise<InternalIDB>) {}
 
         async put(type: string, id: string, properties: DBClients.Query.EntityProperties): Promise<void> {
             const entityIndices = IndexedDBSchema.Property.extractEntityIndices(type, id, properties)
@@ -255,7 +255,7 @@ export module IndexedDBBackend {
     }
 
     class FullTextAdaptor {
-        constructor(private db: InternalIDB) {}
+        constructor(private db: Promise<InternalIDB>) {}
 
         async putEntity(type: string, id: string, terms: DBTokenize.IToken[]) {
             let totalWeight = 0
@@ -342,7 +342,7 @@ export module IndexedDBBackend {
     }
 
     class FilesAdaptor {
-        constructor(private db: InternalIDB) {}
+        constructor(private db: Promise<InternalIDB>) {}
 
         async listFiles(): Promise<DBClients.FileIndex[]> {
             return await this.index.allValues()
@@ -489,7 +489,7 @@ export module IndexedDBBackend {
     }
 
     class LinkAdaptor {
-        constructor(private db: InternalIDB) {}
+        constructor(private db: Promise<InternalIDB>) {}
 
         async listLinks(): Promise<IndexedDBSchema.Links.LinkRef[]> {
             const results = await this.links.allValues()
@@ -564,43 +564,49 @@ export module IndexedDBBackend {
     // DB Helper
 
     class DBWrapper<Name extends StoreNames> {
-        constructor(private db: InternalIDB, private name: Name, private indices: IndexedDBSchema.Schema[Name]["indexes"]) {}
+        constructor(private db: Promise<InternalIDB>, private name: Name, private indices: IndexedDBSchema.Schema[Name]["indexes"]) {}
 
         async allValues(): Promise<IndexedDBSchema.Schema[Name]["value"][]> {
-            const tx = this.db.transaction(this.name, "readonly")
+            const db = await this.db
+            const tx = db.transaction(this.name, "readonly")
             const result = await tx.store.getAll()
             await tx.done
             return result
         }
 
         async get(id: string): Promise<IndexedDBSchema.Schema[Name]["value"] | null> {
-            const tx = this.db.transaction(this.name, "readonly")
+            const db = await this.db
+            const tx = db.transaction(this.name, "readonly")
             const result = await tx.store.get(id)
             await tx.done
             return result ?? null
         }
 
         async put(id: string, value: IndexedDBSchema.Schema[Name]["value"]): Promise<void> {
-            const tx = this.db.transaction(this.name, "readwrite")
+            const db = await this.db
+            const tx = db.transaction(this.name, "readwrite")
             await tx.store.put(value, id)
             await tx.done
         }
 
         async delete(id: string): Promise<void> {
-            const tx = this.db.transaction(this.name, "readwrite")
+            const db = await this.db
+            const tx = db.transaction(this.name, "readwrite")
             await tx.store.delete(id)
             await tx.done
         }
 
         async getKeysByIndex<Idx extends keyof IndexedDBSchema.Schema[Name]["indexes"]>(indexName: Idx, value: IndexKey<IndexedDBSchema.Schema, Name, Idx>): Promise<string[]> {
-            const tx = this.db.transaction(this.name, "readonly")
+            const db = await this.db
+            const tx = db.transaction(this.name, "readonly")
             const result = await tx.store.index(indexName).getAllKeys(value)
             await tx.done
             return result ?? null
         }
 
         async getValuesByIndex<Idx extends keyof IndexedDBSchema.Schema[Name]["indexes"]>(indexName: Idx, value: IndexKey<IndexedDBSchema.Schema, Name, Idx>): Promise<IndexedDBSchema.Schema[Name]["value"][]> {
-            const tx = this.db.transaction(this.name, "readonly")
+            const db = await this.db
+            const tx = db.transaction(this.name, "readonly")
             const result = await tx.store.index(indexName).getAll(value)
             await tx.done
             return result ?? null
@@ -648,10 +654,11 @@ export module IndexedDBBackend {
     }
 
     class FileContentWrapper {
-        constructor(private db: InternalIDB) {}
+        constructor(private db: Promise<InternalIDB>) {}
 
         async get(name: string): Promise<IndexedDBSchema.Files.FileContent | null> {
-            const tx = this.db.transaction("fileContent", "readonly")
+            const db = await this.db
+            const tx = db.transaction("fileContent", "readonly")
             const result = await tx.store.get(name)
             await tx.done
             if(!result) {
@@ -663,13 +670,15 @@ export module IndexedDBBackend {
         }
 
         async put(name: string, content: IndexedDBSchema.Files.FileContent) {
-            const tx = this.db.transaction("fileContent", "readwrite")
+            const db = await this.db
+            const tx = db.transaction("fileContent", "readwrite")
             await tx.store.put(new Blob([content]), name)
             await tx.done
         }
 
         async delete(name: string) {
-            const tx = this.db.transaction("fileContent", "readwrite")
+            const db = await this.db
+            const tx = db.transaction("fileContent", "readwrite")
             await tx.store.delete(name)
             await tx.done
         }

@@ -67,11 +67,21 @@ export module DBConfig {
         }
 
         export const payloadValidators: {[K in Types]: (value: {}) => value is Payloads[K]} = {
-            fullText(v: {}): v is string { return typeof v === "string" },
-            fullTextList(v: {}): v is string[] { return Array.isArray(v) },
-            file(v: {}): v is string { return typeof v === "string" },
-            fileList(v: {}): v is string[] { return Array.isArray(v) },
-            tagList(v: {}): v is string[] { return Array.isArray(v) },
+            fullText: Validators.isString,
+            fullTextList: Validators.isStringArray,
+            file: Validators.isString,
+            fileList: Validators.isStringArray,
+            tagList: Validators.isStringArray,
+        }
+
+        module Validators {
+            export function isString(obj: any): obj is string {
+                return typeof obj === "number"
+            }
+
+            export function isStringArray(obj: any): obj is string[] {
+                return Array.isArray(obj) && obj.every(isString)
+            }
         }
     }
 
@@ -122,6 +132,16 @@ export module DBConfig {
                 FillEndpoints<C[K], Endpoint> :
                 never
         )
+    }
+
+    export type FillEndpointsWithSection<C extends ConfigBase, Endpoint, Section> = {
+        [K in keyof C]: (
+            C[K] extends Field.Field<infer Type> ?
+                Endpoint:
+            C[K] extends ConfigBase ?
+                FillEndpoints<C[K], Endpoint> :
+                never
+        ) & {$section: Section}
     }
 
     export type MapEndpoints<C extends ConfigBase, Endpoints extends {[K in Types]: any}> = {
@@ -233,6 +253,27 @@ export module DBConfig {
     
         function isValuePackFor<Type extends Types>(type: Type, pack: ExtractedValuePack<Types>): pack is ExtractedValuePack<Type> {
             return pack.type === type
+        }
+
+        export function isValidEntity<C extends ConfigBase>(config: C, entity: any): entity is PartialEntity<C> {
+            if(!entity) {
+                return false
+            }
+            for(const key in config) {
+                const c = config[key]
+                if(Field.isField(c)) {
+                    const v = entity[key]
+                    if(v !== undefined && !Field.payloadValidators[c.type](v)) {
+                        return false
+                    }
+                } else {
+                    const v = entity[key]
+                    if(v !== undefined && !isValidEntity(c, v)) {
+                        return false
+                    }
+                }
+            }
+            return true
         }
     
         function* extractEntityValues<C extends ConfigBase>(config: C, entity: PartialEntity<C>, prefix: string = ""): Generator<ExtractedValuePack<Types>> {

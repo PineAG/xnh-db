@@ -1,11 +1,16 @@
 {
-  "name": "components",
+  "name": "@xnh-db/components",
   "version": "1.0.0",
   "main": "src/index.ts",
   "license": "MIT",
   "dependencies": {
+    "@octokit/core": "^5.0.0",
+    "@octokit/rest": "^20.0.1",
+    "@types/react": "^18.2.18",
     "@xnh-db/common": "*",
     "@xnh-db/core": "*",
+    "mobx": "^6.10.0",
+    "mobx-react-lite": "^4.0.3",
     "react": "^18.2.0"
   },
   "devDependencies": {

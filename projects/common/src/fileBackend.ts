@@ -24,6 +24,14 @@ export module DBFileBackend {
         partitionPrefixLength: number
     }
 
+    export class ReadonlyBackend  {
+        constructor(private backend: IFileReadonlyBackend, private options: BackendOptions) {}
+
+        reader(): DBClients.FullSync.IReader {
+            return new Reader(this.backend.reader(), this.options)
+        }
+    }
+
     export class Backend  {
         constructor(private backend: IFileBackend, private options: BackendOptions) {}
 

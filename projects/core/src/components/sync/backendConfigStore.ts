@@ -1,6 +1,8 @@
 import { OctokitBackend } from "@core/octokit/backend"
+import { RestfulFileBackend } from "@core/restful"
 import { Octokit } from "@octokit/rest"
-import { observable, action, makeAutoObservable, makeObservable, toJS } from "mobx"
+import { DBClients, DBFileBackend } from "@xnh-db/common"
+import { observable, action, makeAutoObservable, makeObservable, toJS, computed } from "mobx"
 
 export module BackendConfigurationStore {
     export enum BackendType {
@@ -20,6 +22,14 @@ export module BackendConfigurationStore {
         token: string
         name: string
         email: string
+    }
+
+    export type BackendResult = {
+        type: "readonly",
+        backend: DBFileBackend.IFileReadonlyBackend
+    } | {
+        type: "readwrite",
+        backend: DBFileBackend.IFileBackend
     }
 
     export class ConfigStore {
@@ -47,7 +57,29 @@ export module BackendConfigurationStore {
             return true
         }
 
-        githubConfig(): GitHubConfig {
+        @computed currentBackend(): BackendResult {
+            if(this.config.current === BackendType.Restful) {
+                return {
+                    type: "readonly",
+                    backend: new RestfulFileBackend.ReadonlyBackend({baseURI: ""})
+                }
+            } else if (this.config.current === BackendType.GitHub) {
+                const {token, repo, owner, branch, name, email} = this.githubConfig()
+                const octokit = new Octokit({auth: token})
+                const backend = new OctokitBackend.FileBackend(octokit, {
+                    committer: {name, email},
+                    target: {repo, owner, branch}
+                })
+                return {
+                    type: "readwrite",
+                    backend 
+                }
+            } else {
+                throw new Error(`Invalid backend: ${this.config.current}`)
+            }
+        }
+
+        @computed githubConfig(): GitHubConfig {
             const config = this.config.github
             if(!config) {
                 throw new Error("GitHub config is not available")
@@ -55,7 +87,7 @@ export module BackendConfigurationStore {
             return config
         }
 
-        private isBackendAvailable(backendType: BackendType): boolean {
+        @computed private isBackendAvailable(backendType: BackendType): boolean {
             if(backendType === BackendType.GitHub && !this.config.github) {
                 return false
             }
@@ -119,8 +151,7 @@ export module BackendConfigurationStore {
     
         type GitHubConfigStateTypes = keyof GitHubConfigStatePayload
         type GitHubConfigState<N extends GitHubConfigStateTypes> = {
-            type: N,
-            error?: string
+            type: N
         } & GitHubConfigStatePayload[N]
     
         type GitHubConfigStateBase = GitHubConfigState<GitHubConfigStateTypes>
@@ -128,6 +159,7 @@ export module BackendConfigurationStore {
         export class GitHubConfigStore {
             @observable state: GitHubConfigStateBase = {type: "initial"}
             @observable pending: boolean = false
+            @observable error: string | null = null
     
             private octokit: Octokit | null = null
     
@@ -139,6 +171,7 @@ export module BackendConfigurationStore {
                 validateState("initial", this.state)
                 this.setPending(true)
                 try {
+                    this.octokit = new Octokit({auth: token})
                     const user = await this.backend.getUserInfo()
                     const repoList = await this.backend.listRepos()
                     this.setStateInternal("selectRepo", {
@@ -200,6 +233,7 @@ export module BackendConfigurationStore {
     
             @action private setStateInternal<N extends GitHubConfigStateTypes>(type: N, payload: GitHubConfigStatePayload[N]) {
                 this.state = {type, ...payload}
+                this.error = null
             }
     
             @action private setPending(pending: boolean) {
@@ -207,7 +241,7 @@ export module BackendConfigurationStore {
             }
 
             @action private setError(ex: any) {
-                this.state.error = ex.toString()
+                this.error = ex.toString()
             }
     
             private get backend(): OctokitBackend.OctokitAdaptor {

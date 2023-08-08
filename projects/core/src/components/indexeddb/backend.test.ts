@@ -72,11 +72,11 @@ describe("indexeddb-backend", () => {
 
     beforeEach(async () => {
         db = await IndexedDBBackend.open("test")
-        backend = new IndexedDBBackend.Client(db)
+        backend = new IndexedDBBackend.Client(Promise.resolve(db))
         syncClient = new DBClients.FullSync.QueryClientAdaptor(backend, {character: TestEntities.characterConfig})
         
         db2 = await IndexedDBBackend.open("test2")
-        backend2 = new IndexedDBBackend.Client(db2)
+        backend2 = new IndexedDBBackend.Client(Promise.resolve(db2))
         syncClient2 = new DBClients.FullSync.QueryClientAdaptor(backend2, {character: TestEntities.characterConfig})
     })
 

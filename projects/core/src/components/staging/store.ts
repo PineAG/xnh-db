@@ -1,5 +1,5 @@
 import { DBClients, DBConfig } from "@xnh-db/common";
-import { observable, action, makeAutoObservable, ObservableMap, toJS, runInAction } from "mobx";
+import { observable, action, makeAutoObservable, ObservableMap, toJS, runInAction, computed } from "mobx";
 
 export module StagingStore {
     
@@ -55,7 +55,7 @@ export module StagingStore {
         }
 
         // entities
-        entity(type: string, id: string): Wrappers.Entity {
+        @computed entity(type: string, id: string): Wrappers.Entity {
             const result = this.getEntity(type, id)
             if(result) {
                 return result as Wrappers.Entity
@@ -64,7 +64,7 @@ export module StagingStore {
             return {status: DataStatus.Pending}
         }
 
-        allEntities(): Wrappers.EntityId[] {
+        @computed allEntities(): Wrappers.EntityId[] {
             const result: Wrappers.EntityId[] = []
             for(const entity of this.entities.values()){
                 if(entity.status === DataStatus.Active) {
@@ -123,7 +123,7 @@ export module StagingStore {
         }
 
         // link
-        linksOf(type: string, id: string): Wrappers.LinkCollection {
+        @computed linksOf(type: string, id: string): Wrappers.LinkCollection {
             const entity = this.getEntity(type, id)
             if(!entity) {
                 this.fetchEntity(type, id)
@@ -210,7 +210,7 @@ export module StagingStore {
         }
 
         // file
-        file(name: string): Wrappers.File {
+        @computed file(name: string): Wrappers.File {
             const current = this.getFile(name)
             if(current) {
                 return current
@@ -380,6 +380,7 @@ export module StagingStore {
     }
 
     export interface PropertyEndpoint<N extends DBConfig.Field.Types> {
+        type: N
         value: DBConfig.Field.Payloads[N] | null
         update(value: DBConfig.Field.Payloads[N]): void
     }
@@ -398,6 +399,7 @@ export module StagingStore {
             const c = config[key]
             if(DBConfig.Field.isField(c)) {
                 const endpoint: PropertyEndpoint<DBConfig.Field.Types> = {
+                    type: c.type,
                     get value(): any {
                         return entity[key]
                     },
