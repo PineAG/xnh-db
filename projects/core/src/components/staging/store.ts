@@ -401,7 +401,7 @@ export module StagingStore {
                 const endpoint: PropertyEndpoint<DBConfig.Field.Types> = {
                     type: c.type,
                     get value(): any {
-                        return entity[key]
+                        return toJS(entity[key])
                     },
                     update(value) {
                         runInAction(() => {

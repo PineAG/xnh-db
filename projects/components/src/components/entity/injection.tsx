@@ -13,12 +13,14 @@ export module EntityPropertyInjection {
     interface EntityEndpointNode<N extends DBConfig.Field.Types> {
         title: string
         config: DBConfig.Field.Field<N>
+        path: string
         binding: StagingStore.PropertyEndpoint<N>
     }
 
     interface EntityReadonlyEndpointNode<N extends DBConfig.Field.Types> {
         title: string
         config: DBConfig.Field.Field<N>
+        path: string
         value: DBConfig.Field.Payloads[N] | null
     }
 
@@ -43,7 +45,7 @@ export module EntityPropertyInjection {
         bindings: StagingStore.StoreEndpoints<C>
     }
 
-    export function getEndpoints<C extends CBase>(config: C, options: Options<C>): EntityEditorInjection<C> {
+    export function getEndpoints<C extends CBase>(config: C, options: Options<C>, pathPrefix: string = ""): EntityEditorInjection<C> {
         const result: any = {
             $section: {
                 title: options.titles["$section"]
@@ -51,10 +53,12 @@ export module EntityPropertyInjection {
         }
         for(const key in config) {
             const c = config[key]
+            const p = `${pathPrefix}/${key}`
             if(DBConfig.Field.isField(c)) {
                 const e: EntityEndpointNode<DBConfig.Field.Types> = {
                     title: options.titles[key] as string,
                     config: c,
+                    path: p,
                     binding: options.bindings[key] as any
                 }
                 result[key] = e
@@ -62,7 +66,7 @@ export module EntityPropertyInjection {
                 result[key] = getEndpoints(c, {
                     titles: options.titles[key] as any,
                     bindings: options.bindings[key] as any
-                })
+                }, p)
             }
         }
 
@@ -74,7 +78,7 @@ export module EntityPropertyInjection {
         entity: DBConfig.PartialEntity<C>
     }
 
-    export function getReadonlyEndpoints<C extends CBase>(config: C, options: ReadonlyOptions<C>): EntityReadonlyEndpoints<C> {
+    export function getReadonlyEndpoints<C extends CBase>(config: C, options: ReadonlyOptions<C>, pathPrefix: string = ""): EntityReadonlyEndpoints<C> {
         const result: any = {
             $section: {
                 title: options.titles["$section"]
@@ -82,10 +86,12 @@ export module EntityPropertyInjection {
         }
         for(const key in config) {
             const c = config[key]
+            const p = `${pathPrefix}/${key}`
             if(DBConfig.Field.isField(c)) {
                 const e: EntityReadonlyEndpointNode<DBConfig.Field.Types> = {
                     title: options.titles[key] as string,
                     config: c,
+                    path: p,
                     value: options.entity[key] as any ?? null
                 }
                 result[key] = e
@@ -93,7 +99,7 @@ export module EntityPropertyInjection {
                 result[key] = getReadonlyEndpoints(c, {
                     titles: options.titles[key] as any,
                     entity: options.entity[key] as any ?? {}
-                })
+                }, p)
             }
         }
 

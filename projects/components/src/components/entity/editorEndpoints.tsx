@@ -7,6 +7,7 @@ export module EditorEndpointComponents {
     interface Props<N extends Types> {
         title: string
         config: DBConfig.Field.Field<N>
+        path: string
         binding: StagingStore.PropertyEndpoint<N>
     }
 

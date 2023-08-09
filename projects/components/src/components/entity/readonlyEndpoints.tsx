@@ -7,6 +7,7 @@ export module ReadonlyEndpointComponents {
     interface Props<N extends Types> {
         title: string
         config: DBConfig.Field.Field<N>
+        path: string
         value: DBConfig.Field.Payloads[N]
     }
 

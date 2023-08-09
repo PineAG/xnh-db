@@ -29,6 +29,7 @@ describe("injection-tests", () => {
         const bindings = StagingStore.convertEndpoints(config, entity)
         const endpoints = EntityPropertyInjection.getEndpoints(config, {titles, bindings})
         expect(endpoints.a.$section.title).toBe("Section A")
+        expect(endpoints.a.b.path).toBe("/a/b")
         expect(endpoints.a.b.title).toBe("B")
         expect(endpoints.a.b.binding.value).toStrictEqual(["a", "b"])
         endpoints.a.b.binding.update(["233"])
@@ -43,6 +44,7 @@ describe("injection-tests", () => {
         }
         const endpoints = EntityPropertyInjection.getReadonlyEndpoints(config, {titles, entity})
         expect(endpoints.a.$section.title).toBe("Section A")
+        expect(endpoints.a.b.path).toBe("/a/b")
         expect(endpoints.a.b.title).toBe("B")
         expect(endpoints.a.b.value).toStrictEqual(["a", "b"])
     })

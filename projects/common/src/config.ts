@@ -36,6 +36,10 @@ export module DBConfig {
                 weight: number
             },
             tagList: {
+                fullText?: {
+                    tokenizer: DBTokenize.FuncTokenizer,
+                    weight: number
+                }
                 tagCollection: string,
             },
             file: {
@@ -200,6 +204,13 @@ export module DBConfig {
                     results = p.payload
                     tokenizer = p.options.tokenizer
                     weight = p.options.weight
+                } else if (isValuePackFor(Types.TagList, p)) {
+                    if(!p.options.fullText) {
+                        continue
+                    }
+                    results = p.payload
+                    tokenizer = p.options.fullText.tokenizer
+                    weight = p.options.fullText.weight
                 } else {
                     continue
                 }
