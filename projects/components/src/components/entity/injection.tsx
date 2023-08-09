@@ -6,35 +6,57 @@ export module EntityPropertyInjection {
     import CBase = DBConfig.ConfigBase
     import StoreEndpoints = StagingStore
 
-    export type EntityTitles<C extends CBase> = DBConfig.FillEndpointsWithSection<CBase, string, string>
+    export type EntityTitles<C extends CBase> = DBConfig.FillEndpointsWithSection<C, string, string>
     
     interface EntitySectionNode {
         title: string
     }
 
-    interface EntityEndpointNode {
+    interface EntityEndpointNode<N extends DBConfig.Field.Types> {
         title: string
-        Component: FC<{}>
+        binding: StagingStore.PropertyEndpoint<N>
     }
 
-    export type EntityEditorInjection<C extends CBase> = DBConfig.FillEndpointsWithSection<C, EntityEndpointNode, EntitySectionNode>
-
-    export type InjectionComponents<C extends CBase> = DBConfig.MapEndpoints<C, {
-        file: EndpointComponent<DBConfig.Field.Types.File>,
-        fileList: EndpointComponent<DBConfig.Field.Types.FileList>,
-        tagList: EndpointComponent<DBConfig.Field.Types.TagList>,
-        fullText: EndpointComponent<DBConfig.Field.Types.FullText>,
-        fullTextList: EndpointComponent<DBConfig.Field.Types.FullTextList>,
-    }>
+    export type EntityEditorInjection<C extends CBase> = DBConfig.MapEndpointsWithSection<C, {
+        fullText: EntityEndpointNode<DBConfig.Field.Types.FullText>,
+        fullTextList: EntityEndpointNode<DBConfig.Field.Types.FullTextList>,
+        tagList: EntityEndpointNode<DBConfig.Field.Types.TagList>,
+        file: EntityEndpointNode<DBConfig.Field.Types.File>,
+        fileList: EntityEndpointNode<DBConfig.Field.Types.FileList>,
+    }, EntitySectionNode>
 
     type EndpointComponentProps<Type extends DBConfig.Field.Types> = {
         title: string,
         binding: StagingStore.PropertyEndpoint<Type>
     }
-    type EndpointComponent<Type extends DBConfig.Field.Types> = FC<EndpointComponentProps<Type>>
 
     export type Options<C extends CBase> = {
         titles: EntityTitles<C>
-        components: InjectionComponents<C>
+        bindings: StagingStore.StoreEndpoints<C>
+    }
+
+    export function getEndpoints<C extends CBase>(config: C, options: Options<C>): EntityEditorInjection<C> {
+        const result: any = {
+            $section: {
+                title: options.titles["$section"]
+            }
+        }
+        for(const key in config) {
+            const c = config[key]
+            if(DBConfig.Field.isField(c)) {
+                const e: EndpointComponentProps<DBConfig.Field.Types> = {
+                    title: options.titles[key] as string,
+                    binding: options.bindings[key] as any
+                }
+                result[key] = e
+            } else {
+                result[key] = getEndpoints(c, {
+                    titles: options.titles[key] as any,
+                    bindings: options.bindings[key] as any
+                })
+            }
+        }
+
+        return result
     }
 }

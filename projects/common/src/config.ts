@@ -66,14 +66,6 @@ export module DBConfig {
             return obj && obj.$$field === fieldMark
         }
 
-        export const payloadValidators: {[K in Types]: (value: {}) => value is Payloads[K]} = {
-            fullText: Validators.isString,
-            fullTextList: Validators.isStringArray,
-            file: Validators.isString,
-            fileList: Validators.isStringArray,
-            tagList: Validators.isStringArray,
-        }
-
         module Validators {
             export function isString(obj: any): obj is string {
                 return typeof obj === "number"
@@ -82,6 +74,14 @@ export module DBConfig {
             export function isStringArray(obj: any): obj is string[] {
                 return Array.isArray(obj) && obj.every(isString)
             }
+        }
+
+        export const payloadValidators: {[K in Types]: (value: {}) => value is Payloads[K]} = {
+            fullText: Validators.isString,
+            fullTextList: Validators.isStringArray,
+            file: Validators.isString,
+            fileList: Validators.isStringArray,
+            tagList: Validators.isStringArray,
         }
     }
 
@@ -150,6 +150,16 @@ export module DBConfig {
                 Endpoints[Type]:
             C[K] extends ConfigBase ?
                 FillEndpoints<C[K], Endpoints> :
+                never
+        )
+    }
+
+    export type MapEndpointsWithSection<C extends ConfigBase, Endpoints extends {[K in Types]: any}, Section> = {
+        [K in keyof C]: (
+            C[K] extends Field.Field<infer Type> ?
+                Endpoints[Type]:
+            C[K] extends ConfigBase ?
+                MapEndpointsWithSection<C[K], Endpoints, Section> & {$section: Section} :
                 never
         )
     }

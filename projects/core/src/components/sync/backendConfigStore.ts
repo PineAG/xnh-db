@@ -1,5 +1,5 @@
-import { OctokitBackend } from "@core/octokit/backend"
-import { RestfulFileBackend } from "@core/restful"
+import { OctokitBackend } from "../octokit"
+import { RestfulFileBackend } from "../restful"
 import { Octokit } from "@octokit/rest"
 import { DBClients, DBFileBackend } from "@xnh-db/common"
 import { observable, action, makeAutoObservable, makeObservable, toJS, computed } from "mobx"
