@@ -25,6 +25,7 @@ describe("injection-tests", () => {
                 b: ["a", "b"]
             }
         }
+
         const bindings = StagingStore.convertEndpoints(config, entity)
         const endpoints = EntityPropertyInjection.getEndpoints(config, {titles, bindings})
         expect(endpoints.a.$section.title).toBe("Section A")
@@ -32,5 +33,17 @@ describe("injection-tests", () => {
         expect(endpoints.a.b.binding.value).toStrictEqual(["a", "b"])
         endpoints.a.b.binding.update(["233"])
         expect(entity.a?.b).toStrictEqual(["233"])
+    })
+
+    test("readonly", () => {
+        const entity: DBConfig.PartialEntity<Conf> = {
+            a: {
+                b: ["a", "b"]
+            }
+        }
+        const endpoints = EntityPropertyInjection.getReadonlyEndpoints(config, {titles, entity})
+        expect(endpoints.a.$section.title).toBe("Section A")
+        expect(endpoints.a.b.title).toBe("B")
+        expect(endpoints.a.b.value).toStrictEqual(["a", "b"])
     })
 })
