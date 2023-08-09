@@ -68,7 +68,7 @@ export module DBConfig {
 
         module Validators {
             export function isString(obj: any): obj is string {
-                return typeof obj === "number"
+                return typeof obj === "string"
             }
 
             export function isStringArray(obj: any): obj is string[] {

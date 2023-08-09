@@ -382,7 +382,7 @@ export module StagingStore {
     export interface PropertyEndpoint<N extends DBConfig.Field.Types> {
         type: N
         value: DBConfig.Field.Payloads[N] | null
-        update(value: DBConfig.Field.Payloads[N]): void
+        update(value: DBConfig.Field.Payloads[N] | null): void
     }
 
     export type StoreEndpoints<C extends DBConfig.ConfigBase> = DBConfig.MapEndpoints<C, {
@@ -405,7 +405,11 @@ export module StagingStore {
                     },
                     update(value) {
                         runInAction(() => {
-                            entity[key] = value as any
+                            if(value == null) {
+                                delete entity[key]
+                            } else {
+                                entity[key] = value as any
+                            }
                         })
                     }
                 }

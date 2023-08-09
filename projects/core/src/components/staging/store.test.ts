@@ -67,7 +67,7 @@ describe("staging-tests", () => {
 
     beforeEach(async () => {
         db = await IndexedDBBackend.open("test")
-        backend = new IndexedDBBackend.Client(db)
+        backend = new IndexedDBBackend.Client(Promise.resolve(db))
         fallbackBackend = new Utils.MockBackend()
         store = new StagingStore.Store({
             backend,
@@ -105,7 +105,7 @@ describe("staging-tests", () => {
         const actions = await DBClients.FullSync.Actions.extractActions(store, dst)
         expect(actions.putEntity.length).toBe(1)
         expect(actions.deleteEntity.length).toBe(1)
-        await DBClients.FullSync.Actions.performActions(dst, actions, false)
+        await dst.performActions(actions, false)
         const entity1 = await backend.getEntityIndex(type, id)
         const entity2 = await backend.getEntityIndex(type, id2)
         expect(entity1?.status).toBe(DBClients.EntityState.Active)
@@ -137,5 +137,8 @@ describe("staging-tests", () => {
         proxy.tags.update(["666"])
 
         expect(data.tags && data.tags[0]).toBe("666")
+
+        proxy.tags.update(null)
+        expect(data.tags).toBeUndefined()
     })
 })
