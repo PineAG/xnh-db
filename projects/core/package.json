@@ -8,6 +8,7 @@
   "dependencies": {
     "@octokit/core": "^5.0.0",
     "@octokit/rest": "^20.0.1",
+    "@types/lodash": "^4.14.197",
     "@xnh-db/common": "*",
     "dayjs": "^1.11.9",
     "idb": "^7.1.1",
@@ -34,6 +35,7 @@
     "test:coverage": "jest --coverage ./src",
     "test:indexeddb": "jest ./src/components/indexeddb",
     "test:staging": "jest ./src/components/staging",
-    "test:octokit": "jest ./src/components/octokit"
+    "test:octokit": "jest ./src/components/octokit",
+    "test:search": "jest ./src/components/search"
   }
 }

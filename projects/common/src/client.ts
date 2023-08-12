@@ -1,5 +1,4 @@
 import { DBConfig } from "./config"
-import { DBSearch } from "./search"
 import { DBTokenize } from "./tokenize"
 
 export module DBClients {
@@ -56,6 +55,12 @@ export module DBClients {
             status: EntityState
         }
 
+        export interface SearchResult {
+            type: string
+            id: string
+            weight: number
+        }
+
         export interface IClient {
             listEntities(): Promise<EntityIndex[]>
             getEntityIndex(type: string, id: string): Promise<EntityIndex | null>
@@ -65,12 +70,12 @@ export module DBClients {
             deleteEntity(type: string, id: string, version: number): Promise<void>
 
             // properties
-            queryByTag(type: string, property: string, value: string): Promise<DBSearch.SearchResult[]>
+            queryByTag(type: string, property: string, value: string): Promise<SearchResult[]>
             listTags(propertyCollection: string): Promise<string[]>
 
             // full text
-            queryByFullTextTermGlobal(term: string): Promise<DBSearch.SearchResult[]>
-            queryByFullTextTermInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]>
+            queryByFullTextTermGlobal(term: string): Promise<SearchResult[]>
+            queryByFullTextTermInCollection(type: string, term: string): Promise<SearchResult[]>
 
             getFullTextWeightOfEntity(type: string, id: string): Promise<number | null>
             getFullTextTotalWeightInCollection(type: string, term: string): Promise<number | null>

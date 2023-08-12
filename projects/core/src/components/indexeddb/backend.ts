@@ -1,7 +1,7 @@
 import type {IDBPDatabase, StoreNames as IDBStoreNames, IndexKey} from "idb"
 import {openDB} from "idb"
 import { IndexedDBSchema } from "./schema"
-import { DBClients, DBSearch, DBTokenize } from "@xnh-db/common"
+import { DBClients, DBTokenize } from "@xnh-db/common"
 import { sortBy } from "lodash"
 
 export module IndexedDBBackend {
@@ -57,16 +57,16 @@ export module IndexedDBBackend {
             await this.properties.delete(type, id)
             await this.entities.delete(type, id, version)
         }
-        queryByTag(type: string, property: string, value: string): Promise<DBSearch.SearchResult[]> {
+        queryByTag(type: string, property: string, value: string): Promise<DBClients.Query.SearchResult[]> {
             return this.properties.queryEntities(type, property, value)
         }
         listTags(propertyCollection: string): Promise<string[]> {
             return this.properties.getPropertyValues(propertyCollection)
         }
-        queryByFullTextTermGlobal(term: string): Promise<DBSearch.SearchResult[]> {
+        queryByFullTextTermGlobal(term: string): Promise<DBClients.Query.SearchResult[]> {
             return this.fullText.getEntitiesGlobal(term)
         }
-        queryByFullTextTermInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
+        queryByFullTextTermInCollection(type: string, term: string): Promise<DBClients.Query.SearchResult[]> {
             return this.fullText.getEntitiesInCollection(type, term)
         }
         getFullTextWeightOfEntity(type: string, id: string): Promise<number | null> {
@@ -226,7 +226,7 @@ export module IndexedDBBackend {
             }
         }
 
-        async queryEntities(type: string, propertyName: string, value: string): Promise<DBSearch.SearchResult[]> {
+        async queryEntities(type: string, propertyName: string, value: string): Promise<DBClients.Query.SearchResult[]> {
             const entities = await this.entity.getValuesByIndex("property", `${type}_${propertyName}_${value}`)
             return entities.map(it => ({
                 id: it.id,
@@ -287,12 +287,12 @@ export module IndexedDBBackend {
             await this.entity.delete(docId)
         }
 
-        async getEntitiesInCollection(type: string, term: string): Promise<DBSearch.SearchResult[]> {
+        async getEntitiesInCollection(type: string, term: string): Promise<DBClients.Query.SearchResult[]> {
             const result = await this.term.getValuesByIndex("collectionTerm", `${type}_${term}`)
             return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
         }
 
-        async getEntitiesGlobal(term: string): Promise<DBSearch.SearchResult[]> {
+        async getEntitiesGlobal(term: string): Promise<DBClients.Query.SearchResult[]> {
             const result = await this.term.getValuesByIndex("globalTerm", term)
             return result.map(it => ({type: it.type, id: it.id, weight: it.weight}))
         }

@@ -119,13 +119,15 @@ export module IndexedDBSchema {
             // index
             $entity: `${string}_${string}`
             $propertyValue: `${string}_${string}_${string}`
+            $globalPropertyValue: `${string}_${string}`
         }
         export function entityId({type, id, propertyName}: EntityIndex): string {
             return `Prop_${type}_${id}_${propertyName}`
         }
         export const entityIndices = createIndicesFor<EntityIndex>().as({
             entity: "$entity",
-            property: "$propertyValue"
+            property: "$propertyValue",
+            globalProperty: "$globalPropertyValue"
         })
 
         export function extractEntityIndices(type: string, id: string, properties: DBClients.Query.EntityProperties): EntityIndex[] {
@@ -137,7 +139,8 @@ export module IndexedDBSchema {
                         propertyCollection: prop.propertyCollection,
                         propertyName,
                         $entity: `${type}_${id}`,
-                        $propertyValue: `${type}_${propertyName}_${value}`
+                        $propertyValue: `${type}_${propertyName}_${value}`,
+                        $globalPropertyValue: `${propertyName}_${value}`
                     })
                 }
             }
