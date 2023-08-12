@@ -87,3 +87,50 @@ describe("search-ast", () => {
         expect(() => DBSearchExpression.AST.parse(expr)).toThrow(DBSearchExpression.SyntaxError)
     })
 })
+
+describe.only("search-parse-dump", () => {
+    interface Opt {
+        Id: string
+        Aggregates: "every" | "some"
+        Infix: "and" | "or" | "exclude"
+        Functions: {
+            linkTo: "id"
+        }
+    }
+
+    class Resolver implements DBSearchExpression.Parse.IResolver<Opt> {
+        readonly topAggregate = "every"
+        validateAggregate(n: string): n is "every" | "some" {
+            return n === "every" || n === "some"
+        }
+        validateInfix(n: string): n is "and" | "or" | "exclude" {
+            return n === "and" || n === "or" || n === "exclude"
+        }
+        validateFunction(n: string): n is "linkTo" {
+            return n === "linkTo"
+        }
+    }
+    
+    test("happy-case", () => {
+        const resolver = new Resolver()
+        let expr = `a b c d -and e -or /f/g=hhh -and $some( %linkTo( id=xxxxx ) -exclude (j -and (k)) )`
+        let result = DBSearchExpression.Parse.parse(expr, resolver)
+        if(!result.success) {
+            console.error(result.message)
+            throw new Error();
+        }
+
+        const out1 = expr = DBSearchExpression.Dump.dump(result.query)
+        console.log(expr)
+        
+        result = DBSearchExpression.Parse.parse(expr, resolver)
+        if(!result.success) {
+            console.error(result.message)
+            throw new Error();
+        }
+        const out2 = expr = DBSearchExpression.Dump.dump(result.query)
+        console.log(expr)
+
+        expect(out1).toBe(out2)
+    })
+})

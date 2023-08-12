@@ -683,6 +683,7 @@ export module DBSearchExpression {
                 }
             } catch(ex) {
                 if(ex instanceof SyntaxError) {
+                    console.error(ex)
                     return {
                         success: false,
                         message: ex.message
@@ -696,6 +697,9 @@ export module DBSearchExpression {
         export function convert<Opt extends Query.OptBase>(source: string, root: AST.ASTRoot, resolver: IResolver<Opt>): Query.QueryBase<Opt> {
             const c = new Converter(source, resolver)
             const queries = root.map(it => c.onInfix(it))
+            if(!resolver.topAggregate) {
+                throw new Error("Missing top aggregate.")
+            }
             return {
                 type: Query.Types.Aggregate,
                 options: {
@@ -755,7 +759,7 @@ export module DBSearchExpression {
                     type: Query.Types.Aggregate,
                     options: {
                         type: name,
-                        children 
+                        children
                     }
                 }
             }
@@ -807,8 +811,12 @@ export module DBSearchExpression {
     }
 
     export module Dump {
-        export function dump(query: Query.QueryBase<Query.OptBase>): string {
-            return new Convertor().onAny(query)
+        export function dump(query: Query.QueryBase<Query.OptBase>, removeTopAggregate: boolean = true): string {
+            if(removeTopAggregate && Query.isQueryOfType(Query.Types.Aggregate, query)) {
+                return query.options.children.map(it => dump(it, false)).join(" ")
+            } else {
+                return new Convertor().onAny(query)
+            }
         }
 
         class Convertor {
@@ -848,12 +856,12 @@ export module DBSearchExpression {
 
             onFunction(q: Query.Query<Query.Types.Function, Query.OptBase>): string {
                 const children = Object.entries(q.options.parameters).map(([k, v]) => v ? `${this.onValue(k)}=${this.onValue(v)}` : "")
-                return `%${this.onValue(q.options.name)}(${children.join(" ")})`
+                return `${Tokenize.AcceptedSymbols.FuncPrefix}${this.onValue(q.options.name)}(${children.join(" ")})`
             }
             
             onAggregate(q: Query.Query<Query.Types.Aggregate, Query.OptBase>): string {
                 const children = q.options.children.map(it => this.onAny(it))
-                return `@${this.onValue(q.options.type)}(${children.join(" ")})`
+                return `${Tokenize.AcceptedSymbols.AggPrefix}${this.onValue(q.options.type)}(${children.join(" ")})`
             }
 
             onFullText(q: Query.Query<Query.Types.FullText, Query.OptBase>): string {
