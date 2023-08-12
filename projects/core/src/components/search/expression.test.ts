@@ -65,10 +65,25 @@ describe("search-tokenization", () => {
     })
 })
 
-describe.only("search-ast", () => {
+describe("search-ast", () => {
     test("happy-case", () => {
         const expr = `a b c d -and e -or /f/g=hhh -and $or( %linkTo( id=i ) -exclude (j -and (k)) )`
         const result = DBSearchExpression.AST.parse(expr)
-        console.log(JSON.stringify(result, null, 2))
+        // console.log(JSON.stringify(result, null, 2))
+    })
+
+    test("half-infix", () => {
+        const expr = `a -and `
+        expect(() => DBSearchExpression.AST.parse(expr)).toThrow(DBSearchExpression.SyntaxError)
+    })
+
+    test("half-bracket-left", () => {
+        const expr = `a ( b`
+        expect(() => DBSearchExpression.AST.parse(expr)).toThrow(DBSearchExpression.SyntaxError)
+    })
+
+    test("half-bracket-right", () => {
+        const expr = `a ) c`
+        expect(() => DBSearchExpression.AST.parse(expr)).toThrow(DBSearchExpression.SyntaxError)
     })
 })

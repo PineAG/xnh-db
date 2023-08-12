@@ -1,4 +1,5 @@
 import { DBClients, DBTokenize } from "@xnh-db/common"
+import type { DBSearchExpression } from "./expression"
 
 export module DBSearch {
     export module Query {
@@ -14,7 +15,7 @@ export module DBSearch {
             Id: any
             Aggregates: string
             Infix: string
-            Functions: {[key: string]: string}
+            Functions: Record<string, string>
         }
 
         export type Payloads<Opt extends OptBase> = {
@@ -47,11 +48,6 @@ export module DBSearch {
         }
 
         export interface IResolver<Opt extends OptBase> {
-            readonly topAggregate: Opt["Aggregates"]
-            validateAggregate(n: string): n is Opt["Aggregates"]
-            validateInfix(n: string): n is Opt["Infix"]
-            validateFunction(n: string): n is Extract<keyof Opt["Functions"], string>
-
             aggregate<Agg extends Opt["Aggregates"]>(name: Agg, children: Result<Opt["Id"]>[][]): Promise<Result<Opt["Id"]>[]>
             infix<Ifx extends Opt["Infix"]>(name: Ifx, left: Result<Opt["Id"]>[], right: Result<Opt["Id"]>[]): Promise<Result<Opt["Id"]>[]>
             functions(): {
@@ -90,7 +86,7 @@ export module DBSearch {
             }
         }
 
-        function isQueryOfType<N extends Types, Opt extends OptBase>(type: N, obj: QueryBase<Opt>): obj is Query<N, Opt> {
+        export function isQueryOfType<N extends Types, Opt extends OptBase>(type: N, obj: QueryBase<Opt>): obj is Query<N, Opt> {
             return obj.type === type
         }
     }
@@ -111,7 +107,7 @@ export module DBSearch {
             linkTo: "id" | "type"
         }
 
-        export interface IResolver extends Query.IResolver<Opt> {} 
+        export interface IResolver extends Query.IResolver<Opt>, DBSearchExpression.Parse.IResolver<Opt> {} 
 
         export class Resolver implements IResolver {
             readonly topAggregate: "every" | "some" = "every"

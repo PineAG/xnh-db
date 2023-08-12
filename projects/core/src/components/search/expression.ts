@@ -55,9 +55,9 @@ export module DBSearchExpression {
         if(source && pos) {
             const row = source.split("\n")[pos.row]
             const pointer = " ".repeat(pos.col) + "^"
-            throw new Error(`${message}\nat row ${pos.row} col ${pos.col}\n${row}\n${pointer}`)
+            throw new SyntaxError(`${message}\nat row ${pos.row} col ${pos.col}\n${row}\n${pointer}`)
         } else {
-            throw new Error(message)       
+            throw new SyntaxError(message)    
         }
     }
 
@@ -309,7 +309,9 @@ export module DBSearchExpression {
     }
 
     export module AST {
-        export function parse(input: string): AstNode<NodeTypes.Infix>[] {
+        export type ASTRoot = AstNode<NodeTypes.Infix>[]
+
+        export function parse(input: string): ASTRoot {
             const tokens = Tokenize.tokenize(input)
             return new Parser(input, tokens).parse()
         }
@@ -358,7 +360,7 @@ export module DBSearchExpression {
         }
 
         type InfixRestItem = {
-            infix: string
+            infix: AstNode<NodeTypes.Value>
             right: AstNode<NodeTypes.Term>
         }
 
@@ -366,6 +368,10 @@ export module DBSearchExpression {
             type: N
             options: Payloads[N]
             pos: Position
+        }
+
+        export function isNode<N extends NodeTypes>(type: N, node: AstNode<NodeTypes>): node is AstNode<N> {
+            return node.type === type
         }
 
         class Parser {
@@ -381,6 +387,9 @@ export module DBSearchExpression {
                     result.push(infix)
                     infix = this.tryInfix()
                 }
+                if(this.offset < this.tokens.length) {
+                    this.error("Syntax error.")
+                }
                 return result
             }
 
@@ -393,7 +402,7 @@ export module DBSearchExpression {
                 while(this.matchForward([Tokenize.AcceptedSymbols.InfixPrefix])) {
                     const name = this.must(() => this.tryValue())
                     const right = this.must(() => this.tryTerm())
-                    rest.push({infix: name.options.content, right})
+                    rest.push({infix: name, right})
                 }
 
                 return {
@@ -628,7 +637,14 @@ export module DBSearchExpression {
             }
     
             error(message: string): never {
-                error(message, this.source, this.tokens[this.offset]?.startAt)
+                let pos: Position
+                const token = this.tokens[this.offset]
+                if(token) {
+                    pos = token.startAt
+                } else {
+                    pos = this.tokens[this.tokens.length-1].endAt
+                }
+                error(message, this.source, pos)
             }
         }
 
@@ -644,10 +660,222 @@ export module DBSearchExpression {
                         never:
                     never:
                 never
-        )
-    
-        
+        )   
     }
+
+    export module Parse {
+        export type Result<Opt extends Query.OptBase> = { success: true, query: Query.QueryBase<Opt> } | {success: false, message: string}
+
+        export interface IResolver<Opt extends Query.OptBase> {
+            readonly topAggregate: Opt["Aggregates"]
+            validateAggregate(n: string): n is Opt["Aggregates"]
+            validateInfix(n: string): n is Opt["Infix"]
+            validateFunction(n: string): n is Extract<keyof Opt["Functions"], string>
+        }
+
+        export function parse<Opt extends Query.OptBase>(source: string, resolver: IResolver<Opt>): Result<Opt> {
+            try {
+                const ast = AST.parse(source)
+                const query = convert(source, ast, resolver)
+                return {
+                    success: true,
+                    query
+                }
+            } catch(ex) {
+                if(ex instanceof SyntaxError) {
+                    return {
+                        success: false,
+                        message: ex.message
+                    }
+                } else {
+                    throw ex
+                }
+            }
+        }
+
+        export function convert<Opt extends Query.OptBase>(source: string, root: AST.ASTRoot, resolver: IResolver<Opt>): Query.QueryBase<Opt> {
+            const c = new Converter(source, resolver)
+            const queries = root.map(it => c.onInfix(it))
+            return {
+                type: Query.Types.Aggregate,
+                options: {
+                    type: resolver.topAggregate,
+                    children: queries
+                }
+            }
+        }
+
+        class Converter<Opt extends Query.OptBase> {
+            constructor(private source: string, private resolver: IResolver<Opt>) {}
+
+            onInfix(node: AST.AstNode<AST.NodeTypes.Infix>): Query.QueryBase<Opt> {
+                let left = this.onTerm(node.options.left)
+                for(const {infix, right} of node.options.rest) {
+                    const r = this.onTerm(right)
+                    if(!this.resolver.validateInfix(infix.options.content)) {
+                        this.error(`Unknown infix ${infix}.`, infix)
+                    }
+                    left = this.createInfix(left, infix.options.content, r)
+                }
+                return left
+            }
+
+            onTerm(node: AST.AstNode<AST.NodeTypes.Term>): Query.QueryBase<Opt> {
+                const internal = node.options.content
+                if(AST.isNode(AST.NodeTypes.Infix, internal)) {
+                    return this.onInfix(internal)
+                } else if(AST.isNode(AST.NodeTypes.Aggregate, internal)) {
+                    return this.onAggregate(internal)
+                } else if(AST.isNode(AST.NodeTypes.Function, internal)) {
+                    return this.onFunction(internal)
+                } else if(AST.isNode(AST.NodeTypes.FullText, internal)) {
+                    return this.onFullText(internal)
+                } else if(AST.isNode(AST.NodeTypes.Property, internal)) {
+                    return this.onProperty(internal)
+                } else {
+                    this.error(`Invalid state.`, node)
+                }
+            }
+
+            onFullText(node: AST.AstNode<AST.NodeTypes.FullText>): Query.Query<Query.Types.FullText, Opt> {
+                const term = node.options.value.options.content
+                return {
+                    type: Query.Types.FullText,
+                    options: {term}
+                }
+            }
+
+            onAggregate(node: AST.AstNode<AST.NodeTypes.Aggregate>): Query.Query<Query.Types.Aggregate, Opt> {
+                const name = node.options.name.options.content
+                if(!this.resolver.validateAggregate(name)) {
+                    this.error(`Unknown aggregate ${name}`, node.options.name)
+                }
+                const children = node.options.contentList.map(it => this.onInfix(it))
+                return {
+                    type: Query.Types.Aggregate,
+                    options: {
+                        type: name,
+                        children 
+                    }
+                }
+            }
+
+            onProperty(node: AST.AstNode<AST.NodeTypes.Property>): Query.Query<Query.Types.Property, Opt> {
+                return {
+                    type: Query.Types.Property,
+                    options: {
+                        property: node.options.path.options.content,
+                        value: node.options.value.options.content
+                    }
+                }
+            }
+
+            onFunction(node: AST.AstNode<AST.NodeTypes.Function>): Query.Query<Query.Types.Function, Opt> {
+                const name = node.options.name.options.content
+                if(!this.resolver.validateFunction(name)) {
+                    this.error(`Unknown function ${name}`, node.options.name)
+                }
+
+                const args: Record<string, string> = {}
+                for(const arg of node.options.argList) {
+                    args[arg.options.name.options.content] = arg.options.value.options.content
+                }
+
+                return {
+                    type: Query.Types.Function,
+                    options: {
+                        name,
+                        parameters: args as any
+                    }
+                }
+            }
+
+            createInfix(left: Query.QueryBase<Opt>, infix: Opt["Infix"], right: Query.QueryBase<Opt>): Query.Query<Query.Types.Infix, Opt> {
+                return {
+                    type: Query.Types.Infix,
+                    options: {
+                        left, right,
+                        type: infix
+                    }
+                }
+            }
+
+            error(message: string, node: AST.AstNode<AST.NodeTypes>): never {
+                error(message, this.source, node.pos)
+            }
+        }
+    }
+
+    export module Dump {
+        export function dump(query: Query.QueryBase<Query.OptBase>): string {
+            return new Convertor().onAny(query)
+        }
+
+        class Convertor {
+            onAny(q: Query.QueryBase<Query.OptBase>): string {
+                if(Query.isQueryOfType(Query.Types.Infix, q)) {
+                    return this.onInfix(q)
+                } else if(Query.isQueryOfType(Query.Types.Aggregate, q)) {
+                    return this.onAggregate(q)
+                } else if(Query.isQueryOfType(Query.Types.Function, q)) {
+                    return this.onFunction(q)
+                } else if(Query.isQueryOfType(Query.Types.FullText, q)) {
+                    return this.onFullText(q)
+                } else if(Query.isQueryOfType(Query.Types.Property, q)) {
+                    return this.onProperty(q)
+                } else {
+                    throw new Error(`Invalid state.`)
+                }
+            }
+
+            onInfix(q: Query.Query<Query.Types.Infix, Query.OptBase>, withBrackets: boolean = true): string {
+                let left: string
+                if(Query.isQueryOfType(Query.Types.Infix, q.options.left)) {
+                    left = this.onInfix(q.options.left, false)
+                } else {
+                    left = this.onAny(q.options.left)
+                }
+
+                const op = q.options.type
+                const right = this.onAny(q.options.right)
+
+                let result = `${left} -${op} ${right}`
+                if(withBrackets) {
+                    result = `(${result})`
+                }
+                return result
+            }
+
+            onFunction(q: Query.Query<Query.Types.Function, Query.OptBase>): string {
+                const children = Object.entries(q.options.parameters).map(([k, v]) => v ? `${this.onValue(k)}=${this.onValue(v)}` : "")
+                return `%${this.onValue(q.options.name)}(${children.join(" ")})`
+            }
+            
+            onAggregate(q: Query.Query<Query.Types.Aggregate, Query.OptBase>): string {
+                const children = q.options.children.map(it => this.onAny(it))
+                return `@${this.onValue(q.options.type)}(${children.join(" ")})`
+            }
+
+            onFullText(q: Query.Query<Query.Types.FullText, Query.OptBase>): string {
+                return this.onValue(q.options.term)
+            }
+
+            onProperty(q: Query.Query<Query.Types.Property, Query.OptBase>): string {
+                return `${q.options.property}=${this.onValue(q.options.value)}`
+            }
+
+            onValue(s: string): string {
+                if(s.includes(" ")) {
+                    s = replaceAll(s, '"', '\\"')
+                    return `"${s}"`
+                } else {
+                    return s
+                }
+            }
+        }
+    }
+
+    export class SyntaxError extends Error {}
 
     function replaceAll(s: string, f: string, t: string): string {
         return s.split(f).join(t)
