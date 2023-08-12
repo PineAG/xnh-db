@@ -95,8 +95,19 @@ export module DBSearch {
         export type Id = {type: string, id: string}
 
         export type Result = Query.Result<Id>
+        export type DefaultQuery = Query.QueryBase<Opt>
 
-        type Opt = {
+        export function emptyQuery(): Query.Query<Query.Types.Aggregate, Opt> {
+            return {
+                type: Query.Types.Aggregate,
+                options: {
+                    type: "every",
+                    children: []
+                }
+            }
+        }
+
+        export type Opt = {
             Id: Id
             Aggregates: "every" | "some"
             Infix: "and" | "or" | "exclude"
@@ -107,23 +118,11 @@ export module DBSearch {
             linkTo: "id" | "type"
         }
 
-        export interface IResolver extends Query.IResolver<Opt>, DBSearchExpression.Parse.IResolver<Opt> {} 
+        export interface IResolver extends Query.IResolver<Opt> {} 
 
         export class Resolver implements IResolver {
-            readonly topAggregate: "every" | "some" = "every"
-
             constructor(private backend: DBClients.Query.IClient) {}
             
-            validateAggregate(n: string): n is "every" | "some" {
-                return n === "every" || n === "some"
-            }
-            validateInfix(n: string): n is "and" | "or" | "exclude" {
-                return n === "and" || n === "or" || n === "exclude"
-            }
-            validateFunction(n: string): n is "linkTo" {
-                return n === "linkTo"
-            }
-
             async aggregate<Agg extends Opt["Aggregates"]>(name: Agg, children: Query.Result<Id>[][]): Promise<Query.Result<Id>[]> {
                 if(children.length == 0) {
                     return []
@@ -195,6 +194,19 @@ export module DBSearch {
                     },
                     weight: it.weight
                 }))
+            }
+        }
+
+        export class ExpressionResolver implements DBSearchExpression.Parse.IResolver<Opt> {
+            readonly topAggregate: "every" | "some" = "every"
+            validateAggregate(n: string): n is "every" | "some" {
+                return n === "every" || n === "some"
+            }
+            validateInfix(n: string): n is "and" | "or" | "exclude" {
+                return n === "and" || n === "or" || n === "exclude"
+            }
+            validateFunction(n: string): n is "linkTo" {
+                return n === "linkTo"
             }
         }
 

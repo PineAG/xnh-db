@@ -1,5 +1,5 @@
 import { DBClients } from "@xnh-db/common";
-import { action, makeAutoObservable, observable } from "mobx";
+import { action, computed, makeAutoObservable, observable } from "mobx";
 
 export module SynchronizationStore {
 
@@ -44,25 +44,14 @@ export module SynchronizationStore {
 
     export class Store {
         @observable private syncState: SyncState = {status: "unchecked"}
-        @observable private backend: BackendState
 
-        constructor(initialBackend: BackendState) {
+        constructor() {
             makeAutoObservable(this)
-            this.backend = initialBackend
-        }
-
-        // backend
-        @action setBackend(backend: BackendState) {
-            if(this.syncState.status === "pulling" || this.syncState.status === "pushing") {
-                throw new Error(`Attempting to switch backend while ${this.syncState.status}`)
-            }
-            this.backend = backend
-            this.syncState = {status: "unchecked"}
         }
 
         // sync
 
-        state() {
+        @computed get state() {
             return this.syncState
         }
 
@@ -70,16 +59,16 @@ export module SynchronizationStore {
             this.syncState = syncState
         }
 
-        async push() {
+        async push(backend: BackendState) {
             if(this.syncState.status === "pulling" || this.syncState.status === "pushing") {
                 throw new Error(`Attempting to push while ${this.syncState.status}`)
             }
-            if(this.backend.upstream.type === "readonly") {
+            if(backend.upstream.type === "readonly") {
                 throw new Error("Cannot push to readonly backend.")
             }
-            const upstreamReader = this.backend.upstream.backend.reader()
-            const upstreamWriter = this.backend.upstream.backend.writer()
-            const downstreamReader = this.backend.downstream.reader()
+            const upstreamReader = backend.upstream.backend.reader()
+            const upstreamWriter = backend.upstream.backend.writer()
+            const downstreamReader = backend.downstream.reader()
             this.setSyncState({status: "pushing", message: "Start pushing..."})
             try {
                 const actions = await DBClients.FullSync.Actions.extractActions(downstreamReader, upstreamReader)
@@ -99,13 +88,13 @@ export module SynchronizationStore {
             }
         }
 
-        async pull() {
+        async pull(backend: BackendState) {
             if(this.syncState.status === "pulling" || this.syncState.status === "pushing") {
                 throw new Error(`Attempting to pull while ${this.syncState.status}`)
             }
-            const upstreamReader = this.backend.upstream.backend.reader()
-            const downstreamReader = this.backend.downstream.reader()
-            const downstreamWriter = this.backend.downstream.writer()
+            const upstreamReader = backend.upstream.backend.reader()
+            const downstreamReader = backend.downstream.reader()
+            const downstreamWriter = backend.downstream.writer()
             this.setSyncState({status: "pushing", message: "Start pushing..."})
             try {
                 const actions = await DBClients.FullSync.Actions.extractActions(upstreamReader, downstreamReader)

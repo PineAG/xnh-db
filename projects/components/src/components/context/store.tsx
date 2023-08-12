@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest"
-import { BackendConfigurationStore, IndexedDBBackend, ResourceStore, StagingStore } from "@xnh-db/core"
-import {createContext, useCallback, useContext} from "react"
+import { BackendConfigurationStore, DBSearchStore, IndexedDBBackend, StagingStore, SynchronizationStore } from "@xnh-db/core"
+import {createContext, useContext} from "react"
 import { useLocalObservable } from "mobx-react-lite"
 import { DBFileBackend } from "@xnh-db/common"
 
@@ -12,25 +12,80 @@ export module StoreContext {
         partitionPrefixLength: 2
     }
 
-    export const OctoKitContext = createContext<Octokit>(new Octokit())
-
-    export const ConfigStoreContext = createContext<BackendConfigurationStore.ConfigStore>(new BackendConfigurationStore.ConfigStore(ConfigKey))
-    export const GitHubConfigStoreContext = createContext<BackendConfigurationStore.GitHub.GitHubConfigStore>(new BackendConfigurationStore.GitHub.GitHubConfigStore())
-
-    export function useStagingStore(): StagingStore.Store {
-        const configStore = useContext(ConfigStoreContext)
-        const upstreamFileBackend = configStore.currentBackend()
-        
-        return useLocalObservable(() => {
-            const idbClient = IndexedDBBackend.open(DBKey)
-            const idbBackend = new IndexedDBBackend.Client(idbClient)
-
-            const upstreamBackend = new DBFileBackend.ReadonlyBackend(upstreamFileBackend.backend, FileBackendOptions)
-
-            return new StagingStore.Store({
-                backend: idbBackend,
-                fallbackBackend: upstreamBackend.reader()
-            })
-        })
+    interface ProviderProps {
+        children: React.ReactNode
     }
+
+    export module Sync {
+        export const OctoKitContext = createContext<Octokit>(new Octokit())
+
+        export const ConfigStoreContext = createContext<BackendConfigurationStore.ConfigStore>(new BackendConfigurationStore.ConfigStore(ConfigKey))
+        export const GitHubConfigStoreContext = createContext<BackendConfigurationStore.GitHub.GitHubConfigStore>(new BackendConfigurationStore.GitHub.GitHubConfigStore())
+
+        export const SyncStoreContext = createContext<SynchronizationStore.Store>(new SynchronizationStore.Store())
+    }
+
+    export module Staging {
+        export function useStagingStore(): StagingStore.Store {
+            const configStore = useContext(Sync.ConfigStoreContext)
+            const upstreamFileBackend = configStore.currentBackend()
+            
+            return useLocalObservable(() => {
+                const idbClient = IndexedDBBackend.open(DBKey)
+                const idbBackend = new IndexedDBBackend.Client(idbClient)
+    
+                const upstreamBackend = new DBFileBackend.ReadonlyBackend(upstreamFileBackend.backend, FileBackendOptions)
+    
+                return new StagingStore.Store({
+                    backend: idbBackend,
+                    fallbackBackend: upstreamBackend.reader()
+                })
+            })
+        }
+    }
+
+    export module Search {
+        const SearchContext = createContext<null | DBSearchStore.DataStore>(null)
+
+        export function SearchProvider(props: ProviderProps) {
+            const store = useLocalObservable(() => {
+                const idbClient = IndexedDBBackend.open(DBKey)
+                const idbBackend = new IndexedDBBackend.Client(idbClient)
+                return new DBSearchStore.DataStore(idbBackend)
+            })
+    
+            return <SearchContext.Provider value={store}>
+                {props.children}
+            </SearchContext.Provider>
+        }
+    
+        export function useSearchResult(): DBSearchStore.DataStore {
+            const store = useContext(SearchContext)
+            if(!store) {
+                throw new Error("Not in a SearchProvider")
+            }
+            return store
+        }
+
+        const EditContext = createContext<null | DBSearchStore.EditStore>(null)
+
+        export function EditProvider(props: ProviderProps) {
+            const store = useLocalObservable(() => {
+                return new DBSearchStore.EditStore()
+            })
+    
+            return <EditContext.Provider value={store}>
+                {props.children}
+            </EditContext.Provider>
+        }
+    
+        export function useEdit(): DBSearchStore.EditStore {
+            const store = useContext(EditContext)
+            if(!store) {
+                throw new Error("Not in a EditProvider")
+            }
+            return store
+        }
+    }
+
 }

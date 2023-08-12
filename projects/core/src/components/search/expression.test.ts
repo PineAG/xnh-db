@@ -25,7 +25,6 @@ describe("search-tokenization", () => {
 
     test("property", () => {
         const [t1, t2, t3] = tokenize(`/a/b/c/d="/a/b/c/d"`)
-        console.log(t1, t2, t3)
         if(isToken(TokenTypes.Path, t1)) {
             expect(t1.options.path).toBe("/a/b/c/d")
         } else {
@@ -86,9 +85,14 @@ describe("search-ast", () => {
         const expr = `a ) c`
         expect(() => DBSearchExpression.AST.parse(expr)).toThrow(DBSearchExpression.SyntaxError)
     })
+
+    test("empty", () => {
+        const res = DBSearchExpression.AST.parse("")
+        expect(res.length).toBe(0)
+    })
 })
 
-describe.only("search-parse-dump", () => {
+describe("search-parse-dump", () => {
     interface Opt {
         Id: string
         Aggregates: "every" | "some"
