@@ -24,7 +24,7 @@ export module DBSearchStore {
                 this.setResults(result)
                 this.setErrorMessage(null)
                 this.setPending(false)
-            } catch(ex) {
+            } catch(ex: any) {
                 this.setErrorMessage(ex.toString())
                 this.setPending(false)
             }

@@ -805,7 +805,7 @@ export module DBSearchExpression {
             }
 
             error(message: string, node: AST.AstNode<AST.NodeTypes>): never {
-                error(message, this.source, node.pos)
+                return error(message, this.source, node.pos)
             }
         }
     }

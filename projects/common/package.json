@@ -1,11 +1,14 @@
 {
   "name": "@xnh-db/common",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "typings": "src/index.ts",
   "source": "src/index.ts",
   "license": "MIT",
   "devDependencies": {
     "type-fest": "^4.0.0"
+  },
+  "scripts": {
+    "build": "tsc --build --verbose"
   }
 }

@@ -1,9 +1,12 @@
 {
   "name": "@xnh-db/components",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "typings": "src/index.ts",
+  "source": "dist/index.js",
   "license": "MIT",
   "dependencies": {
+    "@chakra-ui/icons": "^2.1.0",
     "@chakra-ui/react": "^2.8.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -13,9 +16,12 @@
     "@xnh-db/common": "*",
     "@xnh-db/core": "*",
     "framer-motion": "^10.15.1",
+    "js-base64": "^3.7.5",
     "mobx": "^6.10.0",
     "mobx-react-lite": "^4.0.3",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "react-dropzone": "^14.2.3",
+    "react-image-crop": "^10.1.5"
   },
   "devDependencies": {
     "fake-indexeddb": "^4.0.2",

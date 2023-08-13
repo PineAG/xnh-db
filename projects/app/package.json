@@ -44,5 +44,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  
+
+  "browser": {
+    "path": false,
+    "fs": false,
+    "crypto": false
   }
 }

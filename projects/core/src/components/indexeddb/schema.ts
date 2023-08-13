@@ -88,7 +88,7 @@ export module IndexedDBSchema {
     }
 
     const createIndicesFor = <T extends {}>() => ({
-        as: function<const Idx extends StoreIndexBase<T>>(idx: Idx): _ConvertIdx<T, Idx> {
+        as: function<Idx extends StoreIndexBase<T>>(idx: Idx): _ConvertIdx<T, Idx> {
             return idx as unknown as _ConvertIdx<T, Idx>
         }
     })

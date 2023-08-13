@@ -1,4 +1,4 @@
-import { IndexedDBBackend } from "@core/indexeddb"
+import { IndexedDBBackend } from "../indexeddb"
 import { ObservableMap, action, computed, makeAutoObservable, observable } from "mobx"
 
 export module ResourceStore {

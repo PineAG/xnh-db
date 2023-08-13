@@ -79,7 +79,7 @@ export module SynchronizationStore {
                     })
                 })
                 this.setSyncState({status: "stable"})
-            } catch (ex) {
+            } catch (ex: any) {
                 this.setSyncState({
                     status: "error",
                     action: "push",
@@ -105,7 +105,7 @@ export module SynchronizationStore {
                     })
                 })
                 this.setSyncState({status: "stable"})
-            } catch (ex) {
+            } catch (ex: any) {
                 this.setSyncState({
                     status: "error",
                     action: "pull",

@@ -1,7 +1,7 @@
 {
   "name": "@xnh-db/core",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "typings": "src/index.ts",
   "source": "src/index.ts",
   "license": "MIT",
