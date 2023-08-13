@@ -265,7 +265,7 @@ export module ImageUtils {
                     x: size.width * cropByPercentage.x,
                     y: size.width * cropByPercentage.y,
                     width: size.width * cropByPercentage.width,
-                    height: size.width * cropByPercentage.height,
+                    height: size.height * cropByPercentage.height,
                 }
 
                 const cropDstWidth = size.width * cropByPercentage.width
