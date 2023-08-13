@@ -44,8 +44,7 @@ export module BackendConfigurationStore {
                 current: BackendType.Restful,
                 github: null
             }
-
-            this.config = makeObservable(config)
+            this.config = makeAutoObservable(config)
         }
 
         @action switchBackend(backendType: BackendType): boolean {
@@ -182,7 +181,7 @@ export module BackendConfigurationStore {
                             email: user.email
                         }
                     })
-                } catch(ex) {
+                } catch(ex: any) {
                     this.setError(ex)
                 }
                 this.setPending(false)
@@ -203,7 +202,7 @@ export module BackendConfigurationStore {
                         repo,
                         branchList
                     })
-                }catch(ex) {
+                }catch(ex: any) {
                     this.setError(ex)
                 }
                 this.setPending(false)
@@ -220,7 +219,7 @@ export module BackendConfigurationStore {
                         repo: this.state.repo,
                         branch
                     })
-                }catch(ex) {
+                }catch(ex: any) {
                     this.setError(ex)
                 }
                 this.setPending(false)

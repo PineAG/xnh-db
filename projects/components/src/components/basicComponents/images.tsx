@@ -1,11 +1,12 @@
-import {useEffect} from "react"
+import {useEffect, useRef} from "react"
 import {makeAutoObservable, observable, action} from "mobx"
 import * as Chakra from "@chakra-ui/react"
 import * as ChakraIcon from "@chakra-ui/icons"
 import { ElementaryComponents } from "./elementary"
 import { Observer, useLocalObservable } from "mobx-react-lite"
 import { FileComponents, FileUtils } from "./files"
-import {ReactCrop} from "react-image-crop"
+import ReactCrop from "react-image-crop"
+import "react-image-crop/dist/ReactCrop.css";
 
 export module ImageViewerComponents {
     interface ImageBoxProps {
@@ -72,7 +73,7 @@ export module ImageViewerComponents {
                     onChange={(x, y, w, h) => store.setCrop(x, y, w, h)}
                 />
             } else {
-                return <FileComponents.FileUpload 
+                return <FileComponents.FileUpload
                     mime="image/*"
                     onUpload={onUpload}>
                     <div>
@@ -123,11 +124,11 @@ export module ImageViewerComponents {
                 const data = await ImageUtils.Convert.convert(store.data.data, ImageUtils.Convert.cropAndLimitSize(store.crop))
                 await props.onUpload(data)
                 store.clear()
+                store.setShow(false)
             }
         }
 
         async function onUpload(file: File) {
-            console.log(file)
             const data = await FileUtils.readFile(file)
             store.onUpload(data)
         }
@@ -175,13 +176,17 @@ export module ImageViewerComponents {
         onChange: (x: number, y: number, width: number, height: number) => void
     }
     export function ImageCropper(props: ImageCropperProps) {
+        const ref = useRef<HTMLImageElement>(null)
         return <ReactCrop 
-            crop={{unit: "%", x: props.crop.x, y: props.crop.y, width: props.crop.width * 100, height: props.crop.height * 100}}
+            crop={{unit: "%", x: props.crop.x * 100, y: props.crop.y * 100, width: props.crop.width * 100, height: props.crop.height * 100}}
             onChange={(_pxCrop, crop) => {
-                props.onChange(crop.x, crop.y, crop.width, crop.height)
+                if(!ref.current) {
+                    return;
+                }
+                props.onChange(crop.x/100, crop.y/100, crop.width/100, crop.height/100)
             }}
             >
-            <img src={props.src}/>
+            <img ref={ref} src={props.src}/>
         </ReactCrop>
     }
 

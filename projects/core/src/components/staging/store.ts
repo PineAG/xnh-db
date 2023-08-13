@@ -97,7 +97,7 @@ export module StagingStore {
                     data = await this.options.backend.getEntityContent(type, id)
                     await this.fetchLinksOf(type, id)
                 }
-            } catch(ex) {
+            } catch(ex: any) {
                 this.setEntity(type, id, {status: DataStatus.Failure, message: `${ex}`, id: {type, id}})
                 return;
             }
@@ -243,7 +243,7 @@ export module StagingStore {
                         throw new Error(`File not found: ${name}`)
                     }
                 }
-            } catch(ex) {
+            } catch(ex: any) {
                 this.files.set(name, {status: DataStatus.Failure, message: `${ex}`, id: name})
                 return;
             }

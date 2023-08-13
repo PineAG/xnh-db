@@ -7,7 +7,7 @@
         "composite": true,
         "declarationMap": true,
         "moduleResolution": "Node",
-        "module": "NodeNext",
+        "module": "ESNext",
         "skipLibCheck": true,
         "esModuleInterop": true,
         "strictNullChecks": true,

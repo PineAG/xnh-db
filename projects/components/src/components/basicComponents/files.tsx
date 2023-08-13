@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
-import B64 from "js-base64"
+import * as B64 from "js-base64"
 import mobx, { action, makeAutoObservable, observable } from "mobx"
 import { Observer, useLocalObservable } from "mobx-react-lite"
 
@@ -85,7 +85,7 @@ export module FileComponents {
                 this.setData(data)
                 this.setErrorMessage(null)
                 this.setPending(false)
-            } catch(ex) {
+            } catch(ex: any) {
                 console.error(ex)
                 this.setErrorMessage(ex.toString())
                 this.setPending(false)

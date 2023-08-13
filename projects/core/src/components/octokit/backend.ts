@@ -120,7 +120,7 @@ export module OctokitBackend {
                     throw new Error(`Invalid type of ${name}: ${data.type}`)
                 }
                 return B64.toUint8Array(data.content)
-            } catch(ex) {
+            } catch(ex: any) {
                 const status = ex && ex["status"]
                 if(typeof status === "number" && status === 404) {
                     return null
@@ -137,7 +137,7 @@ export module OctokitBackend {
                     owner, repo, branch
                 })
                 return data.commit.sha
-            } catch (ex) {
+            } catch (ex: any) {
                 if(ex && ex["status"] && typeof ex["status"] === "number" && ex["status"] === 404) {
                     return null
                 } else {

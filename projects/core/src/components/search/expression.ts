@@ -681,7 +681,7 @@ export module DBSearchExpression {
                     success: true,
                     query
                 }
-            } catch(ex) {
+            } catch(ex: any) {
                 if(ex instanceof SyntaxError) {
                     console.error(ex)
                     return {
