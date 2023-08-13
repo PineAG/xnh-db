@@ -76,7 +76,7 @@ export module ImageViewerComponents {
                 return <FileComponents.FileUpload
                     mime="image/*"
                     onUpload={onUpload}>
-                    <div>
+                    <div style={{display: "grid", placeItems: "center", width: "100%", height: "60px", backgroundColor: "lightgray"}}>
                         <p>点击上传或拖拽图片到此处</p>
                     </div>
                 </FileComponents.FileUpload>
@@ -97,12 +97,14 @@ export module ImageViewerComponents {
                         </Chakra.ModalBody>
                         
                         <Chakra.ModalFooter>
-                            <Chakra.Button disabled={!store.data} onClick={onSubmit}>
-                                确定
-                            </Chakra.Button>
-                            <Chakra.Button onClick={close}>
-                                取消
-                            </Chakra.Button>
+                            <Chakra.ButtonGroup>
+                                <Chakra.Button variant="outline" onClick={close}>
+                                    取消
+                                </Chakra.Button>
+                                <Chakra.Button variant="solid" disabled={!store.data} onClick={onSubmit}>
+                                    确定
+                                </Chakra.Button>
+                            </Chakra.ButtonGroup>
                         </Chakra.ModalFooter>
                     </Chakra.ModalContent>
                 </Chakra.Modal>

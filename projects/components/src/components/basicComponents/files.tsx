@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
 import * as B64 from "js-base64"
-import mobx, { action, makeAutoObservable, observable } from "mobx"
+import mobx, { action, computed, makeAutoObservable, observable, toJS } from "mobx"
 import { Observer, useLocalObservable } from "mobx-react-lite"
 
 export module FileComponents {
@@ -117,6 +117,87 @@ export module FileComponents {
 
         @action setErrorMessage(message: string | null) {
             this.errorMessage = message
+        }
+    }
+
+    export function useFileList() {
+        const store = useLocalObservable(() => new FileListStore())
+        useEffect(() => store.clear(), [])
+        return store
+    }
+
+
+    class FileListStore {
+        @observable private keys: string[] = observable.array()
+        @observable private payloads: Map<string, DataItem> = observable.map()
+
+        constructor() {
+            makeAutoObservable(this)
+        }
+
+        @computed get files() {
+            return toJS(this.keys)
+        }
+
+        @computed url(name: string) {
+            const data = this.payloads.get(name)
+            if(!data) {
+                throw new Error(`Not found: ${name}`)
+            }
+            return data.url
+        }
+
+        @computed allData(): Record<string, Uint8Array> {
+            const result: Record<string, Uint8Array> = {}
+            for(const [key, data] of this.payloads.entries()) {
+                result[key] = data.data
+            }
+            return result
+        }
+
+
+
+        @action push(name: string, data: Uint8Array) {
+            if(this.payloads.has(name)) {
+                throw new Error(`File has already exists: ${name}`)
+            }
+
+            this.keys.push(name)
+            const url = URL.createObjectURL(new Blob([data]))
+            this.payloads.set(name, {data, url})
+        }
+
+        @action reorder(newList: string[]) {
+            if(newList.length !== this.keys.length) {
+                throw new Error("Invalid new file list.")
+            }
+            const names = new Set(newList)
+            for(const n of this.payloads.keys()) {
+                if(!names.has(n)) {
+                    throw new Error(`Missing file name: ${n}`)
+                }
+            }
+            this.keys = observable.array(newList)
+        }
+
+        @action delete(name: string) {
+            const idx = this.keys.indexOf(name)
+            if(idx >= 0) {
+                this.keys.splice(idx, 1)
+            }
+            const data = this.payloads.get(name)
+            if(data) {
+                this.payloads.delete(name)
+                URL.revokeObjectURL(data.url)
+            }
+        }
+
+        @action clear() {
+            for(const data of this.payloads.values()) {
+                URL.revokeObjectURL(data.url)
+            }
+            this.payloads.clear()
+            this.keys.splice(0, this.keys.length)
         }
     }
 }
