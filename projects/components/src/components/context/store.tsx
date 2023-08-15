@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest"
 import { BackendConfigurationStore, DBSearchStore, IndexedDBBackend, StagingStore, SynchronizationStore } from "@xnh-db/core"
-import {createContext, useContext} from "react"
+import {createContext, useCallback, useContext, useEffect, useMemo} from "react"
 import { useLocalObservable } from "mobx-react-lite"
 import { DBFileBackend } from "@xnh-db/common"
 
@@ -26,14 +26,24 @@ export module StoreContext {
     }
 
     export module Staging {
+        function useIndexDBClient(dbName: string): Promise<IndexedDBBackend.ClientIDB> {
+            const db = useMemo(() => {
+                return IndexedDBBackend.open(dbName)
+            }, [dbName])
+            useEffect(() => () => {
+                db.then(db => db.close())
+            }, [dbName])
+
+            return db
+        }
+
         export function useStagingStore(): StagingStore.Store {
             const configStore = useContext(Sync.ConfigStoreContext)
             const upstreamFileBackend = configStore.currentBackend()
+            const idbClient = useIndexDBClient(DBKey)
             
             return useLocalObservable(() => {
-                const idbClient = IndexedDBBackend.open(DBKey)
                 const idbBackend = new IndexedDBBackend.Client(idbClient)
-    
                 const upstreamBackend = new DBFileBackend.ReadonlyBackend(upstreamFileBackend.backend, FileBackendOptions)
     
                 return new StagingStore.Store({

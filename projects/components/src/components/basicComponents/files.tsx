@@ -120,14 +120,17 @@ export module FileComponents {
         }
     }
 
-    export function useFileList() {
+    export function useFileList(): IFileListStore {
         const store = useLocalObservable(() => new FileListStore())
         useEffect(() => store.clear(), [])
         return store
     }
 
+    export interface IFileListStore extends FileListStore {}
+
 
     class FileListStore {
+        @observable pending: boolean = false
         @observable private keys: string[] = observable.array()
         @observable private payloads: Map<string, DataItem> = observable.map()
 
@@ -139,12 +142,9 @@ export module FileComponents {
             return toJS(this.keys)
         }
 
-        @computed url(name: string) {
+        @computed url(name: string): string | null {
             const data = this.payloads.get(name)
-            if(!data) {
-                throw new Error(`Not found: ${name}`)
-            }
-            return data.url
+            return data?.url ?? null
         }
 
         @computed allData(): Record<string, Uint8Array> {
@@ -155,7 +155,27 @@ export module FileComponents {
             return result
         }
 
+        async loadAll(names: string[], loader: (name: string) => Promise<Uint8Array>) {
+            this.setPending(false)
+            try {
+                for(const name of names) {
+                    const data = await loader(name)
+                    this.push(name, data)
+                }
+            } finally {
+                this.setPending(false)
+            }
+        }
 
+        async load(name: string, loader: (name: string) => Promise<Uint8Array>) {
+            this.setPending(false)
+            try {
+                const data = await loader(name)
+                this.push(name, data)
+            } finally {
+                this.setPending(false)
+            }
+        }
 
         @action push(name: string, data: Uint8Array) {
             if(this.payloads.has(name)) {
@@ -198,6 +218,10 @@ export module FileComponents {
             }
             this.payloads.clear()
             this.keys.splice(0, this.keys.length)
+        }
+
+        @action setPending(pending: boolean) {
+            this.pending = pending
         }
     }
 }

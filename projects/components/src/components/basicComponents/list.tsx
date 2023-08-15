@@ -1,226 +1,157 @@
-import { action, computed, makeAutoObservable, observable } from "mobx"
+import { createContext, useContext, useEffect } from "react"
+import {DndProvider, useDrag, useDrop, DragPreviewImage} from "react-dnd"
+import {HTML5Backend} from "react-dnd-html5-backend"
+import { FileComponents } from "./files"
+import { ImageViewerComponents } from "./images"
 import { Observer, useLocalObservable } from "mobx-react-lite"
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { IObservableValue, observable } from "mobx"
 
-export module BasicListComponents {
-    export module DraggableList {
-        interface DraggableWrapperProps {
-            index: number
-            children: React.ReactNode
-        }
-        
-        export function DraggableWrapper(props: DraggableWrapperProps) {
-            const store = useStore()
-            const id = useComponentId({
-                onInit: id => {store.registerDraggableWrapper(id, props.index)},
-                onRevoked: id => store.revokeDraggableWrapper(id)
-            })
-            return <Observer>{() => (
-                <DraggableWrapperIdContext.Provider value={id}>
-                    {props.children}
-                </DraggableWrapperIdContext.Provider>
-            )}</Observer>
+export module DnDListComponents {
+
+    export module ImageList {
+        export interface Props {
+            columns: number
+            idList: string[]
+            load: (id: string) => Promise<Uint8Array>
+            onComplete: (idList: string[]) => void
+            upload: (id: string, data: Uint8Array) => Promise<void>
         }
 
-        interface DraggableZoneProps {
-            style?: React.CSSProperties
-            children?: (selected: boolean, index: number) => React.ReactNode 
-        }
-
-        export function DraggableZone(props: DraggableZoneProps) {
-            const store = useStore()
-            const [ref, bounds] = useBoundingRef<HTMLDivElement>()
-            const id = useComponentId({
-                onInit: id => {store.registerDraggableZone(id, bounds)},
-                onRevoked: id => store.revokeDraggableZone(id)
-            })
-
+        export function ImageList(props: Props) {
+            const store = FileComponents.useFileList()
             useEffect(() => {
-                store.registerDraggableZone(id, bounds)
-            }, bounds)
+                store.clear()
+                store.loadAll(props.idList, props.load)
+                return () => store.clear()
+            }, props.idList)
 
-            const zoneId = useDraggableWrapperId()
-
-            return <Observer>{() => (
-                <div ref={ref}>{
-                    props.children?.call(
-                        null,
-                        store.isDragging(id),
-                        store.getIndexByWrapperId(zoneId)
-                    )
-                }</div>
-            )}</Observer>
-        }
-        
-        interface DroppableZoneProps {
-            index: number
-            children: (selected: boolean) => React.ReactNode 
+            return <DndProvider backend={HTML5Backend}>
+                <ListStoreContext.Provider value={store}>
+                    <PropsContext.Provider value={props}>
+                            <ListBody/>
+                    </PropsContext.Provider>
+                </ListStoreContext.Provider>
+            </DndProvider>
         }
 
-        export function DroppableZone(props: DroppableZoneProps) {
-            const store = useStore()
-            const id = useComponentId({
-                onInit: id => {
-                    store.registerDroppableZone(id, props.index, bounds)
+        function ListBody() {
+            const store = useNullableContext(ListStoreContext)
+            const props = useNullableContext(PropsContext)
+            const uploader = ImageViewerComponents.useUploadImageDialog({
+                onUpload: (data) => store.push(crypto.randomUUID(), data)
+            })
+
+            return <Observer>
+                {() => {
+                    const children: React.ReactNode[] = []
+
+                    const rows = Math.ceil(store.files.length / props.columns)
+                    for(let r=0; r<rows; r++) {
+                        const cols = r === rows-1 ? store.files.length - r * props.columns : props.columns
+                        children.push(<DroppableArea index={r*props.columns} key={`pad_start_${r}`}/>)
+                        for(let c=0; c<cols; c++) {
+                            const idx = r*props.columns+c
+                            const name = store.files[idx]
+                            children.push(<ListImageBox index={idx} name={name} key={`img_${r}_${c}`}/>)
+                            children.push(<DroppableArea index={idx+1} key={`pad_${r}_${c}`}/>)
+                        }
+                    }
+
+                    return <div style={{display: "grid", gridTemplateColumns: `${droppableAreaWidth} repeat(${props.columns}, 1fr ${droppableAreaWidth})`}}>
+                        {...children}
+                        <button onClick={() => {
+                            console.log("Upload")
+                            uploader.open()
+                        }}>添加</button>
+                        {uploader.placeholder}
+                    </div>
+                }}
+            </Observer>
+        }
+
+        function ListImageBox(props: {name: string, index: number}) {
+            const store = useNullableContext(ListStoreContext)
+            const [{isDragging}, drag, preview] = useDrag({
+                canDrag: true,
+                type: DnDType,
+                item: {index: props.index},
+                collect: (monitor) => ({
+                    isDragging: !!monitor.isDragging()
+                })
+            })
+
+            return <Observer>
+                {() => {
+                    const url = store.url(props.name)
+                    let previewElement: React.ReactNode = null
+                    if(url !== null) {
+                        previewElement = <DragPreviewImage connect={preview} src={url}/>
+                    }
+
+                    return <> 
+                    {previewElement}
+                    <ImageViewerComponents.ImageBox src={url} isPending={false}>
+                        <div
+                            ref={drag}
+                            style={{width: "100%", height: "100%", position: "absolute", top: 0, left: 0}}
+                        />
+                    </ImageViewerComponents.ImageBox>
+                    </>
+                }}
+            </Observer>
+        }
+
+        function DroppableArea(props: {index: number}) {
+            const store = useNullableContext(ListStoreContext)
+            const [{ isMoving }, drop] = useDrop({
+                canDrop: () => true,
+                accept: DnDType,
+                collect: (monitor) => {
+                    return {
+                        isMoving: !!monitor.canDrop(),
+                        droppingHere: !!monitor.isOver(), 
+                    }
                 },
-                onRevoked: id => {
-                    store.revokeDroppableZone(id)
-                }
+                drop: (item: any, monitor) => {
+                    let index = item["index"]
+                    if(typeof index === "number") {
+                        insertIntoList(store, index, props.index)
+                    }
+                },
             })
 
-            useEffect(() => {
-                store.registerDroppableZone(id, props.index, bounds)
-            }, [props.index])
-            
-            return <Observer>{() => (
-                <div>
-                    {props.children(store.isNearest(id))}
-                </div>
-            )}</Observer>
+            return <Observer>{() => {
+                return <div
+                    ref={drop}
+                    style={{height: "100%", backgroundColor: isMoving ? "pink" : "transparent"}}
+                />
+            }}</Observer>
         }
 
-        interface ProviderProps<T> extends ListRef<T> {
-            children: React.ReactNode
-        }
+        const PropsContext = createContext<Props | null>(null)
+        const DnDType = "list-image"
+        const droppableAreaWidth = "50px"
 
-        export function DnDProvider<T>(props: ProviderProps<T>) {
-            const store = useLocalObservable(() => new Store())
-            useEffect(() => {
-                store.updateRef(props.items, props.onChange)
-            }, [props.items, props.onChange])
-
-            return <StoreContext.Provider value={store}>
-                {props.children}
-            </StoreContext.Provider>
-        }
-
-        interface ListRef<T> {
-            items: T[]
-            onChange: (items: T[], indices?: number[]) => void
-        }
-
-        type Bounds = [number, number, number, number]
-
-        class Store {
-            @observable listRef: ListRef<any> = {items: [], onChange: () => {}}
-            @observable elementCounter: number = 0
-            @observable selectedDraggableZoneId: null | number = null
-            @observable nearestDroppableZoneId: null | number = null
-            @observable draggableWrappers: Map<number, {index: number}> = observable.map()
-            @observable draggableZones: Map<number, {bounds: Bounds}> = observable.map()
-            @observable droppableZones: Map<number, {index: number, bounds: Bounds}> = observable.map()
-
-            constructor() {
-                makeAutoObservable(this)
+        function insertIntoList(store: FileComponents.IFileListStore, fromIndex: number, toIndex: number) {
+            const keys = store.files
+            const [value] = keys.splice(fromIndex, 1)
+            if(toIndex > fromIndex) {
+                toIndex --
             }
-
-            @action updateRef(items: ListRef<any>["items"], onChange: ListRef<any>["onChange"]) {
-                this.listRef = {items, onChange}
-                this.clear()
-            }
-
-            @action newId(): number {
-                return this.elementCounter++
-            }
-
-            @computed isNearest(id: number): boolean {
-                return id === this.nearestDroppableZoneId
-            }
-
-            @computed isDragging(id: number): boolean {
-                return id === this.selectedDraggableZoneId
-            }
-
-            @computed getIndexByWrapperId(id: number): number {
-                throw new Error()
-            }
-
-            @action insert(fromIndex: number, toIndex: number) {
-
-            }
-
-            @action clear() {
-                this.selectedDraggableZoneId = null
-                this.nearestDroppableZoneId = null
-            }
-
-            @action registerDraggableWrapper(id: number, index: number) {
-                throw new Error()
-            }
-
-            @action revokeDraggableWrapper(id: number) {
-                this.clear()
-            }
-
-            @action registerDraggableZone(id: number, bounds: Bounds) {
-                throw new Error()
-            }
-
-            @action revokeDraggableZone(id: number) {
-                this.clear()
-            }
-
-            @action registerDroppableZone(id: number, index: number, bounds: Bounds) {
-                throw new Error()
-            }
-
-            @action revokeDroppableZone(id: number) {
-                this.clear()
-            }
-        }
-
-        const StoreContext = createContext<Store | null>(null)
-        const DraggableWrapperIdContext = createContext<number | null>(null)
-
-        function useStore(): Store {
-            const store = useContext(StoreContext)
-            if(!store) {
-                throw new Error(`Not in DnD Provider`)
-            }
-            return store
-        }
-
-        function useDraggableWrapperId(): number {
-            const id = useContext(DraggableWrapperIdContext)
-            if(id == null) {
-                throw new Error(`Not in a DraggableWrapper`)
-            }
-            return id
-        }
-
-        interface UseComponentIdProps {
-            onInit: (id: number) => void
-            onRevoked: (id: number) => void
-        }
-
-        function useComponentId(props: UseComponentIdProps): number {
-            const store = useStore()
-            const [id, setId] = useState<number | null>(null)
-            useEffect(() => {
-                const newId = store.newId()
-                setId(newId)
-                props.onInit(newId)
-                return () => props.onRevoked(newId)
-            }, [])
-            if(id == null) {
-                throw new Error("Invalid state")
-            }
-            return id
-        }
-
-        function useBoundingRef<T extends HTMLElement>(): [React.LegacyRef<T>, [number, number, number, number]] {
-            const ref = useRef<T>(null)
-            const rect = expandRect(ref.current?.getBoundingClientRect())
-            
-            return [ref, rect]
-
-            function expandRect(rect: undefined | DOMRect): [number, number, number, number] {
-                if(!rect) {
-                    return [0, 0, 0, 0]
-                } else {
-                    return [rect.x, rect.y, rect.width, rect.height]
-                }
+            if(value !== undefined) {
+                keys.splice(toIndex, 0, value)
+                store.reorder(keys)
             }
         }
     }
+
+    const ListStoreContext = createContext<FileComponents.IFileListStore | null>(null)
+}
+
+function useNullableContext<T extends {}>(context: React.Context<T | null>): T {
+    const value = useContext(context)
+    if(value == null) {
+        throw new Error("Not in provider")
+    }
+    return value
 }

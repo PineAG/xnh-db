@@ -1,27 +1,22 @@
 import React, { useState } from 'react';
 import './App.css';
 
-import {DBWebUIProvider, ImageViewerComponents} from "@xnh-db/components"
+import {DnDListComponents, DBWebUIProvider} from "@xnh-db/components"
 
 function App() {
-  const [url, setUrl] = useState<string | null>(null)
-
-  const upload = ImageViewerComponents.useUploadImageDialog({
-    onUpload: (data) => {
-      if(url) {
-        URL.revokeObjectURL(url)
-      }
-      setUrl(URL.createObjectURL(new Blob([data])))
-    }
-  })
+  const [list, setList] = useState<string[]>([])
 
   return (
     <div className="App">
       <DBWebUIProvider>
-        <button onClick={upload.open}>上传</button>
-        {upload.placeholder}
+      <DnDListComponents.ImageList.ImageList
+        columns={3}
+        idList={list}
+        onComplete={setList}
+        load={() => {throw new Error("SHIT")}}
+        upload={() => {throw new Error("SHIT")}}
+      />
       </DBWebUIProvider>
-      <img src={url ?? ""}/>
     </div>
   );
 }

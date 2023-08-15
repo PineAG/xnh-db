@@ -30,8 +30,10 @@ export module ImageViewerComponents {
             internal = <ChakraIcon.WarningTwoIcon/>
         }
 
-        return <Chakra.Box boxSize={props.size ?? "md"}>
-            {internal}
+        return <Chakra.Box boxSize={props.size ?? "md"} style={{position: "relative"}}>
+            <div style={{position: "absolute", width: "100%", height: "100%", display: "grid", placeItems: "center", top: 0, left: 0, overflow: "hidden"}}>
+                {internal}
+            </div>
             {props.children}
         </Chakra.Box>
 
