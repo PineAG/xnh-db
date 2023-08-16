@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect } from "react"
+import * as Chakra from "@chakra-ui/react"
+import { CSSProperties, createContext, useContext, useEffect, useState } from "react"
 import {DndProvider, useDrag, useDrop, DragPreviewImage} from "react-dnd"
 import {HTML5Backend} from "react-dnd-html5-backend"
 import { FileComponents } from "./files"
@@ -9,61 +10,119 @@ import { IObservableValue, observable } from "mobx"
 export module DnDListComponents {
 
     export module ImageList {
-        export interface Props {
-            columns: number
-            idList: string[]
-            load: (id: string) => Promise<Uint8Array>
-            onComplete: (idList: string[]) => void
-            upload: (id: string, data: Uint8Array) => Promise<void>
+
+        interface DataItem {
+            name: string
+            data: Uint8Array
         }
 
-        export function ImageList(props: Props) {
+        export interface Props {
+            fileList: DataItem[]
+            onComplete: (idList: DataItem[]) => void
+        }
+
+        interface UseImageListDialogHandle {
+            open: () => void
+            placeholder: React.ReactNode
+        }
+
+        export function useImageListDialog(props: Props): UseImageListDialogHandle {
+            const [opened, setOpened] = useState(false)
             const store = FileComponents.useFileList()
             useEffect(() => {
                 store.clear()
-                store.loadAll(props.idList, props.load)
+                if(opened) {
+                    store.loadAll(props.fileList)
+                }
                 return () => store.clear()
-            }, props.idList)
+            }, [opened, props.fileList.map(it => it.name).join("/")])
 
-            return <DndProvider backend={HTML5Backend}>
-                <ListStoreContext.Provider value={store}>
-                    <PropsContext.Provider value={props}>
-                            <ListBody/>
-                    </PropsContext.Provider>
-                </ListStoreContext.Provider>
-            </DndProvider>
+            
+            const uploader = ImageViewerComponents.useUploadImageDialog({
+                onUpload: (data) => {
+                    const id = crypto.randomUUID()
+                    store.push(`${id}.webp`, data)
+                }
+            })
+
+            const placeholder = <>
+            {uploader.placeholder}
+            <Chakra.Modal isOpen={opened} onClose={close} closeOnEsc={false} closeOnOverlayClick={false} size="6xl" scrollBehavior="inside">
+                <Chakra.ModalOverlay />
+                <Chakra.ModalContent>
+                    <Chakra.ModalHeader>
+                        编辑图片列表
+                    </Chakra.ModalHeader>
+                    <Chakra.ModalBody>
+                        <DndProvider backend={HTML5Backend}>
+                            <ListStoreContext.Provider value={store}>
+                                <PropsContext.Provider value={props}>
+                                    <ListBody/>
+                                </PropsContext.Provider>
+                            </ListStoreContext.Provider>
+                        </DndProvider>
+                    </Chakra.ModalBody>
+                    <Chakra.ModalFooter>
+                        <Chakra.ButtonGroup>
+                            <Chakra.Button colorScheme="pink" onClick={uploader.open}>添加</Chakra.Button>
+                            <Chakra.Button variant="ghost" onClick={close}>取消</Chakra.Button>
+                            <Chakra.Button onClick={save}>保存</Chakra.Button>
+                        </Chakra.ButtonGroup>
+                    </Chakra.ModalFooter>
+                </Chakra.ModalContent>
+            </Chakra.Modal>
+            </>
+
+            return {
+                placeholder,
+                open
+            }
+
+            function open() {
+                setOpened(true)
+                store.clear()
+            }
+
+            function close() {
+                setOpened(false)
+                store.clear()
+            }
+
+            function save() {
+                const results: DataItem[] = []
+                for(const [name, data] of Object.entries(store.allData())) {
+                    results.push({name, data})
+                }
+                props.onComplete(results)
+                store.clear()
+                setOpened(false)
+            }
         }
 
         function ListBody() {
             const store = useNullableContext(ListStoreContext)
             const props = useNullableContext(PropsContext)
-            const uploader = ImageViewerComponents.useUploadImageDialog({
-                onUpload: (data) => store.push(crypto.randomUUID(), data)
-            })
+
+            const columns = 5
 
             return <Observer>
                 {() => {
                     const children: React.ReactNode[] = []
 
-                    const rows = Math.ceil(store.files.length / props.columns)
+                    const rows = Math.ceil(store.files.length / columns)
                     for(let r=0; r<rows; r++) {
-                        const cols = r === rows-1 ? store.files.length - r * props.columns : props.columns
-                        children.push(<DroppableArea index={r*props.columns} key={`pad_start_${r}`}/>)
+                        const cols = r === rows-1 ? store.files.length - r * columns : columns
+                        children.push(<DroppableArea index={r*columns} key={`pad_start_${r}`}/>)
                         for(let c=0; c<cols; c++) {
-                            const idx = r*props.columns+c
+                            const idx = r*columns+c
                             const name = store.files[idx]
                             children.push(<ListImageBox index={idx} name={name} key={`img_${r}_${c}`}/>)
                             children.push(<DroppableArea index={idx+1} key={`pad_${r}_${c}`}/>)
                         }
                     }
 
-                    return <div style={{display: "grid", gridTemplateColumns: `${droppableAreaWidth} repeat(${props.columns}, 1fr ${droppableAreaWidth})`}}>
+                    return <div style={{display: "grid", gridTemplateColumns: `25px repeat(${columns}, 1fr 25px)`, justifyContent: "space-around"}}>
                         {...children}
-                        <button onClick={() => {
-                            console.log("Upload")
-                            uploader.open()
-                        }}>添加</button>
-                        {uploader.placeholder}
                     </div>
                 }}
             </Observer>
@@ -71,6 +130,7 @@ export module DnDListComponents {
 
         function ListImageBox(props: {name: string, index: number}) {
             const store = useNullableContext(ListStoreContext)
+            const globalProps = useNullableContext(PropsContext)
             const [{isDragging}, drag, preview] = useDrag({
                 canDrag: true,
                 type: DnDType,
@@ -90,20 +150,27 @@ export module DnDListComponents {
 
                     return <> 
                     {previewElement}
-                    <ImageViewerComponents.ImageBox src={url} isPending={false}>
+                    <ImageViewerComponents.ImageBox src={url} isPending={false} size="150px">
                         <div
                             ref={drag}
                             style={{width: "100%", height: "100%", position: "absolute", top: 0, left: 0}}
                         />
+                        <CloseButton name={props.name}/>
                     </ImageViewerComponents.ImageBox>
                     </>
                 }}
             </Observer>
         }
 
+        function CloseButton(props: {name: string}) {
+            const store = useNullableContext(ListStoreContext)
+            return <Chakra.CloseButton style={{position: "absolute", top: "10px", right: "10px"}} onClick={() => store.delete(props.name)}/>
+        }
+
         function DroppableArea(props: {index: number}) {
             const store = useNullableContext(ListStoreContext)
-            const [{ isMoving }, drop] = useDrop({
+            const globalProps = useNullableContext(PropsContext)
+            const [{ isMoving, droppingHere }, drop] = useDrop({
                 canDrop: () => true,
                 accept: DnDType,
                 collect: (monitor) => {
@@ -120,17 +187,19 @@ export module DnDListComponents {
                 },
             })
 
+            const style: CSSProperties = {height: "100%"}
+            style.backgroundColor = isMoving ? "pink" : "transparent"
+            
             return <Observer>{() => {
                 return <div
                     ref={drop}
-                    style={{height: "100%", backgroundColor: isMoving ? "pink" : "transparent"}}
+                    style={style}
                 />
             }}</Observer>
         }
 
         const PropsContext = createContext<Props | null>(null)
         const DnDType = "list-image"
-        const droppableAreaWidth = "50px"
 
         function insertIntoList(store: FileComponents.IFileListStore, fromIndex: number, toIndex: number) {
             const keys = store.files

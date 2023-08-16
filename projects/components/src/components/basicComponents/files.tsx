@@ -128,6 +128,10 @@ export module FileComponents {
 
     export interface IFileListStore extends FileListStore {}
 
+    interface DataListItem {
+        name: string
+        data: Uint8Array
+    }
 
     class FileListStore {
         @observable pending: boolean = false
@@ -155,12 +159,11 @@ export module FileComponents {
             return result
         }
 
-        async loadAll(names: string[], loader: (name: string) => Promise<Uint8Array>) {
+        loadAll(files: DataListItem[]) {
             this.setPending(false)
             try {
-                for(const name of names) {
-                    const data = await loader(name)
-                    this.push(name, data)
+                for(const f of files) {
+                    this.push(f.name, f.data)
                 }
             } finally {
                 this.setPending(false)
