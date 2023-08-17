@@ -3,7 +3,7 @@ import * as ChakraIcons from "@chakra-ui/icons"
 import { CSSProperties, createContext, useContext, useEffect, useState } from "react"
 import {DndProvider, useDrag, useDrop, DragPreviewImage} from "react-dnd"
 import {HTML5Backend} from "react-dnd-html5-backend"
-import { FileComponents } from "./files"
+import { FileComponents, FileUtils } from "./files"
 import { ImageViewerComponents } from "./images"
 import { Observer, useLocalObservable } from "mobx-react-lite"
 import { IObservableValue, observable } from "mobx"
@@ -45,8 +45,8 @@ export module DnDListComponents {
 
             
             const uploader = ImageViewerComponents.useUploadImageDialog({
-                onUpload: (data) => {
-                    const id = crypto.randomUUID()
+                onUpload: async (data) => {
+                    const id = await FileUtils.getHash(data)
                     store.push(`${id}.webp`, data)
                 }
             })

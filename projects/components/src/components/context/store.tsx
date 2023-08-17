@@ -20,7 +20,6 @@ export module StoreContext {
         export const OctoKitContext = createContext<Octokit>(new Octokit())
 
         export const ConfigStoreContext = createContext<BackendConfigurationStore.ConfigStore>(new BackendConfigurationStore.ConfigStore(ConfigKey))
-        export const GitHubConfigStoreContext = createContext<BackendConfigurationStore.GitHub.GitHubConfigStore>(new BackendConfigurationStore.GitHub.GitHubConfigStore())
 
         export const SyncStoreContext = createContext<SynchronizationStore.Store>(new SynchronizationStore.Store())
     }

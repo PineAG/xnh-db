@@ -60,7 +60,7 @@ export module BackendConfigurationStore {
             if(this.config.current === BackendType.Restful) {
                 return {
                     type: "readonly",
-                    backend: new RestfulFileBackend.ReadonlyBackend({baseURI: ""})
+                    backend: new RestfulFileBackend.ReadonlyBackend({baseURI: "/data"})
                 }
             } else if (this.config.current === BackendType.GitHub) {
                 const {token, repo, owner, branch, name, email} = this.githubConfig()

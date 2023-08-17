@@ -13,8 +13,8 @@ function App() {
 
   return (
     <div className="App">
-      <ImageViewerComponents.ImageList fileList={list.map(it => ({name: it.name, load: () => Promise.resolve(it.data)}))}/>
-      <DBWebUIProvider>
+      <DBWebUIProvider documentTypes={{}}>
+        <ImageViewerComponents.ImageList fileList={list.map(it => ({name: it.name, load: () => Promise.resolve(it.data)}))}/>
         {editor.placeholder}
         <button onClick={editor.open}>打开</button>
       </DBWebUIProvider>

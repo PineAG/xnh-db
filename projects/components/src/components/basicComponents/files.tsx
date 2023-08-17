@@ -176,6 +176,7 @@ export module FileComponents {
                 try {
                     this.setPayload(f.name, {loaded: false})
                     const p = this.currentPromise.then(f.load)
+                    this.currentPromise = p.then()
                     data = await p
                     this.push(f.name, data)
                 } finally {
