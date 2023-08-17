@@ -128,15 +128,19 @@ export module FileComponents {
 
     export interface IFileListStore extends FileListStore {}
 
-    interface DataListItem {
+    type DataListItem = {loaded: false} | {loaded: true, data: Uint8Array, url: string}
+
+    interface DataListItemSource {
         name: string
-        data: Uint8Array
+        load(): Promise<Uint8Array>
     }
 
     class FileListStore {
         @observable pending: boolean = false
         @observable private keys: string[] = observable.array()
-        @observable private payloads: Map<string, DataItem> = observable.map()
+        @observable private payloads: Map<string, DataListItem> = observable.map()
+
+        private currentPromise: Promise<void> = Promise.resolve()
 
         constructor() {
             makeAutoObservable(this)
@@ -148,26 +152,41 @@ export module FileComponents {
 
         @computed url(name: string): string | null {
             const data = this.payloads.get(name)
-            return data?.url ?? null
+            if(data?.loaded) {
+                return data.url
+            }
+            return null
         }
 
-        @computed allData(): Record<string, Uint8Array> {
-            const result: Record<string, Uint8Array> = {}
-            for(const [key, data] of this.payloads.entries()) {
-                result[key] = data.data
+        @computed allData(): [string, Uint8Array][] {
+            const result: [string, Uint8Array][] = []
+            for(const key of this.keys) {
+                const item = this.payloads.get(key)
+                if(item?.loaded) {
+                    result.push([key, item.data])
+                }
             }
             return result
         }
 
-        loadAll(files: DataListItem[]) {
-            this.setPending(false)
-            try {
-                for(const f of files) {
-                    this.push(f.name, f.data)
-                }
-            } finally {
+        async loadAll(files: DataListItemSource[]) {
+            for(const f of files) {
+                let data: Uint8Array
                 this.setPending(false)
+                try {
+                    this.setPayload(f.name, {loaded: false})
+                    const p = this.currentPromise.then(f.load)
+                    data = await p
+                    this.push(f.name, data)
+                } finally {
+                    this.setPending(false)
+                }
+                this.push(f.name, data)
             }
+        }
+
+        @action setPayload(name: string, payload: DataListItem) {
+            this.payloads.set(name, payload)
         }
 
         async load(name: string, loader: (name: string) => Promise<Uint8Array>) {
@@ -181,13 +200,20 @@ export module FileComponents {
         }
 
         @action push(name: string, data: Uint8Array) {
-            if(this.payloads.has(name)) {
-                throw new Error(`File has already exists: ${name}`)
+            const current = this.payloads.get(name)
+            if(current?.loaded) {
+                URL.revokeObjectURL(current.url)
+            }
+            this.payloads.delete(name)
+
+            const currentIdx = this.keys.indexOf(name)
+            if(currentIdx >= 0) {
+                this.keys.splice(currentIdx, 1)
             }
 
             this.keys.push(name)
             const url = URL.createObjectURL(new Blob([data]))
-            this.payloads.set(name, {data, url})
+            this.payloads.set(name, {loaded: true, data, url})
         }
 
         @action reorder(newList: string[]) {
@@ -209,7 +235,7 @@ export module FileComponents {
                 this.keys.splice(idx, 1)
             }
             const data = this.payloads.get(name)
-            if(data) {
+            if(data?.loaded) {
                 this.payloads.delete(name)
                 URL.revokeObjectURL(data.url)
             }
@@ -217,7 +243,9 @@ export module FileComponents {
 
         @action clear() {
             for(const data of this.payloads.values()) {
-                URL.revokeObjectURL(data.url)
+                if(data?.loaded) {
+                    URL.revokeObjectURL(data.url)
+                }
             }
             this.payloads.clear()
             this.keys.splice(0, this.keys.length)

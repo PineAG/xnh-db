@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import './App.css';
 
-import {DnDListComponents, DBWebUIProvider} from "@xnh-db/components"
+import {DnDListComponents, DBWebUIProvider, ImageViewerComponents} from "@xnh-db/components"
 
 function App() {
   const [list, setList] = useState<{name: string, data: Uint8Array}[]>([])
 
   const editor = DnDListComponents.ImageList.useImageListDialog({
-    fileList: list,
+    fileList: list.map(it => ({name: it.name, load: () => Promise.resolve(it.data)})),
     onComplete: setList
   })
 
   return (
     <div className="App">
+      <ImageViewerComponents.ImageList fileList={list.map(it => ({name: it.name, load: () => Promise.resolve(it.data)}))}/>
       <DBWebUIProvider>
         {editor.placeholder}
         <button onClick={editor.open}>打开</button>

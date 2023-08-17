@@ -1,5 +1,5 @@
-import {useEffect, useRef} from "react"
-import {makeAutoObservable, observable, action} from "mobx"
+import {CSSProperties, useEffect, useRef} from "react"
+import {makeAutoObservable, observable, action, computed} from "mobx"
 import * as Chakra from "@chakra-ui/react"
 import * as ChakraIcon from "@chakra-ui/icons"
 import { ElementaryComponents } from "./elementary"
@@ -13,7 +13,7 @@ export module ImageViewerComponents {
         src: string | null
         isPending: boolean
         enablePreview?: boolean
-        size?: Chakra.BoxProps["boxSize"]
+        width?: CSSProperties["width"]
         children?: React.ReactNode
     }
 
@@ -30,12 +30,12 @@ export module ImageViewerComponents {
             internal = <ChakraIcon.WarningTwoIcon/>
         }
 
-        return <Chakra.Box boxSize={props.size ?? "md"} style={{position: "relative"}}>
+        return <div style={{width: props.width ?? "128px", position: "relative", aspectRatio: "1 / 1"}}>
             <div style={{position: "absolute", width: "100%", height: "100%", display: "grid", placeItems: "center", top: 0, left: 0, overflow: "hidden"}}>
                 {internal}
             </div>
             {props.children}
-        </Chakra.Box>
+        </div>
 
         function onClick() {
             if(!props.enablePreview || !props.src) {
@@ -192,6 +192,37 @@ export module ImageViewerComponents {
             >
             <img ref={ref} src={props.src}/>
         </ReactCrop>
+    }
+
+    interface DataListItemSource {
+        name: string
+        load(): Promise<Uint8Array>
+    }
+
+    export interface ImageListProps {
+        fileList: DataListItemSource[]
+        style?: CSSProperties
+    }
+
+    export function ImageList(props: ImageListProps) {
+        const store = FileComponents.useFileList()
+        useEffect(() => {
+            store.clear()
+            store.loadAll(props.fileList)
+            return () => store.clear()
+        }, [props.fileList.map(it => it.name).join("/")])
+
+        return <Observer>
+            {() => (
+                <Chakra.Grid gridTemplateColumns="repeat(5, 1fr)">
+                    {store.files.map(fn => (
+                        <Chakra.GridItem key={fn}>
+                            <ImageBox src={store.url(fn)} isPending={!store.url(fn)} enablePreview/>
+                        </Chakra.GridItem>
+                    ))}
+                </Chakra.Grid>
+            )}
+        </Observer>
     }
 
 }

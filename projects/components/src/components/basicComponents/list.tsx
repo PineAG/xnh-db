@@ -1,4 +1,5 @@
 import * as Chakra from "@chakra-ui/react"
+import * as ChakraIcons from "@chakra-ui/icons"
 import { CSSProperties, createContext, useContext, useEffect, useState } from "react"
 import {DndProvider, useDrag, useDrop, DragPreviewImage} from "react-dnd"
 import {HTML5Backend} from "react-dnd-html5-backend"
@@ -16,8 +17,13 @@ export module DnDListComponents {
             data: Uint8Array
         }
 
+        interface DataItemSource {
+            name: string
+            load: () => Promise<Uint8Array>
+        }
+
         export interface Props {
-            fileList: DataItem[]
+            fileList: DataItemSource[]
             onComplete: (idList: DataItem[]) => void
         }
 
@@ -64,7 +70,9 @@ export module DnDListComponents {
                     </Chakra.ModalBody>
                     <Chakra.ModalFooter>
                         <Chakra.ButtonGroup>
-                            <Chakra.Button colorScheme="pink" onClick={uploader.open}>添加</Chakra.Button>
+                            <Chakra.Button colorScheme="pink" onClick={uploader.open} leftIcon={<ChakraIcons.AddIcon/>}>
+                                添加
+                            </Chakra.Button>
                             <Chakra.Button variant="ghost" onClick={close}>取消</Chakra.Button>
                             <Chakra.Button onClick={save}>保存</Chakra.Button>
                         </Chakra.ButtonGroup>
@@ -90,7 +98,7 @@ export module DnDListComponents {
 
             function save() {
                 const results: DataItem[] = []
-                for(const [name, data] of Object.entries(store.allData())) {
+                for(const [name, data] of store.allData()) {
                     results.push({name, data})
                 }
                 props.onComplete(results)
@@ -150,7 +158,7 @@ export module DnDListComponents {
 
                     return <> 
                     {previewElement}
-                    <ImageViewerComponents.ImageBox src={url} isPending={false} size="150px">
+                    <ImageViewerComponents.ImageBox src={url} isPending={false} width="150px">
                         <div
                             ref={drag}
                             style={{width: "100%", height: "100%", position: "absolute", top: 0, left: 0}}
